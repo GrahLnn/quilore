@@ -32,6 +32,11 @@ input::-webkit-credentials-auto-fill-button {
   --input: hsl(240 4.9% 83.9%);
   --ring: hsl(240 5% 64.9%);
   --radius: 0.5rem;
+
+  --butty-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 3px 6px rgba(0, 0, 0, 0.06),
+    0 6px 12px rgba(0, 0, 0, 0.06);
+  --card-bg: #f8f9fa;
+  --app-bg: #f5f8fa;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,6 +60,7 @@ input::-webkit-credentials-auto-fill-button {
     --border: hsl(240 3.7% 15.9%);
     --input: hsl(240 3.7% 15.9%);
     --ring: hsl(240 3.8% 46.1%);
+    --app-bg: #0f0f0f;
   }
 }
 
@@ -86,7 +92,7 @@ body {
   @apply font-body;
   @apply text-[#090909] dark:text-[#f6f6f6];
 
-  @apply dark:bg-[#0f0f0f] bg-[#fafafa] transition;
+  @apply bg-[var(--app-bg)] transition;
 }
 
 #root {
@@ -99,4 +105,8 @@ main {
 
 h1 {
   @apply font-bold text-2xl;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
