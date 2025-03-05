@@ -1,111 +1,19 @@
-import { cn } from "@/lib/utils";
-import { icons } from "@/src/assets/icons";
-import { Window } from "@tauri-apps/api/window";
-import { platform } from "@tauri-apps/plugin-os";
 import {
-  type PropsWithChildren,
-  useCallback,
-  useEffect,
-  useState,
-  type KeyboardEvent,
-} from "react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { icons, logos } from "@/src/assets/icons";
+import { platform } from "@tauri-apps/plugin-os";
+import React, { type PropsWithChildren, useEffect, memo } from "react";
+import { useWindowFocus } from "./state_machine/windowFocus";
 
-const appWindow = new Window("main");
 const os = platform();
-
-interface WindowsButtonProps extends PropsWithChildren {
-  onClick?: () => void;
-  className?: string;
-  title?: string;
-  color?: string;
-  emphasizeColor?: string;
-}
-
-function WindowsButton({
-  children,
-  onClick,
-  title,
-  color,
-  className,
-  emphasizeColor,
-}: WindowsButtonProps) {
-  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      onClick?.();
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
-      className={cn(
-        "h-8 w-[46px] flex items-center justify-center",
-        "opacity-60 hover:opacity-100",
-        "transition-all",
-        color
-          ? "hover:bg-[var(--hover-bg-color)] hover:text-[var(--hover-text-color)]"
-          : "hover:bg-black/5 dark:hover:bg-white/5",
-        className
-      )}
-      style={{
-        ...(color
-          ? ({ "--hover-bg-color": color } as React.CSSProperties)
-          : {}),
-        ...(emphasizeColor
-          ? ({ "--hover-text-color": emphasizeColor } as React.CSSProperties)
-          : {}),
-      }}
-      title={title}
-      tabIndex={0}
-    >
-      {children}
-    </button>
-  );
-}
-
-function WindowsControls() {
-  const [maximized, setMaximized] = useState(false);
-  const getWindowState = useCallback(async () => {
-    const isMaximized = await Window.getCurrent().isMaximized();
-    setMaximized(isMaximized);
-  }, []);
-
-  useEffect(() => {
-    getWindowState().catch(console.error);
-
-    const unlisten = Window.getCurrent().onResized(() => {
-      getWindowState().catch(console.error);
-    });
-
-    return () => {
-      unlisten.then((fn) => fn()).catch(console.error);
-    };
-  }, [getWindowState]);
-
-  return (
-    <div className="flex items-center">
-      <WindowsButton onClick={() => appWindow.minimize()}>
-        <icons.minus size={14} />
-      </WindowsButton>
-      <WindowsButton onClick={() => appWindow.toggleMaximize()}>
-        {maximized ? (
-          <icons.stacksquare size={14} />
-        ) : (
-          <icons.square size={14} />
-        )}
-      </WindowsButton>
-      <WindowsButton
-        onClick={() => appWindow.close()}
-        color="#e81123"
-        emphasizeColor="#f0f0f0"
-      >
-        <icons.xmark />
-      </WindowsButton>
-    </div>
-  );
-}
 
 interface CtrlButtonProps {
   children: React.ReactNode;
@@ -127,7 +35,7 @@ function CtrlButton({
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
       <div
         className={cn([
-          "rounded-md cursor-default",
+          "rounded-md cursor-default h-8 flex items-center",
           p || "p-2",
           o || "opacity-60",
           "hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100 transition-all duration-300 ease-in-out",
@@ -141,20 +49,78 @@ function CtrlButton({
   );
 }
 
-function LeftControls() {
+interface DropdownMenuItemProps {
+  name: string;
+  shortcut?: string;
+  fn?: () => void;
+  data?: React.ReactNode;
+}
+
+interface DropdownButtonProps extends PropsWithChildren {
+  p?: string;
+  o?: string;
+  className?: string;
+  label?: string | React.ReactNode;
+  items?: Array<DropdownMenuItemProps>;
+}
+
+function DropdownButton({
+  children,
+  label,
+  items,
+  p,
+  o,
+  className,
+}: DropdownButtonProps) {
   return (
-    <div className="flex items-center px-2">
-      <img src="/tauri.svg" className="h-4 " alt="Tauri logo" />
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn([
+          "focus:outline-none focus:ring-0 focus:border-0",
+          "rounded-md cursor-default",
+          p || "p-2",
+          o || "opacity-60",
+          "hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100 transition-all duration-300 ease-in-out",
+          "data-[state=open]:bg-black/5 dark:data-[state=open]:bg-white/5 data-[state=open]:opacity-100",
+          className,
+        ])}
+      >
+        {children}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56 bg-popover/80 backdrop-filter backdrop-blur-[16px]">
+        {label && <DropdownMenuLabel>{label}</DropdownMenuLabel>}
+        {label && <DropdownMenuSeparator />}
+        {items?.map((item) => (
+          <React.Fragment key={item.name}>
+            <DropdownMenuItem
+              className="focus:bg-accent/60"
+              key={item.name}
+              onClick={item.fn}
+            >
+              {item.name}
+              {item.shortcut && (
+                <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>
+              )}
+            </DropdownMenuItem>
+            {item.data}
+          </React.Fragment>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-function RightControls() {
+const LeftControls = memo(() => {
+  return (
+    <div className="flex items-center px-2 text-[var(--content)]">
+      <logos.tauri className="h-4 w-4 opacity-60" />
+    </div>
+  );
+});
+
+const RightControls = memo(() => {
   return (
     <div className="flex items-center">
-      <CtrlButton>
-        <icons.cloudRefresh size={14} />
-      </CtrlButton>
       <CtrlButton>
         <icons.magnifler3 size={14} />
       </CtrlButton>
@@ -162,53 +128,95 @@ function RightControls() {
         <icons.globe3 size={14} />
       </CtrlButton>
 
-      <WindowsControls />
+      <CtrlButton>
+        <icons.arrowDown size={14} />
+      </CtrlButton>
+
+      <div className="w-[138px]" />
     </div>
   );
-}
+});
 
-function MiddleControls() {
+const settingsItems = [
+  { name: "Load", fn: () => {} },
+  { name: "Export", fn: () => {} },
+  { name: "X api", fn: () => {} },
+];
+
+const MiddleControls = memo(() => {
   return (
     <div className={cn(["flex items-center h-full"])}>
       <CtrlButton>
-        <icons.menuBars size={14} />
+        <icons.gridCircle size={14} />
       </CtrlButton>
 
-      <CtrlButton
-        className="text-xs font-light text-[#343434]"
-        o="opacity-80"
-        p="py-2 px-5"
-      >
-        <span>GrahLnn.X.Likes</span>
+      <CtrlButton className="text-xs font-light" o="opacity-80" p="px-5">
+        <div className="text-trim-cap">GrahLnn.X.Likes</div>
       </CtrlButton>
-      <CtrlButton>
-        <icons.sliders2 size={14} />
-      </CtrlButton>
+      <DropdownButton label="Settings" items={settingsItems}>
+        <icons.sliders size={14} />
+      </DropdownButton>
     </div>
   );
-}
+});
 
-export default function TopBar() {
-  const [windowFocused, setWindowFocused] = useState(true);
+const TopBar = memo(() => {
+  const windowFocused = useWindowFocus();
 
   useEffect(() => {
-    const handleFocus = () => setWindowFocused(true);
-    const handleBlur = () => setWindowFocused(false);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
+    if (!windowFocused) {
+      document.body.setAttribute("window-blur", "");
+
+      // 创建遮罩层
+      const overlay = document.createElement("div");
+      overlay.id = "window-blur-overlay";
+      overlay.className = "window-blur-overlay";
+
+      // 添加事件监听器以捕获所有事件
+      const blockEvent = (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+      };
+
+      overlay.addEventListener("mousedown", blockEvent, true);
+      overlay.addEventListener("mouseup", blockEvent, true);
+      overlay.addEventListener("click", blockEvent, true);
+      overlay.addEventListener("dblclick", blockEvent, true);
+      overlay.addEventListener("contextmenu", blockEvent, true);
+      overlay.addEventListener("wheel", blockEvent, true);
+      overlay.addEventListener("touchstart", blockEvent, true);
+      overlay.addEventListener("touchend", blockEvent, true);
+      overlay.addEventListener("touchmove", blockEvent, true);
+      overlay.addEventListener("keydown", blockEvent, true);
+      overlay.addEventListener("keyup", blockEvent, true);
+
+      document.body.appendChild(overlay);
+    } else {
+      document.body.removeAttribute("window-blur");
+
+      // 移除遮罩层
+      const overlay = document.getElementById("window-blur-overlay");
+      if (overlay) {
+        document.body.removeChild(overlay);
+      }
+    }
+
+    // 清理函数
     return () => {
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
+      const overlay = document.getElementById("window-blur-overlay");
+      if (overlay) {
+        document.body.removeChild(overlay);
+      }
     };
-  }, []);
+  }, [windowFocused]);
 
   return (
     <>
       {os === "windows" && (
-        <header
+        <div
           className={cn([
-            "absolute top-0 left-0",
-            "w-screen h-8 z-100 select-none",
+            "fixed top-0 left-0 flex",
+            "w-screen h-8 z-[9999] select-none",
             "before:absolute before:inset-0 before:-z-10",
             "before:bg-gradient-to-b before:from-[var(--app-bg)] before:to-[var(--app-bg)]/60",
             "after:absolute after:inset-0 after:-z-10",
@@ -216,7 +224,6 @@ export default function TopBar() {
             "after:bg-gradient-to-b after:from-transparent after:via-transparent after:to-white/0",
             "after:mask-image-[linear-gradient(to_bottom,rgba(0,0,0,1)_0%,rgba(0,0,0,0)_100%)]",
           ])}
-          data-tauri-drag-region
         >
           <div
             className={cn([
@@ -225,18 +232,20 @@ export default function TopBar() {
               "transition-all duration-300",
             ])}
           >
-            <div data-tauri-drag-region="false" className="flex justify-start">
+            <div data-tauri-drag-region className="flex justify-start pl-1">
               <LeftControls />
             </div>
-            <div data-tauri-drag-region="false">
+            <div data-tauri-drag-region>
               <MiddleControls />
             </div>
-            <div data-tauri-drag-region="false" className="flex justify-end">
+            <div data-tauri-drag-region className="flex justify-end">
               <RightControls />
             </div>
           </div>
-        </header>
+        </div>
       )}
     </>
   );
-}
+});
+
+export default TopBar;

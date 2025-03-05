@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* @custom-variant dark (&:is(.dark *)); */
+
 @theme {
   --font-body: "Inter", "Avenir", "Helvetica", "Arial", sans-serif;
 }
@@ -35,8 +37,15 @@ input::-webkit-credentials-auto-fill-button {
 
   --butty-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 3px 6px rgba(0, 0, 0, 0.06),
     0 6px 12px rgba(0, 0, 0, 0.06);
+
+  --lightbox-shadow-color: 204deg 10% 48%;
+  --lightbox-shadow: 1px 1px 2.1px hsl(var(--shadow-color) / 0),
+    43.5px 43.5px 92.3px hsl(var(--shadow-color) / 0.82),
+    137px 137px 290.6px hsl(var(--shadow-color) / 1);
+
   --card-bg: #f8f9fa;
   --app-bg: #f5f8fa;
+  --content: #1a1a1a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,7 +69,11 @@ input::-webkit-credentials-auto-fill-button {
     --border: hsl(240 3.7% 15.9%);
     --input: hsl(240 3.7% 15.9%);
     --ring: hsl(240 3.8% 46.1%);
-    --app-bg: #0f0f0f;
+    --butty-shadow: 0 1px 3px rgba(255, 255, 255, 0.06),
+      0 3px 6px rgba(255, 255, 255, 0.06), 0 6px 12px rgba(255, 255, 255, 0.06);
+    --card-bg: #171717;
+    --app-bg: #0a0a0a;
+    --content: #ebebeb;
   }
 }
 
@@ -95,6 +108,18 @@ body {
   @apply bg-[var(--app-bg)] transition;
 }
 
+body::-webkit-scrollbar {
+  display: none;
+}
+
+body[window-blur] {
+  overflow: hidden;
+  pointer-events: none;
+  overscroll-behavior: contain;
+  touch-action: none;
+  user-select: none;
+}
+
 #root {
   @apply h-full;
 }
@@ -109,4 +134,48 @@ h1 {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.text-trim-ex {
+  /* biome-ignore lint/correctness/noUnknownProperty: <explanation> */
+  text-box: ex alphabetic;
+}
+
+.text-trim-cap {
+  /* biome-ignore lint/correctness/noUnknownProperty: <explanation> */
+  text-box: cap alphabetic;
+}
+
+#window-blur-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  pointer-events: auto !important;
+  background-color: transparent;
+}
+
+#windows-control-portal {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 99999; /* 大于遮罩层 */
+  /* 其他样式根据需要来调整 */
+}
+
+.lightbox-shadow {
+  --shadow-color: 0deg 0% 47%;
+  box-shadow: 1px 1px 2.1px hsl(var(--shadow-color) / 0),
+    19.3px 19.3px 40.9px hsl(var(--shadow-color) / 0.67);
 }

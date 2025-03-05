@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "react-tauri",
+  "productName": "quilore",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.quilore.desktop",
   "build": {
     "frontendDist": "../build",
     "devUrl": "http://localhost:3000",
@@ -12,13 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "react-tauri",
+        "title": "quilore",
         "width": 1400,
         "height": 750,
         "minWidth": 768,
         "minHeight": 500,
         "resizable": true,
-        "fullscreen": false,
         "decorations": false
       }
     ],
