@@ -4,7 +4,7 @@ use super::{
 };
 use crate::database::core::{Curd, HasId};
 use crate::domain::enums::table::Table;
-use crate::utils::serialize::i64_from_string_or_number;
+use crate::utils::serialize::{ i64_from_string_or_number , i64_to_string};
 use anyhow::{Error, Result};
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,7 @@ use surrealdb::RecordId;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct QuotePost {
+    #[serde(serialize_with = "i64_to_string")]
     #[serde(deserialize_with = "i64_from_string_or_number")]
     #[specta(type = String)]
     pub rest_id: i64,
@@ -27,6 +28,7 @@ pub struct QuotePost {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct Post {
+    #[serde(serialize_with = "i64_to_string")]
     #[serde(deserialize_with = "i64_from_string_or_number")]
     #[specta(type = String)]
     pub rest_id: i64,

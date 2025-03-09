@@ -69,8 +69,8 @@ input::-webkit-credentials-auto-fill-button {
     --border: hsl(240 3.7% 15.9%);
     --input: hsl(240 3.7% 15.9%);
     --ring: hsl(240 3.8% 46.1%);
-    --butty-shadow: 0 1px 3px rgba(255, 255, 255, 0.06),
-      0 3px 6px rgba(255, 255, 255, 0.06), 0 6px 12px rgba(255, 255, 255, 0.06);
+    --butty-shadow: 0 1px 3px rgba(238, 238, 238, 0.06),
+      0 3px 6px rgba(235, 235, 235, 0.06), 0 6px 12px rgba(236, 236, 236, 0.06);
     --card-bg: #171717;
     --app-bg: #0a0a0a;
     --content: #ebebeb;
@@ -105,7 +105,7 @@ body {
   @apply font-body;
   @apply text-[#090909] dark:text-[#f6f6f6];
 
-  @apply bg-[var(--app-bg)] transition;
+  @apply bg-[var(--app-bg)] transition-all duration-500;
 }
 
 body::-webkit-scrollbar {
@@ -145,12 +145,12 @@ h1 {
   }
 }
 
-.text-trim-ex {
+.trim-ex {
   /* biome-ignore lint/correctness/noUnknownProperty: <explanation> */
   text-box: ex alphabetic;
 }
 
-.text-trim-cap {
+.trim-cap {
   /* biome-ignore lint/correctness/noUnknownProperty: <explanation> */
   text-box: cap alphabetic;
 }
@@ -170,12 +170,19 @@ h1 {
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 99999; /* 大于遮罩层 */
-  /* 其他样式根据需要来调整 */
+  z-index: 99999;
 }
 
 .lightbox-shadow {
   --shadow-color: 0deg 0% 47%;
-  box-shadow: 1px 1px 2.1px hsl(var(--shadow-color) / 0),
-    19.3px 19.3px 40.9px hsl(var(--shadow-color) / 0.67);
+  box-shadow: 0 0 10px hsl(var(--shadow-color) / 0.3),
+    0 0 30px hsl(var(--shadow-color) / 0.67);
+}
+
+@media (prefers-color-scheme: dark) {
+  .lightbox-shadow {
+    --shadow-color: 0deg 0% 47%;
+    box-shadow: 0 0 10px hsl(var(--shadow-color) / 0.3),
+      0 0 30px hsl(var(--shadow-color) / 0.67);
+  }
 }

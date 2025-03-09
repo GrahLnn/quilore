@@ -24,7 +24,7 @@ use tokio::task::block_in_place;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder: Builder = Builder::new().commands(collect_commands![greet, take_post_chunk]);
+    let builder: Builder = Builder::new().commands(collect_commands![take_post_chunk]);
 
     #[cfg(debug_assertions)]
     builder
@@ -55,12 +55,6 @@ pub fn run() {
         .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-#[tauri::command]
-#[specta::specta]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
 async fn load_scraper_data() -> Result<()> {

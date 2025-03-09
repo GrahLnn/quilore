@@ -30,7 +30,6 @@ function Posts({ initialPosts = [], initialCursor = null }: PostsProps) {
   const loadMorePosts = useCallback(async () => {
     if (isLoading) return; // 避免重复请求
     if (cursor === 0) return; // 如果后端返回cursor=0表示没下一页，可据此终止请求
-
     setIsLoading(true);
     const result = await cmdAdapter.takePostChunk(cursor);
     result.match({
@@ -50,13 +49,10 @@ function Posts({ initialPosts = [], initialCursor = null }: PostsProps) {
     setIsLoading(false);
   }, [isLoading, cursor]);
 
-  useEffect(() => {
-    console.log("len posts", posts.length);
-  }, [posts]);
-
   return (
     <Masonry
       items={posts}
+      overscanBy={4}
       columnGutter={16}
       columnWidth={340}
       render={({ data }) => <TweetCard postdata={data.post} />}

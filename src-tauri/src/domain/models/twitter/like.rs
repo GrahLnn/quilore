@@ -1,8 +1,8 @@
 use super::post::{DbPost, Post};
 use crate::database::core::{Curd, HasId};
-use crate::domain::enums::{meta::MetaKey, table::Table};
-use crate::domain::models::meta::DbMeta;
-use crate::utils::serialize::i64_from_string_or_number;
+use crate::domain::enums::sql::Queries;
+use crate::domain::enums::table::Table;
+use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
 use anyhow::Result;
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,7 @@ use surrealdb::RecordId;
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct LikedPost {
     #[serde(deserialize_with = "i64_from_string_or_number")]
+    #[serde(serialize_with = "i64_to_string")]
     #[specta(type = String)]
     pub sortidx: i64,
     pub post: Post,
@@ -40,7 +41,7 @@ impl LikedPost {
         // };
         let start = end - (num as i64);
         let dbresult = DbLikedPost::query_take(
-            format!("SELECT * FROM {}:{}..{};", DbLikedPost::TABLE, start, end).as_str(),
+            Queries::range_query(Table::LikedPost, start, end).as_str(),
             None,
         )
         .await?;
