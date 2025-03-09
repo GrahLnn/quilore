@@ -1,3 +1,4 @@
+use super::table::Table;
 pub struct QueryTemplate {
     pub query: &'static str,
 }
@@ -21,5 +22,9 @@ impl Queries {
                 query: "UPDATE users SET status = $1 WHERE id = $2",
             },
         }
+    }
+    
+    pub fn range_query(table: Table, start: i64, end: i64) -> String {
+        format!("SELECT * FROM {}:{}..{};", table.as_str(), start, end)
     }
 }

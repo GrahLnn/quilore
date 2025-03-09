@@ -5,9 +5,6 @@
 
 
 export const commands = {
-async greet(name: string) : Promise<string> {
-    return await TAURI_INVOKE("greet", { name });
-},
 async takePostChunk(cursor: number | null) : Promise<Result<LikedChunk, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("take_post_chunk", { cursor }) };

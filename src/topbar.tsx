@@ -163,52 +163,52 @@ const MiddleControls = memo(() => {
 const TopBar = memo(() => {
   const windowFocused = useWindowFocus();
 
-  useEffect(() => {
-    if (!windowFocused) {
-      document.body.setAttribute("window-blur", "");
+  // useEffect(() => {
+  //   if (!windowFocused) {
+  //     document.body.setAttribute("window-blur", "");
 
-      // 创建遮罩层
-      const overlay = document.createElement("div");
-      overlay.id = "window-blur-overlay";
-      overlay.className = "window-blur-overlay";
+  //     // 创建遮罩层
+  //     const overlay = document.createElement("div");
+  //     overlay.id = "window-blur-overlay";
+  //     overlay.className = "window-blur-overlay";
 
-      // 添加事件监听器以捕获所有事件
-      const blockEvent = (e: Event) => {
-        e.stopPropagation();
-        e.preventDefault();
-      };
+  //     // 添加事件监听器以捕获所有事件
+  //     const blockEvent = (e: Event) => {
+  //       e.stopPropagation();
+  //       e.preventDefault();
+  //     };
 
-      overlay.addEventListener("mousedown", blockEvent, true);
-      overlay.addEventListener("mouseup", blockEvent, true);
-      overlay.addEventListener("click", blockEvent, true);
-      overlay.addEventListener("dblclick", blockEvent, true);
-      overlay.addEventListener("contextmenu", blockEvent, true);
-      overlay.addEventListener("wheel", blockEvent, true);
-      overlay.addEventListener("touchstart", blockEvent, true);
-      overlay.addEventListener("touchend", blockEvent, true);
-      overlay.addEventListener("touchmove", blockEvent, true);
-      overlay.addEventListener("keydown", blockEvent, true);
-      overlay.addEventListener("keyup", blockEvent, true);
+  //     overlay.addEventListener("mousedown", blockEvent, true);
+  //     overlay.addEventListener("mouseup", blockEvent, true);
+  //     overlay.addEventListener("click", blockEvent, true);
+  //     overlay.addEventListener("dblclick", blockEvent, true);
+  //     overlay.addEventListener("contextmenu", blockEvent, true);
+  //     overlay.addEventListener("wheel", blockEvent, true);
+  //     overlay.addEventListener("touchstart", blockEvent, true);
+  //     overlay.addEventListener("touchend", blockEvent, true);
+  //     overlay.addEventListener("touchmove", blockEvent, true);
+  //     overlay.addEventListener("keydown", blockEvent, true);
+  //     overlay.addEventListener("keyup", blockEvent, true);
 
-      document.body.appendChild(overlay);
-    } else {
-      document.body.removeAttribute("window-blur");
+  //     document.body.appendChild(overlay);
+  //   } else {
+  //     document.body.removeAttribute("window-blur");
 
-      // 移除遮罩层
-      const overlay = document.getElementById("window-blur-overlay");
-      if (overlay) {
-        document.body.removeChild(overlay);
-      }
-    }
+  //     // 移除遮罩层
+  //     const overlay = document.getElementById("window-blur-overlay");
+  //     if (overlay) {
+  //       document.body.removeChild(overlay);
+  //     }
+  //   }
 
-    // 清理函数
-    return () => {
-      const overlay = document.getElementById("window-blur-overlay");
-      if (overlay) {
-        document.body.removeChild(overlay);
-      }
-    };
-  }, [windowFocused]);
+  //   // 清理函数
+  //   return () => {
+  //     const overlay = document.getElementById("window-blur-overlay");
+  //     if (overlay) {
+  //       document.body.removeChild(overlay);
+  //     }
+  //   };
+  // }, [windowFocused]);
 
   return (
     <>
@@ -219,10 +219,12 @@ const TopBar = memo(() => {
             "w-screen h-8 z-[9999] select-none",
             "before:absolute before:inset-0 before:-z-10",
             "before:bg-gradient-to-b before:from-[var(--app-bg)] before:to-[var(--app-bg)]/60",
+            "before:transition-colors before:duration-300",
             "after:absolute after:inset-0 after:-z-10",
             "after:backdrop-blur-[16px] after:opacity-100 after:origin-top",
             "after:bg-gradient-to-b after:from-transparent after:via-transparent after:to-white/0",
             "after:mask-image-[linear-gradient(to_bottom,rgba(0,0,0,1)_0%,rgba(0,0,0,0)_100%)]",
+            "after:transition-all after:duration-300",
           ])}
         >
           <div

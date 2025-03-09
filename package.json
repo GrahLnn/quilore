@@ -14,6 +14,7 @@
     "@tauri-apps/plugin-os": "~2.2.0",
     "@tauri-apps/plugin-shell": "~2.2.0",
     "@types/punycode": "^2.1.4",
+    "@types/react-lazyload": "^3.2.3",
     "@types/wcwidth": "^1.0.2",
     "@xstate/react": "^5.0.2",
     "arktype": "^2.1.0",
@@ -24,9 +25,12 @@
     "motion": "^12.4.7",
     "next-themes": "^0.4.4",
     "postcss": "^8.5.3",
+    "prop-types": "^15.8.1",
     "punycode": "^2.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-intersection-observer": "^9.15.1",
+    "react-lazyload": "^3.2.1",
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.9",
@@ -40,6 +44,7 @@
     "@tauri-apps/cli": "^2.2.7",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "geteventlisteners": "^1.1.0",
     "typescript": "^5.7.3"
   }
 }

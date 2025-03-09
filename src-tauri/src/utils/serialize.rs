@@ -1,4 +1,5 @@
 use serde::Deserializer;
+use serde::Serializer;
 
 pub fn i64_from_string_or_number<'de, D>(deserializer: D) -> Result<i64, D::Error>
 where
@@ -50,4 +51,12 @@ where
 
     // 让 Serde 用我们定义的 Visitor 去解析即可
     deserializer.deserialize_any(I64orStringVisitor)
+}
+
+pub fn i64_to_string<S>(value: &i64, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    // 将i64转换为字符串并序列化
+    serializer.serialize_str(&value.to_string())
 }

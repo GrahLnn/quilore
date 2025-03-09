@@ -449,4 +449,132 @@ export const icons = {
       </svg>
     );
   },
+  duplicate2({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path
+            d="M3.75 12.75L10.75 12.75C11.8546 12.75 12.75 11.8546 12.75 10.75L12.75 3.75C12.75 2.64543 11.8546 1.75 10.75 1.75L3.75 1.75C2.64543 1.75 1.75 2.64543 1.75 3.75L1.75 10.75C1.75 11.8546 2.64543 12.75 3.75 12.75Z"
+            fill="#212121"
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke={color || "currentColor"}
+          />
+          <path d="M3.75 12.75L10.75 12.75C11.8546 12.75 12.75 11.8546 12.75 10.75L12.75 3.75C12.75 2.64543 11.8546 1.75 10.75 1.75L3.75 1.75C2.64543 1.75 1.75 2.64543 1.75 3.75L1.75 10.75C1.75 11.8546 2.64543 12.75 3.75 12.75Z" />
+          <path d="M15.199 6.002L16.228 12.926C16.39 14.019 15.636 15.036 14.544 15.198L7.61998 16.227C6.68698 16.366 5.80998 15.837 5.47198 14.999" />
+        </g>
+      </svg>
+    );
+  },
+  dotsVertical({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            opacity="0.4"
+            d="M9.00009 10.25C9.69045 10.25 10.2501 9.69036 10.2501 9C10.2501 8.30964 9.69045 7.75 9.00009 7.75C8.30974 7.75 7.75009 8.30964 7.75009 9C7.75009 9.69036 8.30974 10.25 9.00009 10.25Z"
+          />
+          <path d="M9.00009 4.5C9.69045 4.5 10.2501 3.94036 10.2501 3.25C10.2501 2.55964 9.69045 2 9.00009 2C8.30974 2 7.75009 2.55964 7.75009 3.25C7.75009 3.94036 8.30974 4.5 9.00009 4.5Z" />
+          <path d="M9.00009 16C9.69045 16 10.2501 15.4404 10.2501 14.75C10.2501 14.0596 9.69045 13.5 9.00009 13.5C8.30974 13.5 7.75009 14.0596 7.75009 14.75C7.75009 15.4404 8.30974 16 9.00009 16Z" />
+        </g>
+      </svg>
+    );
+  },
+  dots({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            opacity="0.4"
+            d="M9.00009 10.25C9.69045 10.25 10.2501 9.69036 10.2501 9C10.2501 8.30964 9.69045 7.75 9.00009 7.75C8.30974 7.75 7.75009 8.30964 7.75009 9C7.75009 9.69036 8.30974 10.25 9.00009 10.25Z"
+          />
+          <path d="M3.25009 10.25C3.94045 10.25 4.50009 9.69036 4.50009 9C4.50009 8.30964 3.94045 7.75 3.25009 7.75C2.55974 7.75 2.00009 8.30964 2.00009 9C2.00009 9.69036 2.55974 10.25 3.25009 10.25Z" />
+          <path d="M14.7501 10.25C15.4404 10.25 16.0001 9.69036 16.0001 9C16.0001 8.30964 15.4404 7.75 14.7501 7.75C14.0597 7.75 13.5001 8.30964 13.5001 9C13.5001 9.69036 14.0597 10.25 14.7501 10.25Z" />
+        </g>
+      </svg>
+    );
+  },
+  shareUpRight2({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          stroke-width="1.5"
+          stroke={color || "currentColor"}
+        >
+          <line x1="5.268" y1="6.732" x2="11.073" y2=".927" />
+          <polyline points="11.25 4.5 11.25 .75 7.5 .75" />
+          <path d="m9.25,6.285v2.465c0,1.105-.895,2-2,2H3.25c-1.105,0-2-.895-2-2v-4c0-1.105.895-2,2-2h2.465" />
+        </g>
+      </svg>
+    );
+  },
+  fullScreen4({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            opacity="0.4"
+            d="M2.75 7.5C3.164 7.5 3.5 7.164 3.5 6.75V4.75C3.5 4.061 4.061 3.5 4.75 3.5H6.75C7.164 3.5 7.5 3.164 7.5 2.75C7.5 2.336 7.164 2 6.75 2H4.75C3.233 2 2 3.233 2 4.75V6.75C2 7.164 2.336 7.5 2.75 7.5Z"
+          />
+          <path
+            opacity="0.4"
+            d="M13.25 2H11.25C10.836 2 10.5 2.336 10.5 2.75C10.5 3.164 10.836 3.5 11.25 3.5H13.25C13.939 3.5 14.5 4.061 14.5 4.75V6.75C14.5 7.164 14.836 7.5 15.25 7.5C15.664 7.5 16 7.164 16 6.75V4.75C16 3.233 14.767 2 13.25 2Z"
+          />
+          <path
+            opacity="0.4"
+            d="M15.25 10.5C14.836 10.5 14.5 10.836 14.5 11.25V13.25C14.5 13.939 13.939 14.5 13.25 14.5H11.25C10.836 14.5 10.5 14.836 10.5 15.25C10.5 15.664 10.836 16 11.25 16H13.25C14.767 16 16 14.767 16 13.25V11.25C16 10.836 15.664 10.5 15.25 10.5Z"
+          />
+          <path
+            opacity="0.4"
+            d="M6.75 14.5H4.75C4.061 14.5 3.5 13.939 3.5 13.25V11.25C3.5 10.836 3.164 10.5 2.75 10.5C2.336 10.5 2 10.836 2 11.25V13.25C2 14.767 3.233 16 4.75 16H6.75C7.164 16 7.5 15.664 7.5 15.25C7.5 14.836 7.164 14.5 6.75 14.5Z"
+          />
+          <path d="M11.25 6H6.75C6.33579 6 6 6.33579 6 6.75V11.25C6 11.6642 6.33579 12 6.75 12H11.25C11.6642 12 12 11.6642 12 11.25V6.75C12 6.33579 11.6642 6 11.25 6Z" />
+        </g>
+      </svg>
+    );
+  },
 };
