@@ -139,9 +139,7 @@ const renderThreeMedia = (media: Media[], state: TweetState) => {
     return (
       <div className="flex flex-col gap-2">
         {media.map((m) => (
-          <div key={m.id} className="w-full h-auto overflow-hidden">
-            <MediaElement media={m} state={state} />
-          </div>
+          <MediaElement media={m} state={state} key={m.id} />
         ))}
       </div>
     );
@@ -152,9 +150,7 @@ const renderThreeMedia = (media: Media[], state: TweetState) => {
     return (
       <div className="flex flex-row gap-2">
         {media.map((m, i) => (
-          <div key={`${m.id}-${i}`} className="w-full h-auto overflow-hidden">
-            <MediaElement media={m} state={state} />
-          </div>
+          <MediaElement media={m} state={state} key={`${m.id}-${i}`} />
         ))}
       </div>
     );
@@ -169,9 +165,7 @@ const renderThreeMedia = (media: Media[], state: TweetState) => {
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-2">
           {wide.map((m, i) => (
-            <div key={`${m.id}-${i}`}>
-              <MediaElement media={m} state={state} />
-            </div>
+            <MediaElement media={m} state={state} key={`${m.id}-${i}`} />
           ))}
         </div>
         <div>
@@ -193,9 +187,7 @@ const renderThreeMedia = (media: Media[], state: TweetState) => {
         </div>
         <div className="flex flex-row gap-2">
           {tall.map((m, i) => (
-            <div key={`${m.id}-${i}`}>
-              <MediaElement media={m} state={state} />
-            </div>
+            <MediaElement media={m} state={state} key={`${m.id}-${i}`} />
           ))}
         </div>
       </div>
@@ -243,10 +235,10 @@ const renderDefaultGrid = (media: Media[], state: TweetState) => (
 
 interface ShowMediaProps {
   state: TweetState;
-  media?: Media[] | null;
+  medias?: Media[] | null;
 }
 
-export default function ShowMedia({ state, media: medias }: ShowMediaProps) {
+export default function MediaGrid({ state, medias }: ShowMediaProps) {
   if (!medias?.length) return null;
 
   const renderStrategies: Record<

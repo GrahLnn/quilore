@@ -4,7 +4,7 @@ import type { Card, Content, Post, QuotePost, User } from "@/src/cmd/commands";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import punycode from "punycode";
 import { memo, useState } from "react";
-import ShowMedia from "./lazyMedia";
+import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 
 const libraryPath = "C:\\Users\\grahl\\quill";
@@ -40,7 +40,7 @@ function ContentEle({ content }: { content: Content }) {
       // 创建新的parts数组
       const newParts: (string | React.ReactNode)[] = [];
 
-      for (const [idx, part] of parts.entries()) {
+      for (const part of parts) {
         if (typeof part === "string") {
           // 分割字符串部分
           const splitParts = part.split(placeholder);
@@ -161,7 +161,7 @@ function Detail({
     <div className="flex flex-col gap-2">
       <ContentEle content={tweet.content} />
       <CardEle card={tweet.card} />
-      <ShowMedia media={tweet.media} state={state} />
+      <MediaGrid medias={tweet.media} state={state} />
       {"quote" in tweet && <QuoteEle quote={tweet.quote} />}
     </div>
   );

@@ -96,3 +96,7 @@ export function clearVideo(videoEl: HTMLVideoElement) {
   // 7. 触发重新加载，确保清理生效
   videoEl.load();
 }
+
+export const clearImg = (img: HTMLImageElement) => {
+    img.src = "";
+  };
