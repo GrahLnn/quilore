@@ -1,4 +1,3 @@
-// lightbox-observer.ts
 export type LightboxPayload = {
   images: string[];
   currentIndex: number;
