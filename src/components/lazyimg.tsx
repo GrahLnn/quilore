@@ -24,13 +24,10 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, ratio, ...props }) => {
 
   useEffect(() => {
     if (imgEl && !inView) clearImg(imgEl);
-  }, [inView, imgEl]);
-
-  useEffect(() => {
     return () => {
-      if (imgEl) clearImg(imgEl);
+      if (imgEl && !inView) clearImg(imgEl);
     };
-  }, [imgEl]);
+  }, [inView, imgEl]);
 
   return (
     <div
