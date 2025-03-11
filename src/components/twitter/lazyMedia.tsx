@@ -74,7 +74,6 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           loop
           muted
           playsInline
-          preload="metadata"
           aria-label={media.description || "Video content"}
           src={convertFileSrc(compath(media.path))}
           ratio={media.aspect_ratio}

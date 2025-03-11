@@ -205,39 +205,39 @@ interface AuthorProps {
 }
 function Author({ author, size = "normal" }: AuthorProps) {
   return (
-    <a
-      href={`https://x.com/${author.screen_name}`}
-      target="_blank"
-      rel="noreferrer"
-    >
-      <div className="flex gap-2 group">
-        <img
-          src={convertFileSrc(compath(author.avatar.path))}
-          alt="Avatar"
-          className={cn(["rounded-full object-cover w-8 h-8"])}
-        />
+    // <a
+    //   href={`https://x.com/${author.screen_name}`}
+    //   target="_blank"
+    //   rel="noreferrer"
+    // >
+    <div className="flex gap-2 group">
+      <img
+        src={convertFileSrc(compath(author.avatar.path))}
+        alt="Avatar"
+        className={cn(["rounded-full object-cover w-8 h-8"])}
+      />
+
+      <div
+        className={cn([
+          "flex flex-col items-start pt-[4px]",
+          size === "normal" && "gap-2",
+          size === "small" && "gap-1.5",
+        ])}
+      >
+        <div className={cn(["font-bold text-[var(--content)] trim-cap"])}>
+          {punycode.toUnicode(author.name)}
+        </div>
 
         <div
           className={cn([
-            "flex flex-col items-start pt-[4px]",
-            size === "normal" && "gap-2",
-            size === "small" && "gap-1.5",
+            "text-gray-500 dark:text-[#6e6e6e] trim-cap text-[0.85em]",
           ])}
         >
-          <div className={cn(["font-bold text-[var(--content)] trim-cap"])}>
-            {punycode.toUnicode(author.name)}
-          </div>
-
-          <div
-            className={cn([
-              "text-gray-500 dark:text-[#6e6e6e] trim-cap text-[0.85em]",
-            ])}
-          >
-            @{author.screen_name}
-          </div>
+          @{author.screen_name}
         </div>
       </div>
-    </a>
+    </div>
+    // </a>
   );
 }
 

@@ -13,6 +13,13 @@ export function Lightbox() {
   const [toMax, setToMax] = useState(false);
   const [zoomable, setZoomable] = useState(false);
   const [imgState, setImgState] = useState<"normal" | "max">("normal");
+  // 订阅全局 LightboxState
+  useEffect(() => {
+    const unsubscribe = LightboxState.subscribe((data) => {
+      setState(data);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (zoomable && toMax) {
@@ -22,13 +29,6 @@ export function Lightbox() {
     }
   }, [zoomable, toMax]);
 
-  // 订阅全局 LightboxState
-  useEffect(() => {
-    const unsubscribe = LightboxState.subscribe((data) => {
-      setState(data);
-    });
-    return unsubscribe;
-  }, []);
   useEffect(() => {
     if (state.isOpen) {
       document.body.style.overflow = "hidden";

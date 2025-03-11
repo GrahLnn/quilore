@@ -186,3 +186,11 @@ h1 {
       0 0 30px hsl(var(--shadow-color) / 0.67);
   }
 }
+
+[data-rounded-scroll='true'] div::-webkit-scrollbar {
+  display: none;
+}
+[data-rounded-scroll='true'] div {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
