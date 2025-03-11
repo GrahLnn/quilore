@@ -32,16 +32,16 @@ export default function Posts({
     }
     // 更新容器高度
     scrollbar.updateContainerHeight(container.current?.clientHeight || 0);
-    
+
     // 监听容器大小变化，更新滚动条高度
     const resizeObserver = new ResizeObserver(() => {
       scrollbar.updateContainerHeight(container.current?.clientHeight || 0);
     });
-    
+
     if (container.current) {
       resizeObserver.observe(container.current);
     }
-    
+
     return () => {
       if (container.current) {
         resizeObserver.unobserve(container.current);
@@ -68,6 +68,7 @@ export default function Posts({
       },
       err: (error) => {
         console.error("获取帖子失败:", error);
+        setPosts([]);
       },
     });
     setIsLoading(false);
@@ -81,20 +82,24 @@ export default function Posts({
         "max-w-[1186px] mx-auto h-full",
       ])}
     >
-      <Masonry
-        items={posts}
-        overscanBy={6}
-        columnGutter={16}
-        columnWidth={340}
-        maxColumnCount={3}
-        render={({ data }) => <TweetCard postdata={data.post} />}
-        onRender={(_startIndex, stopIndex, items) => {
-          // 当渲染接近末尾时，加载更多数据
-          if (!isLoading && stopIndex >= items.length - 30) {
-            loadMorePosts();
-          }
-        }}
-      />
+      {posts.length > 0 ? (
+        <Masonry
+          items={posts}
+          overscanBy={6}
+          columnGutter={16}
+          columnWidth={340}
+          maxColumnCount={3}
+          render={({ data }) => <TweetCard postdata={data.post} />}
+          onRender={(_startIndex, stopIndex, items) => {
+            // 当渲染接近末尾时，加载更多数据
+            if (!isLoading && stopIndex >= items.length - 30) {
+              loadMorePosts();
+            }
+          }}
+        />
+      ) : (
+        <div className="text-gray-500">No posts found</div>
+      )}
     </div>
   );
 }
