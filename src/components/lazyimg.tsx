@@ -1,6 +1,7 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "react-intersection-observer";
+import useElementInView from "../hooks/view";
+import { clearImg } from "../utils/media";
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -9,31 +10,36 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 
 const LazyImage: React.FC<LazyImageProps> = ({ src, ratio, ...props }) => {
   const offset = 1000;
-  const { ref, inView } = useInView({
-    threshold: 0,
-    rootMargin: `${offset}px`,
-  });
   const [w, h] = ratio;
+  const containerRef = useRef<HTMLImageElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const inView = useElementInView(containerRef, offset);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    setImgEl(imgRef.current);
-  }, []);
+    if (inView && imgRef.current) {
+      setImgEl(imgRef.current);
+    }
+  }, [inView]);
 
   useEffect(() => {
-    if (imgEl && !inView) {
-      imgEl.src = "";
-    }
+    if (imgEl && !inView) clearImg(imgEl);
   }, [inView, imgEl]);
 
+  useEffect(() => {
+    return () => {
+      if (imgEl) clearImg(imgEl);
+    };
+  }, [imgEl]);
+
   return (
-    <div ref={ref}>
-      {inView ? (
+    <div
+      ref={containerRef}
+      style={{ width: "100%", aspectRatio: `${w} / ${h}` }}
+    >
+      {inView && (
         // biome-ignore lint/a11y/useAltText: <explanation>
         <img ref={imgRef} src={src} {...props} />
-      ) : (
-        <div style={{ width: "100%", aspectRatio: `${w} / ${h}` }} />
       )}
     </div>
   );

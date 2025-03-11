@@ -28,6 +28,60 @@ export function Scrollbar() {
   const [showScrollbar, setShowScrollbar] = useState(false);
   // 是否正在拖拽
   const [isDragging, setIsDragging] = useState(false);
+  // 是否显示滑块（当用户不操作时隐藏）
+  const [showThumb, setShowThumb] = useState(false);
+  // 用于跟踪滑块隐藏的定时器
+  const hideThumbTimerRef = useRef<number | null>(null);
+
+  // 重置隐藏滑块的定时器
+  const resetHideThumbTimer = () => {
+    // 先清除之前的定时器
+    if (hideThumbTimerRef.current) {
+      clearTimeout(hideThumbTimerRef.current);
+    }
+
+    // 显示滑块
+    setShowThumb(true);
+
+    // 设置新的定时器，500ms后隐藏滑块
+    hideThumbTimerRef.current = setTimeout(() => {
+      // 如果不在拖拽状态，才隐藏滑块
+      if (!isDragging) {
+        setShowThumb(false);
+      }
+    }, 500);
+  };
+
+  // 当滚动位置变化时，重置隐藏定时器
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    resetHideThumbTimer();
+  }, [state.scrollTop]);
+
+  // 当拖拽状态变化时，处理滑块显示
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (isDragging) {
+      setShowThumb(true);
+      // 清除任何现有的隐藏定时器
+      if (hideThumbTimerRef.current) {
+        clearTimeout(hideThumbTimerRef.current);
+        hideThumbTimerRef.current = null;
+      }
+    } else {
+      // 拖拽结束后，设置定时器隐藏滑块
+      resetHideThumbTimer();
+    }
+  }, [isDragging]);
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (hideThumbTimerRef.current) {
+        clearTimeout(hideThumbTimerRef.current);
+      }
+    };
+  }, []);
 
   // 当 state.scrollTop 或 state.scrollHeight 等变化时，更新滚动条位置
   useEffect(() => {
@@ -71,7 +125,7 @@ export function Scrollbar() {
       y: thumbPosition,
       duration: isDragging ? 0.05 : 0.2, // 拖动时使用更短的动画时间保持响应性
       ease: "power2.out",
-      overwrite: true // 确保动画不会堆叠
+      overwrite: true, // 确保动画不会堆叠
     });
   }, [state.scrollTop, state.scrollHeight, isDragging]);
 
@@ -122,9 +176,9 @@ export function Scrollbar() {
       // 使用GSAP实现平滑滚动，即使在拖动过程中
       gsap.to(window, {
         scrollTo: { y: newScrollTop },
-        duration: 0.15,  // 短暂的动画时间，保持响应性但又有平滑效果
+        duration: 0.15, // 短暂的动画时间，保持响应性但又有平滑效果
         ease: "power1.out",
-        overwrite: true  // 覆盖之前未完成的动画
+        overwrite: true, // 覆盖之前未完成的动画
       });
     };
 
@@ -202,15 +256,16 @@ export function Scrollbar() {
       <div
         ref={thumbRef}
         className={cn(
-          "fixed top-10 z-20",
-          "rounded-full opacity-70 hover:opacity-100 transition-opacity duration-300 ease-in-out",
-          "bg-black/30 dark:bg-white/30",
-          basecn
+          "fixed rounded-full",
+          "bg-black/50 dark:bg-white/50",
+          "z-20",
+          "transition-opacity duration-500",
+          basecn,
+          {
+            "opacity-0": !showScrollbar || !showThumb,
+            "opacity-100": showScrollbar && showThumb,
+          }
         )}
-        style={{
-          display: showScrollbar ? "block" : "none",
-          minHeight: "20px",
-        }}
         data-component="scroll-thumb"
       />
     </div>

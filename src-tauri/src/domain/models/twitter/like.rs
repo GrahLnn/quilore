@@ -32,14 +32,7 @@ impl HasId for DbLikedPost {
 
 impl LikedPost {
     pub async fn take(num: usize, end: i64) -> Result<Vec<Self>> {
-        // let end = match cursor {
-        //     Some(cursor) => cursor,
-        //     None => DbMeta::get(MetaKey::FirstCursor.as_str().to_string())
-        //         .await?
-        //         .ok_or_else(|| anyhow::anyhow!("FirstCursor not found"))?
-        //         .into_number(),
-        // };
-        let start = end - (num as i64);
+        let start = (end - (num as i64)).max(0);
         let dbresult = DbLikedPost::query_take(
             Queries::range_query(Table::LikedPost, start, end).as_str(),
             None,
