@@ -1,4 +1,4 @@
-use crate::domain::enums::meta::MetaKey;
+use crate::database::enums::meta::MetaKey;
 use crate::domain::models::meta::{DbMeta, Meta, MetaValue};
 use crate::domain::models::twitter::post::DbReply;
 use crate::domain::models::twitter::{
@@ -63,22 +63,22 @@ pub async fn load_data(
     let data = read_tweets_from_json(file)?;
     let favs = data.results;
 
-    let mut posts = Vec::new();
-    let mut replies = Vec::new();
-    let mut quotes = Vec::new();
     let mut metadatas = Vec::new();
     let mut dbposts_map = HashMap::new();
     let mut dbreplies_map = HashMap::new();
     let mut dbusers_map = HashMap::new();
     let mut dbmedias_map = HashMap::new();
 
-    for fav in favs.iter() {
-        let (main_posts, quote_posts, reply_posts) = collect_nested_posts(&fav.post);
-        posts.extend(main_posts);
-        quotes.extend(quote_posts);
-
-        replies.extend(reply_posts);
-    }
+    let (posts, quotes, replies): (Vec<_>, Vec<_>, Vec<_>) =
+        favs.iter().map(|fav| collect_nested_posts(&fav.post)).fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |mut acc, (p, q, r)| {
+                acc.0.extend(p);
+                acc.1.extend(q);
+                acc.2.extend(r);
+                acc
+            },
+        );
     for post in posts {
         let dbpost = DbPost::from_domain(post.clone(), PostType::Post)?;
         dbposts_map.entry(dbpost.id.clone()).or_insert(dbpost);

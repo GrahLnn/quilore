@@ -6,6 +6,7 @@ import LazyImage from "../lazyimg";
 import LazyVideo from "../lazyvideo";
 import { box } from "../lightbox";
 import { TweetState, calcLayout, isLandscape } from "./utils";
+import { openLightbox, closeLightbox } from "../modalbox/lightbox";
 
 const libraryPath = "C:\\Users\\grahl\\quill";
 const compath = (path: string) => `${libraryPath}\\${path}`;
@@ -33,7 +34,11 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
   switch (media.type) {
     case "photo": {
       const handleOpenLightbox = () => {
-        box.open([convertFileSrc(compath(media.path))], 0);
+        // box.open([convertFileSrc(compath(media.path))], 0);
+        openLightbox({
+          images: [convertFileSrc(compath(media.path))],
+          currentIndex: 0,
+        })
       };
       return (
         <LazyImage
@@ -43,7 +48,6 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           )}
           src={convertFileSrc(compath(media.path))}
           onClick={handleOpenLightbox}
-          loading="lazy"
           alt-label={media.description || ""}
           ratio={[media.width, media.height]}
         />
@@ -233,12 +237,12 @@ const renderDefaultGrid = (media: Media[], state: TweetState) => (
   </div>
 );
 
-interface ShowMediaProps {
+interface MediaGridProps {
   state: TweetState;
   medias?: Media[] | null;
 }
 
-export default function MediaGrid({ state, medias }: ShowMediaProps) {
+export default function MediaGrid({ state, medias }: MediaGridProps) {
   if (!medias?.length) return null;
 
   const renderStrategies: Record<

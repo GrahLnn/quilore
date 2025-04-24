@@ -1,11 +1,15 @@
-use super::post::{DbPost, Post};
-use crate::database::core::{Curd, HasId};
-use crate::domain::enums::sql::Queries;
-use crate::domain::enums::table::Table;
+use crate::database::enums::table::Table;
+use crate::database::{Crud, HasId};
+use crate::utils::json_path;
 use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
+
+use super::post::{DbPost, Post};
+
+use crate::impl_crud;
 use anyhow::Result;
 use futures::future;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use specta::Type;
 use surrealdb::RecordId;
 
@@ -31,13 +35,9 @@ impl HasId for DbLikedPost {
 }
 
 impl LikedPost {
-    pub async fn take(num: usize, end: i64) -> Result<Vec<Self>> {
-        let start = (end - (num as i64)).max(0);
-        let dbresult = DbLikedPost::query_take(
-            Queries::range_query(Table::LikedPost, start, end).as_str(),
-            None,
-        )
-        .await?;
+    pub async fn take(num: i64, end: i64) -> Result<Vec<Self>> {
+        let start = (end - num).max(0);
+        let dbresult = DbLikedPost::range_select(start, end).await?;
         let futures = dbresult.into_iter().map(|record| async move {
             match record.clone().into_domain().await {
                 Ok(domain) => Some(domain),
@@ -52,11 +52,75 @@ impl LikedPost {
 
         Ok(result)
     }
+
+    pub fn from_json(json: &Value) -> Option<Self> {
+        let post = Post::from_json(&json_path::get_path(
+            json,
+            "content.itemContent.tweet_results.result",
+        ))?;
+        let sortidx = json_path::get_string(json, "sortIndex")?
+            .parse::<i64>()
+            .ok()?;
+        Some(Self { sortidx, post })
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_from_json() {
+        let json = json!({
+            "sortIndex": "1914753776963561233",
+            "content": {
+                "itemContent": {
+                    "tweet_results": {
+                        "result": {
+                            "rest_id": "1914869413079036055",
+                            "core": {
+                                "user_results": {
+                                    "result": {
+                                        "legacy": {
+                                            "name": "𝚐𝑪𝗾𝚡𝚡𝗾",
+                                            "screen_name": "gm8xx8",
+                                            "profile_image_url_https": "https://pbs.twimg.com/profile_images/1723513473294835712/pvPLgqp3_normal.jpg"
+                                        }
+                                    }
+                                }
+                            },
+                            "note_tweet": {
+                                "note_tweet_results": {
+                                    "result": {
+                                        "text": "Muon Optimizer Accelerates Grokking\n\nMuon optimizer accelerates grokking in Transformers (mean epoch: 102.89 vs 153.09, p < 1e‑7) across 7 modular arithmetic tasks. Combines spectral norm constraints + second-order info. Also evaluates interactions with softmax variants (standard, stablemax, sparsemax)."
+                                    }
+                                }
+                            },
+                            "legacy": {
+                                "created_at": "Wed Apr 23 02:30:19 +0000 2025",
+                                "lang": "en"
+                            },
+                            
+                        }
+                    }
+                }
+            }
+        });
+
+        let liked_post = LikedPost::from_json(&json);
+        assert!(liked_post.is_some());
+
+        let liked_post = liked_post.unwrap();
+        // assert_eq!(liked_post.sortidx, 1914753776963561233);
+        // assert_eq!(liked_post.post.rest_id.to_string(), "1914869413079036055");
+        // assert_eq!(liked_post.post.author.id, "gm8xx8");
+        // assert_eq!(liked_post.post.author.name, "𝚐𝑪𝗾𝚡𝚡𝗾");
+        // assert_eq!(liked_post.post.content.text, "Muon Optimizer Accelerates Grokking\n\nMuon optimizer accelerates grokking in Transformers (mean epoch: 102.89 vs 153.09, p < 1e‑7) across 7 modular arithmetic tasks. Combines spectral norm constraints + second-order info. Also evaluates interactions with softmax variants (standard, stablemax, sparsemax).");
+        // assert_eq!(liked_post.post.content.lang, "en");
+    }
 }
 
-impl Curd for DbLikedPost {
-    const TABLE: &'static str = Table::LikedPost.as_str();
-}
+impl_crud!(DbLikedPost, Table::LikedPost);
 
 impl DbLikedPost {
     pub async fn into_domain(self) -> Result<LikedPost> {

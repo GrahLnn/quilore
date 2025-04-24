@@ -1,0 +1,16 @@
+{
+  "name": "sidecar-app",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@yao-pkg/pkg": "^6.4.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "rettiwt-api": "^4.2.0"
+  }
+}

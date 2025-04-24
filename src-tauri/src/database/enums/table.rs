@@ -6,6 +6,8 @@ pub enum Table {
     Reply,
     User,
     Meta,
+    UserKV,
+
 }
 
 impl Table {
@@ -17,7 +19,7 @@ impl Table {
             Table::Reply => "reply",
             Table::User => "user",
             Table::Meta => "metadata",
+            Table::UserKV => "user_kv",
         }
     }
 }
-

@@ -1,15 +1,18 @@
-use crate::database::core::{Curd, HasId};
-use crate::domain::enums::meta::MetaKey;
-use crate::domain::enums::table::Table;
+use crate::database::enums::meta::MetaKey;
+use crate::database::enums::table::Table;
+use crate::database::{Crud, HasId, Result as DBResult};
+use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use surrealdb::RecordId;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub enum MetaValue {
     String(String),
-    Number(i64),
+    #[serde(serialize_with = "i64_to_string")]
+    #[serde(deserialize_with = "i64_from_string_or_number")]
+    Number(#[specta(type = String)] i64),
 }
 
 impl MetaValue {
@@ -28,7 +31,7 @@ impl MetaValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct Meta {
     pub id: MetaKey,
     pub v: MetaValue,
@@ -46,8 +49,8 @@ impl HasId for DbMeta {
     }
 }
 
-impl Curd for DbMeta {
-    const TABLE: &'static str = Table::Meta.as_str();
+impl Crud for DbMeta {
+    const TABLE: Table = Table::Meta;
 }
 
 impl DbMeta {
@@ -56,8 +59,8 @@ impl DbMeta {
         Self { id, v: v.into() }
     }
 
-    pub async fn get(id: String) -> Result<Option<MetaValue>> {
-        match DbMeta::select(id).await {
+    pub async fn get(id: MetaKey) -> DBResult<Option<MetaValue>> {
+        match DbMeta::select(id.as_str().to_string()).await {
             Ok(data) => Ok(Some(data.v)),
             Err(e) => {
                 if e.to_string().contains("not found") {
@@ -69,11 +72,11 @@ impl DbMeta {
         }
     }
 
-    pub async fn set<T: Into<MetaValue>>(id: &str, v: T) -> Result<()> {
-        let data = DbMeta::new(id.to_string(), v);
-        DbMeta::create_or_update(id, data).await?;
-        Ok(())
-    }
+    // pub async fn set<T: Into<MetaValue>>(id: &str, v: T) -> Result<()> {
+    //     let data = DbMeta::new(id.to_string(), v);
+    //     DbMeta::create_or_update(id, data).await?;
+    //     Ok(())
+    // }
 
     pub fn to_domain(self) -> Result<Meta> {
         let key_str = self.id.key().to_string();
@@ -110,4 +113,19 @@ impl From<i32> for MetaValue {
     fn from(n: i32) -> Self {
         MetaValue::Number(n as i64)
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn upsert_metakv(id: MetaKey, v: &str) -> DBResult<()> {
+    DbMeta::from_domain(Meta { id, v: v.into() })?
+        .upsert()
+        .await?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_meta_value(id: MetaKey) -> DBResult<Option<MetaValue>> {
+    DbMeta::get(id).await
 }

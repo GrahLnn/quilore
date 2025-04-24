@@ -577,4 +577,226 @@ export const icons = {
       </svg>
     );
   },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHBhdGggZD0iTTkgMy4yNVYxNC43NSI+PC9wYXRoPjxwYXRoIGQ9Ik0zLjI1IDlIMTQuNzUiPjwvcGF0aD48L2c+PC9zdmc+)
+   * @returns
+   */
+  plus({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path d="M9 3.25V14.75" /> <path d="M3.25 9H14.75" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHBhdGggZD0iTTIuMjUsNy43NXYtM2MwLTEuMTA1LC44OTUtMiwyLTJoMS45NTFjLjYwNywwLDEuMTgsLjI3NSwxLjU2LC43NDhsLjYwMywuNzUyaDUuMzg2YzEuMTA1LDAsMiwuODk1LDIsMnYxLjUiPjwvcGF0aD48cGF0aCBkPSJNMi43MDIsNy43NUgxNS4yOThjLjk4NiwwLDEuNzAzLC45MzQsMS40NDksMS44ODZsLTEuMTAxLDQuMTI5Yy0uMjMzLC44NzYtMS4wMjYsMS40ODUtMS45MzIsMS40ODVINC4yODdjLS45MDYsMC0xLjY5OS0uNjA5LTEuOTMyLTEuNDg1bC0xLjEwMS00LjEyOWMtLjI1NC0uOTUyLC40NjQtMS44ODYsMS40NDktMS44ODZaIj48L3BhdGg+PC9nPjwvc3ZnPg==)
+   * @returns
+   */
+  folderOpen({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path d="M2.25,7.75v-3c0-1.105,.895-2,2-2h1.951c.607,0,1.18,.275,1.56,.748l.603,.752h5.386c1.105,0,2,.895,2,2v1.5" />
+          <path d="M2.702,7.75H15.298c.986,0,1.703,.934,1.449,1.886l-1.101,4.129c-.233,.876-1.026,1.485-1.932,1.485H4.287c-.906,0-1.699-.609-1.932-1.485l-1.101-4.129c-.254-.952,.464-1.886,1.449-1.886Z" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9IiMyMTIxMjEiPjxwYXRoIG9wYWNpdHk9IjAuNCIgZD0iTTIuNzUgNS4wMDAwMkg1LjkzOUw0Ljk2ODk5IDUuOTY5OTlDNC42NzU5OSA2LjI2Mjk5IDQuNjc1OTkgNi43MzgwMyA0Ljk2ODk5IDcuMDMxMDNDNS4xMTQ5OSA3LjE3NzAzIDUuMzA2OTkgNy4yNTEgNS40OTg5OSA3LjI1MUM1LjY5MDk5IDcuMjUxIDUuODgyOTkgNy4xNzgwMyA2LjAyODk5IDcuMDMxMDNMOC4yNzg5OSA0Ljc4MTAzQzguNTcxOTkgNC40ODgwMyA4LjU3MTk5IDQuMDEyOTkgOC4yNzg5OSAzLjcxOTk5TDYuMDMgMS40Njk5OUM1LjczNyAxLjE3Njk5IDUuMjYxOTkgMS4xNzY5OSA0Ljk2ODk5IDEuNDY5OTlDNC42NzU5OSAxLjc2Mjk5IDQuNjc1OTkgMi4yMzgwMyA0Ljk2ODk5IDIuNTMxMDNMNS45MzkgMy41MDFIMi43NUMyLjMzNiAzLjUwMSAyIDMuODM3IDIgNC4yNTFDMiA0LjY2NSAyLjMzNiA1LjAwMDAyIDIuNzUgNS4wMDAwMloiPjwvcGF0aD48cGF0aCBvcGFjaXR5PSIwLjQiIGQ9Ik05LjAzIDEwLjk3QzguNzM3IDEwLjY3NyA4LjI2MTk5IDEwLjY3NyA3Ljk2ODk5IDEwLjk3QzcuNjc1OTkgMTEuMjYzIDcuNjc1OTkgMTEuNzM4IDcuOTY4OTkgMTIuMDMxTDguOTM5IDEzLjAwMUgyLjc1QzIuMzM2IDEzLjAwMSAyIDEzLjMzNyAyIDEzLjc1MUMyIDE0LjE2NSAyLjMzNiAxNC41MDEgMi43NSAxNC41MDFIOC45MzlMNy45Njg5OSAxNS40NzFDNy42NzU5OSAxNS43NjQgNy42NzU5OSAxNi4yMzkgNy45Njg5OSAxNi41MzJDOC4xMTQ5OSAxNi42NzggOC4zMDY5OSAxNi43NTIgOC40OTg5OSAxNi43NTJDOC42OTA5OSAxNi43NTIgOC44ODI5OSAxNi42NzkgOS4wMjg5OSAxNi41MzJMMTEuMjc5IDE0LjI4MkMxMS41NzIgMTMuOTg5IDExLjU3MiAxMy41MTQgMTEuMjc5IDEzLjIyMUw5LjAyODk5IDEwLjk3MUw5LjAzIDEwLjk3WiI+PC9wYXRoPjxwYXRoIGQ9Ik0xNS43OCA4LjQ2OTk5TDEzLjUzIDYuMjE5OTlDMTMuMjM3IDUuOTI2OTkgMTIuNzYyIDUuOTI2OTkgMTIuNDY5IDYuMjE5OTlDMTIuMTc2IDYuNTEyOTkgMTIuMTc2IDYuOTg4MDMgMTIuNDY5IDcuMjgxMDNMMTMuNDM5IDguMjUxSDIuNzVDMi4zMzYgOC4yNTEgMiA4LjU4NyAyIDkuMDAxQzIgOS40MTUgMi4zMzYgOS43NTEgMi43NSA5Ljc1MUgxMy40MzlMMTIuNDY5IDEwLjcyMUMxMi4xNzYgMTEuMDE0IDEyLjE3NiAxMS40ODkgMTIuNDY5IDExLjc4MkMxMi42MTUgMTEuOTI4IDEyLjgwNyAxMi4wMDIgMTIuOTk5IDEyLjAwMkMxMy4xOTEgMTIuMDAyIDEzLjM4MyAxMS45MjkgMTMuNTI5IDExLjc4MkwxNS43NzkgOS41MzIwMUMxNi4wNzIgOS4yMzkwMSAxNi4wNzIgOC43NjM5NyAxNS43NzkgOC40NzA5N0wxNS43OCA4LjQ2OTk5WiI+PC9wYXRoPjwvZz48L3N2Zz4=)
+   * @returns
+   */
+  threeArrowRight({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            opacity="0.4"
+            d="M2.75 5.00002H5.939L4.96899 5.96999C4.67599 6.26299 4.67599 6.73803 4.96899 7.03103C5.11499 7.17703 5.30699 7.251 5.49899 7.251C5.69099 7.251 5.88299 7.17803 6.02899 7.03103L8.27899 4.78103C8.57199 4.48803 8.57199 4.01299 8.27899 3.71999L6.03 1.46999C5.737 1.17699 5.26199 1.17699 4.96899 1.46999C4.67599 1.76299 4.67599 2.23803 4.96899 2.53103L5.939 3.501H2.75C2.336 3.501 2 3.837 2 4.251C2 4.665 2.336 5.00002 2.75 5.00002Z"
+          />
+          <path
+            opacity="0.4"
+            d="M9.03 10.97C8.737 10.677 8.26199 10.677 7.96899 10.97C7.67599 11.263 7.67599 11.738 7.96899 12.031L8.939 13.001H2.75C2.336 13.001 2 13.337 2 13.751C2 14.165 2.336 14.501 2.75 14.501H8.939L7.96899 15.471C7.67599 15.764 7.67599 16.239 7.96899 16.532C8.11499 16.678 8.30699 16.752 8.49899 16.752C8.69099 16.752 8.88299 16.679 9.02899 16.532L11.279 14.282C11.572 13.989 11.572 13.514 11.279 13.221L9.02899 10.971L9.03 10.97Z"
+          />
+          <path d="M15.78 8.46999L13.53 6.21999C13.237 5.92699 12.762 5.92699 12.469 6.21999C12.176 6.51299 12.176 6.98803 12.469 7.28103L13.439 8.251H2.75C2.336 8.251 2 8.587 2 9.001C2 9.415 2.336 9.751 2.75 9.751H13.439L12.469 10.721C12.176 11.014 12.176 11.489 12.469 11.782C12.615 11.928 12.807 12.002 12.999 12.002C13.191 12.002 13.383 11.929 13.529 11.782L15.779 9.53201C16.072 9.23901 16.072 8.76397 15.779 8.47097L15.78 8.46999Z" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9IiMyMTIxMjEiPjxwYXRoIG9wYWNpdHk9IjAuNCIgZD0iTTE1IDkuNzVIMi43NUMyLjMzNiA5Ljc1IDIgOS40MTQgMiA5QzIgOC41ODYgMi4zMzYgOC4yNSAyLjc1IDguMjVIMTVDMTUuNDE0IDguMjUgMTUuNzUgOC41ODYgMTUuNzUgOUMxNS43NSA5LjQxNCAxNS40MTQgOS43NSAxNSA5Ljc1WiI+PC9wYXRoPjxwYXRoIGQ9Ik0xMSAxNEMxMC44MDggMTQgMTAuNjE2IDEzLjkyNyAxMC40NyAxMy43OEMxMC4xNzcgMTMuNDg3IDEwLjE3NyAxMy4wMTIgMTAuNDcgMTIuNzE5TDE0LjE5IDguOTk4OTlMMTAuNDcgNS4yNzlDMTAuMTc3IDQuOTg2IDEwLjE3NyA0LjUxMSAxMC40NyA0LjIxOEMxMC43NjMgMy45MjUgMTEuMjM4IDMuOTI1IDExLjUzMSA0LjIxOEwxNS43ODEgOC40NjhDMTYuMDc0IDguNzYxIDE2LjA3NCA5LjIzNiAxNS43ODEgOS41MjlMMTEuNTMxIDEzLjc3OUMxMS4zODUgMTMuOTI1IDExLjE5MyAxMy45OTkgMTEuMDAxIDEzLjk5OUwxMSAxNFoiPjwvcGF0aD48L2c+PC9zdmc+)
+   * @returns
+   */
+  arrowRight({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            opacity="0.4"
+            d="M15 9.75H2.75C2.336 9.75 2 9.414 2 9C2 8.586 2.336 8.25 2.75 8.25H15C15.414 8.25 15.75 8.586 15.75 9C15.75 9.414 15.414 9.75 15 9.75Z"
+          />
+          <path d="M11 14C10.808 14 10.616 13.927 10.47 13.78C10.177 13.487 10.177 13.012 10.47 12.719L14.19 8.99899L10.47 5.279C10.177 4.986 10.177 4.511 10.47 4.218C10.763 3.925 11.238 3.925 11.531 4.218L15.781 8.468C16.074 8.761 16.074 9.236 15.781 9.529L11.531 13.779C11.385 13.925 11.193 13.999 11.001 13.999L11 14Z" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9IiMyMTIxMjEiPjxwYXRoIG9wYWNpdHk9IjAuNCIgZD0iTTE1LjI1IDkuNzVIM0MyLjU4NiA5Ljc1IDIuMjUgOS40MTQgMi4yNSA5QzIuMjUgOC41ODYgMi41ODYgOC4yNSAzIDguMjVIMTUuMjVDMTUuNjY0IDguMjUgMTYgOC41ODYgMTYgOUMxNiA5LjQxNCAxNS42NjQgOS43NSAxNS4yNSA5Ljc1WiI+PC9wYXRoPjxwYXRoIGQ9Ik02Ljk5OTk5IDE0QzYuODA3OTkgMTQgNi42MTU5OSAxMy45MjcgNi40Njk5OSAxMy43OEwyLjIxOTk5IDkuNTI5OTlDMS45MjY5OSA5LjIzNjk5IDEuOTI2OTkgOC43NjE5OSAyLjIxOTk5IDguNDY4OTlMNi40Njk5OSA0LjIxOTk5QzYuNzYyOTkgMy45MjY5OSA3LjIzOCAzLjkyNjk5IDcuNTMxIDQuMjE5OTlDNy44MjQgNC41MTI5OSA3LjgyNCA0Ljk4OCA3LjUzMSA1LjI4MUwzLjgxMSA5LjAwMUw3LjUzMSAxMi43MjFDNy44MjQgMTMuMDE0IDcuODI0IDEzLjQ4OSA3LjUzMSAxMy43ODJDNy4zODUgMTMuOTI4IDcuMTkzIDE0LjAwMiA3LjAwMSAxNC4wMDJMNi45OTk5OSAxNFoiPjwvcGF0aD48L2c+PC9zdmc+)
+   * @returns
+   */
+  arrowLeft({ size, color, className }: IconProps) {
+    return (
+      // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            opacity="0.4"
+            d="M15.25 9.75H3C2.586 9.75 2.25 9.414 2.25 9C2.25 8.586 2.586 8.25 3 8.25H15.25C15.664 8.25 16 8.586 16 9C16 9.414 15.664 9.75 15.25 9.75Z"
+          />
+          <path d="M6.99999 14C6.80799 14 6.61599 13.927 6.46999 13.78L2.21999 9.52999C1.92699 9.23699 1.92699 8.76199 2.21999 8.46899L6.46999 4.21999C6.76299 3.92699 7.238 3.92699 7.531 4.21999C7.824 4.51299 7.824 4.988 7.531 5.281L3.811 9.001L7.531 12.721C7.824 13.014 7.824 13.489 7.531 13.782C7.385 13.928 7.193 14.002 7.001 14.002L6.99999 14Z" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9IiMyMTIxMjEiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNC43NSAzLjVDNC4wNTkyMSAzLjUgMy41IDQuMDU5MjEgMy41IDQuNzVWNi4yNUMzLjUgNi42NjQyMSAzLjE2NDIxIDcgMi43NSA3QzIuMzM1NzkgNyAyIDYuNjY0MjEgMiA2LjI1VjQuNzVDMiAzLjIzMDc5IDMuMjMwNzkgMiA0Ljc1IDJINi43NUM3LjE2NDIxIDIgNy41IDIuMzM1NzkgNy41IDIuNzVDNy41IDMuMTY0MjEgNy4xNjQyMSAzLjUgNi43NSAzLjVINC43NVoiIGZpbGwtb3BhY2l0eT0iMC40Ij48L3BhdGg+PHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMC41IDIuNzVDMTAuNSAyLjMzNTc5IDEwLjgzNTggMiAxMS4yNSAySDEzLjI1QzE0Ljc2OTIgMiAxNiAzLjIzMDc5IDE2IDQuNzVWNi4yNUMxNiA2LjY2NDIxIDE1LjY2NDIgNyAxNS4yNSA3QzE0LjgzNTggNyAxNC41IDYuNjY0MjEgMTQuNSA2LjI1VjQuNzVDMTQuNSA0LjA1OTIxIDEzLjk0MDggMy41IDEzLjI1IDMuNUgxMS4yNUMxMC44MzU4IDMuNSAxMC41IDMuMTY0MjEgMTAuNSAyLjc1WiIgZmlsbC1vcGFjaXR5PSIwLjQiPjwvcGF0aD48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTE1LjI1IDExQzE1LjY2NDIgMTEgMTYgMTEuMzM1OCAxNiAxMS43NVYxMy4yNUMxNiAxNC43NjkyIDE0Ljc2OTIgMTYgMTMuMjUgMTZIMTEuMjVDMTAuODM1OCAxNiAxMC41IDE1LjY2NDIgMTAuNSAxNS4yNUMxMC41IDE0LjgzNTggMTAuODM1OCAxNC41IDExLjI1IDE0LjVIMTMuMjVDMTMuOTQwOCAxNC41IDE0LjUgMTMuOTQwOCAxNC41IDEzLjI1VjExLjc1QzE0LjUgMTEuMzM1OCAxNC44MzU4IDExIDE1LjI1IDExWiIgZmlsbC1vcGFjaXR5PSIwLjQiPjwvcGF0aD48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTIuNzUgMTFDMy4xNjQyMSAxMSAzLjUgMTEuMzM1OCAzLjUgMTEuNzVWMTMuMjVDMy41IDEzLjk0MDggNC4wNTkyMSAxNC41IDQuNzUgMTQuNUg2Ljc1QzcuMTY0MjEgMTQuNSA3LjUgMTQuODM1OCA3LjUgMTUuMjVDNy41IDE1LjY2NDIgNy4xNjQyMSAxNiA2Ljc1IDE2SDQuNzVDMy4yMzA3OSAxNiAyIDE0Ljc2OTIgMiAxMy4yNVYxMS43NUMyIDExLjMzNTggMi4zMzU3OSAxMSAyLjc1IDExWiIgZmlsbC1vcGFjaXR5PSIwLjQiPjwvcGF0aD48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTEgOUMxIDguNTg1NzkgMS4zMzU3OSA4LjI1IDEuNzUgOC4yNUgxNi4yNUMxNi42NjQyIDguMjUgMTcgOC41ODU3OSAxNyA5QzE3IDkuNDE0MjEgMTYuNjY0MiA5Ljc1IDE2LjI1IDkuNzVIMS43NUMxLjMzNTc5IDkuNzUgMSA5LjQxNDIxIDEgOVoiPjwvcGF0aD48L2c+PC9zdmc+)
+   * @returns
+   */
+  scan({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M4.75 3.5C4.05921 3.5 3.5 4.05921 3.5 4.75V6.25C3.5 6.66421 3.16421 7 2.75 7C2.33579 7 2 6.66421 2 6.25V4.75C2 3.23079 3.23079 2 4.75 2H6.75C7.16421 2 7.5 2.33579 7.5 2.75C7.5 3.16421 7.16421 3.5 6.75 3.5H4.75Z"
+            fillOpacity="0.4"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M10.5 2.75C10.5 2.33579 10.8358 2 11.25 2H13.25C14.7692 2 16 3.23079 16 4.75V6.25C16 6.66421 15.6642 7 15.25 7C14.8358 7 14.5 6.66421 14.5 6.25V4.75C14.5 4.05921 13.9408 3.5 13.25 3.5H11.25C10.8358 3.5 10.5 3.16421 10.5 2.75Z"
+            fillOpacity="0.4"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M15.25 11C15.6642 11 16 11.3358 16 11.75V13.25C16 14.7692 14.7692 16 13.25 16H11.25C10.8358 16 10.5 15.6642 10.5 15.25C10.5 14.8358 10.8358 14.5 11.25 14.5H13.25C13.9408 14.5 14.5 13.9408 14.5 13.25V11.75C14.5 11.3358 14.8358 11 15.25 11Z"
+            fillOpacity="0.4"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M2.75 11C3.16421 11 3.5 11.3358 3.5 11.75V13.25C3.5 13.9408 4.05921 14.5 4.75 14.5H6.75C7.16421 14.5 7.5 14.8358 7.5 15.25C7.5 15.6642 7.16421 16 6.75 16H4.75C3.23079 16 2 14.7692 2 13.25V11.75C2 11.3358 2.33579 11 2.75 11Z"
+            fillOpacity="0.4"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M1 9C1 8.58579 1.33579 8.25 1.75 8.25H16.25C16.6642 8.25 17 8.58579 17 9C17 9.41421 16.6642 9.75 16.25 9.75H1.75C1.33579 9.75 1 9.41421 1 9Z"
+          />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![img](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHBhdGggZD0iTTkgMTYuMjVDMTMuMDA0MSAxNi4yNSAxNi4yNSAxMy4wMDQxIDE2LjI1IDlDMTYuMjUgNC45OTU5NCAxMy4wMDQxIDEuNzUgOSAxLjc1QzQuOTk1OTQgMS43NSAxLjc1IDQuOTk1OTQgMS43NSA5QzEuNzUgMTMuMDA0MSA0Ljk5NTk0IDE2LjI1IDkgMTYuMjVaIiBmaWxsPSIjMjEyMTIxIiBmaWxsLW9wYWNpdHk9IjAuMyIgZGF0YS1zdHJva2U9Im5vbmUiIHN0cm9rZT0ibm9uZSI+PC9wYXRoPjxwYXRoIGQ9Ik05IDE2LjI1QzEzLjAwNDEgMTYuMjUgMTYuMjUgMTMuMDA0MSAxNi4yNSA5QzE2LjI1IDQuOTk1OTQgMTMuMDA0MSAxLjc1IDkgMS43NUM0Ljk5NTk0IDEuNzUgMS43NSA0Ljk5NTk0IDEuNzUgOUMxLjc1IDEzLjAwNDEgNC45OTU5NCAxNi4yNSA5IDE2LjI1WiI+PC9wYXRoPjxwYXRoIGQ9Ik05IDEyLjgxOVY4LjI1Ij48L3BhdGg+PHBhdGggZD0iTTkgNi43NUM4LjQ0OCA2Ljc1IDggNi4zMDEgOCA1Ljc1QzggNS4xOTkgOC40NDggNC43NSA5IDQuNzVDOS41NTIgNC43NSAxMCA1LjE5OSAxMCA1Ljc1QzEwIDYuMzAxIDkuNTUyIDYuNzUgOSA2Ljc1WiIgZmlsbD0iIzIxMjEyMSIgZGF0YS1zdHJva2U9Im5vbmUiIHN0cm9rZT0ibm9uZSI+PC9wYXRoPjwvZz48L3N2Zz4=)
+   * @returns
+   */
+  circleInfo({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path
+            d="M9 16.25C13.0041 16.25 16.25 13.0041 16.25 9C16.25 4.99594 13.0041 1.75 9 1.75C4.99594 1.75 1.75 4.99594 1.75 9C1.75 13.0041 4.99594 16.25 9 16.25Z"
+            fill={color || "currentColor"}
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke="none"
+          />
+          <path d="M9 16.25C13.0041 16.25 16.25 13.0041 16.25 9C16.25 4.99594 13.0041 1.75 9 1.75C4.99594 1.75 1.75 4.99594 1.75 9C1.75 13.0041 4.99594 16.25 9 16.25Z" />{" "}
+          <path d="M9 12.819V8.25" />
+          <path
+            d="M9 6.75C8.448 6.75 8 6.301 8 5.75C8 5.199 8.448 4.75 9 4.75C9.552 4.75 10 5.199 10 5.75C10 6.301 9.552 6.75 9 6.75Z"
+            fill={color || "currentColor"}
+            data-stroke="none"
+            stroke="none"
+          />
+        </g>
+      </svg>
+    );
+  },
 };

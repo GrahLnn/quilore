@@ -1,9 +1,12 @@
-use crate::database::core::{Curd, HasId};
-use crate::domain::enums::table::Table;
+use crate::database::enums::table::Table;
+use crate::database::{Crud, HasId};
+use crate::{impl_crud, impl_id};
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use specta::Type;
 use surrealdb::RecordId;
+use url::Url;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct MediaBase {
@@ -75,14 +78,120 @@ pub struct DbMedia {
     pub bitrate: Option<u32>,
 }
 
-impl HasId for DbMedia {
-    fn id(&self) -> RecordId {
-        self.id.clone()
-    }
-}
+impl_crud!(DbMedia, Table::Media);
+impl_id!(DbMedia, id);
 
-impl Curd for DbMedia {
-    const TABLE: &'static str = Table::Media.as_str();
+impl Media {
+    pub fn from_json(json: &Value) -> Option<Self> {
+        // 1. 先拿到 type 字段
+        let media_type = json.get("type")?.as_str()?;
+
+        // 2. 根据 type 分支处理
+        match media_type {
+            "photo" => {
+                // 对应照片
+                let url = json.get("media_url_https")?.as_str()?.to_string();
+                let id = Url::parse(&url).ok()?.path_segments()?.last()?.to_string();
+                let width = json
+                    .get("original_info")?
+                    .get("width")
+                    .and_then(Value::as_u64)
+                    .map(|v| v as u32);
+                let height = json
+                    .get("original_info")?
+                    .get("height")
+                    .and_then(Value::as_u64)
+                    .map(|v| v as u32);
+
+                Some(Media::Photo(PhotoMedia {
+                    base: MediaBase {
+                        id: id.clone(),
+                        url: url.clone(),
+                        path: id,
+                        description: None,
+                        width,
+                        height,
+                    },
+                }))
+            }
+
+            "video" | "animated_gif" => {
+                // 拿到所有变体
+                let variants = json
+                    .get("video_info")?
+                    .get("variants")?
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
+
+                // 选 bitrate 最大的那个
+                let best = variants
+                    .iter()
+                    .max_by_key(|v| v.get("bitrate").and_then(Value::as_u64).unwrap_or(0))?;
+
+                let url = best.get("url")?.as_str()?.to_string();
+                let bitrate = best
+                    .get("bitrate")
+                    .and_then(Value::as_u64)
+                    .map(|v| v as u32);
+                let id = Url::parse(&url).ok()?.path_segments()?.last()?.to_string();
+
+                // 公共 base 字段
+                let width = json
+                    .get("original_info")?
+                    .get("width")
+                    .and_then(Value::as_u64)
+                    .map(|v| v as u32);
+                let height = json
+                    .get("original_info")?
+                    .get("height")
+                    .and_then(Value::as_u64)
+                    .map(|v| v as u32);
+
+                let base = MediaBase {
+                    id: id.clone(),
+                    url: url.clone(),
+                    path: id,
+                    description: None,
+                    width,
+                    height,
+                };
+
+                // 解析宽高比
+                let arr = json.get("video_info")?.get("aspect_ratio")?.as_array()?;
+                let aspect_ratio = (arr.get(0)?.as_u64()? as u32, arr.get(1)?.as_u64()? as u32);
+
+                // 缩略图
+                let thumb = json.get("media_url_https")?.as_str()?.to_string();
+
+                if media_type == "video" {
+                    // 只有 video 有 duration
+                    let duration_millis =
+                        json.get("video_info")?.get("duration_millis")?.as_u64()? as u32;
+
+                    Some(Media::Video(VideoMedia {
+                        base,
+                        aspect_ratio,
+                        thumb,
+                        thumb_path: None,
+                        duration_millis,
+                        bitrate,
+                    }))
+                } else {
+                    // animated_gif
+                    Some(Media::AnimatedGif(AnimatedGifMedia {
+                        base,
+                        aspect_ratio,
+                        thumb,
+                        thumb_path: None,
+                        bitrate,
+                    }))
+                }
+            }
+
+            _ => None,
+        }
+    }
 }
 
 impl DbMedia {

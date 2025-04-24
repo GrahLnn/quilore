@@ -1,22 +1,19 @@
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { icons, logos } from "@/src/assets/icons";
 import { platform } from "@tauri-apps/plugin-os";
-import React, { type PropsWithChildren, useEffect, memo } from "react";
-import { useWindowFocus } from "./state_machine/windowFocus";
+import { AnimatePresence, motion } from "motion/react";
+import type React from "react";
+import { type PropsWithChildren, memo, useState } from "react";
+import { isBarVisible } from "./state_machine/barVisible";
+import { toggleLanguageMode } from "./state_machine/language";
+import { isWindowFocus } from "./state_machine/windowFocus";
+import { useCenterTool } from "./subpub/centerTool";
 
 const os = platform();
 
-interface CtrlButtonProps {
-  children: React.ReactNode;
+interface CtrlButtonProps extends PropsWithChildren {
+  icon?: React.ReactNode;
+  label?: string;
   onClick?: () => void;
   className?: string;
   o?: string;
@@ -24,89 +21,43 @@ interface CtrlButtonProps {
 }
 
 function CtrlButton({
-  children,
+  icon,
+  label,
   onClick = () => {},
   className,
   o,
   p,
 }: CtrlButtonProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const isVisible = isBarVisible();
   return (
-    <div data-tauri-drag-region="false">
+    <div data-tauri-drag-region={!isVisible}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
       <div
         className={cn([
-          "rounded-md cursor-default h-8 flex items-center",
+          "rounded-md cursor-default h-8 flex items-center justify-center",
           p || "p-2",
           o || "opacity-60",
-          "hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100 transition-all duration-300 ease-in-out",
+          "hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100 ",
+          "transition duration-300 ease-in-out",
+          !isVisible && "opacity-0 pointer-events-none",
           className,
         ])}
         onClick={onClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        {children}
+        <div className={cn(["flex items-center gap-1"])}>
+          {icon}
+          {/* <motion.span
+            className={cn(["text-xs trim-cap overflow-hidden", !isHovered && "w-0"])}
+            layout
+          >
+            {label}
+          </motion.span> */}
+        </div>
       </div>
     </div>
-  );
-}
-
-interface DropdownMenuItemProps {
-  name: string;
-  shortcut?: string;
-  fn?: () => void;
-  data?: React.ReactNode;
-}
-
-interface DropdownButtonProps extends PropsWithChildren {
-  p?: string;
-  o?: string;
-  className?: string;
-  label?: string | React.ReactNode;
-  items?: Array<DropdownMenuItemProps>;
-}
-
-function DropdownButton({
-  children,
-  label,
-  items,
-  p,
-  o,
-  className,
-}: DropdownButtonProps) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn([
-          "focus:outline-none focus:ring-0 focus:border-0",
-          "rounded-md cursor-default",
-          p || "p-2",
-          o || "opacity-60",
-          "hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100 transition-all duration-300 ease-in-out",
-          "data-[state=open]:bg-black/5 dark:data-[state=open]:bg-white/5 data-[state=open]:opacity-100",
-          className,
-        ])}
-      >
-        {children}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-popover/80 backdrop-filter backdrop-blur-[16px]">
-        {label && <DropdownMenuLabel>{label}</DropdownMenuLabel>}
-        {label && <DropdownMenuSeparator />}
-        {items?.map((item) => (
-          <React.Fragment key={item.name}>
-            <DropdownMenuItem
-              className="focus:bg-accent/60"
-              key={item.name}
-              onClick={item.fn}
-            >
-              {item.name}
-              {item.shortcut && (
-                <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>
-              )}
-            </DropdownMenuItem>
-            {item.data}
-          </React.Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
@@ -120,48 +71,49 @@ const LeftControls = memo(() => {
 
 const RightControls = memo(() => {
   return (
-    <div className="flex items-center">
-      <CtrlButton>
-        <icons.magnifler3 size={14} />
-      </CtrlButton>
-      <CtrlButton>
-        <icons.globe3 size={14} />
-      </CtrlButton>
+    <div
+      className={cn([
+        "flex items-center",
+        // "transition duration-300 ease-in-out",
+      ])}
+    >
+      <CtrlButton label="Search" icon={<icons.magnifler3 size={14} />} />
 
-      <CtrlButton>
-        <icons.arrowDown size={14} />
-      </CtrlButton>
+      <CtrlButton
+        onClick={toggleLanguageMode}
+        label="Language"
+        icon={<icons.globe3 size={14} />}
+      />
+
+      <CtrlButton label="Update" icon={<icons.arrowDown size={14} />} />
 
       <div className="w-[138px]" />
     </div>
   );
 });
 
-const settingsItems = [
-  { name: "Load", fn: () => {} },
-  { name: "Export", fn: () => {} },
-  { name: "X api", fn: () => {} },
-];
-
 const MiddleControls = memo(() => {
+  const middleTools = useCenterTool();
   return (
-    <div className={cn(["flex items-center h-full"])}>
-      <CtrlButton>
-        <icons.gridCircle size={14} />
-      </CtrlButton>
-
-      <CtrlButton className="text-xs font-light" o="opacity-80" p="px-5">
-        <div className="text-trim-cap">GrahLnn.X.Likes</div>
-      </CtrlButton>
-      <DropdownButton label="Settings" items={settingsItems}>
-        <icons.sliders size={14} />
-      </DropdownButton>
-    </div>
+    <AnimatePresence>
+      {middleTools && (
+        <motion.div
+          key={middleTools?.key || "tool"} // 确保每种组件唯一 key，防止动画冲突
+          initial={{ opacity: 0, y: 2 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -2 }}
+          transition={{ duration: 0.2 }}
+        >
+          {middleTools?.node}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 });
 
 const TopBar = memo(() => {
-  const windowFocused = useWindowFocus();
+  const windowFocused = isWindowFocus();
+  const barVisible = isBarVisible();
 
   // useEffect(() => {
   //   if (!windowFocused) {
@@ -219,28 +171,31 @@ const TopBar = memo(() => {
             "w-screen h-8 z-[9999] select-none",
             "before:absolute before:inset-0 before:-z-10",
             "before:bg-gradient-to-b before:from-[var(--app-bg)] before:to-[var(--app-bg)]/60",
-            "before:transition-colors before:duration-300",
+            "before:transition-colors before:duration-500 before:ease-in-out",
             "after:absolute after:inset-0 after:-z-10",
             "after:backdrop-blur-[16px] after:opacity-100 after:origin-top",
             "after:bg-gradient-to-b after:from-transparent after:via-transparent after:to-white/0",
             "after:mask-image-[linear-gradient(to_bottom,rgba(0,0,0,1)_0%,rgba(0,0,0,0)_100%)]",
-            "after:transition-all after:duration-300",
+            "after:transition-colors after:duration-500 after:ease-in-out",
           ])}
         >
           <div
             className={cn([
               "grid grid-cols-[1fr_auto_1fr] w-full h-full",
               !windowFocused && "opacity-30",
-              "transition-all duration-300",
+              "transition duration-300 ease-in-out",
             ])}
           >
-            <div data-tauri-drag-region className="flex justify-start pl-1">
+            <div
+              data-tauri-drag-region
+              className={cn(["flex justify-start pl-1"])}
+            >
               <LeftControls />
             </div>
-            <div data-tauri-drag-region>
+            <div data-tauri-drag-region className={cn(["flex justify-center"])}>
               <MiddleControls />
             </div>
-            <div data-tauri-drag-region className="flex justify-end">
+            <div data-tauri-drag-region className={cn(["flex justify-end"])}>
               <RightControls />
             </div>
           </div>

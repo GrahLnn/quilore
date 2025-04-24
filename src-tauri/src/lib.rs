@@ -4,27 +4,38 @@ mod utils;
 
 use crate::domain::models::meta::DbMeta;
 use anyhow::Result;
-use database::core::{init_db, Curd};
-use domain::{
-    enums::meta::MetaKey,
-    models::twitter::{
-        interface::LikedChunk,
-        like::{DbLikedPost, LikedPost},
-        media::DbMedia,
-        post::{DbPost, DbReply, Post, PostType},
-        users::DbUser,
-    },
+use database::enums::meta::MetaKey;
+use database::{init_db, Crud};
+use domain::models::meta::{get_meta_value, upsert_metakv};
+use domain::models::userkv::{get_userkv_value, upsert_userkv};
+use domain::models::twitter::{
+    content_to_copy::ContentToCopy,
+    interface::LikedChunk,
+    like::{DbLikedPost, LikedPost},
+    media::DbMedia,
+    post::{DbPost, DbReply},
+    users::DbUser,
 };
-use futures::future;
+use domain::platform::twitter::api::user;
+
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::block_on;
 use tauri::Manager;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_specta::{collect_commands, Builder};
 use tokio::task::block_in_place;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder: Builder = Builder::new().commands(collect_commands![take_post_chunk]);
+    let builder: Builder = Builder::new().commands(collect_commands![
+        take_post_chunk,
+        copy_to_clipboard,
+        upsert_metakv,
+        get_meta_value,
+        upsert_userkv,
+        get_userkv_value,
+        user::likes,
+    ]);
 
     #[cfg(debug_assertions)]
     builder
@@ -37,6 +48,8 @@ pub fn run() {
         .expect("Failed to export typescript bindings");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -73,10 +86,10 @@ async fn load_scraper_data() -> Result<()> {
 
 #[tauri::command]
 #[specta::specta]
-async fn take_post_chunk(cursor: Option<i32>) -> Result<LikedChunk, String> {
-    let cursor_i64 = match cursor {
+async fn take_post_chunk(cursor: Option<u32>) -> Result<LikedChunk, String> {
+    let end = match cursor {
         Some(cursor) => cursor as i64,
-        None => DbMeta::get(MetaKey::FirstCursor.as_str().to_string())
+        None => DbMeta::get(MetaKey::FirstCursor)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| anyhow::anyhow!("FirstCursor not found"))
@@ -84,9 +97,20 @@ async fn take_post_chunk(cursor: Option<i32>) -> Result<LikedChunk, String> {
             .into_number(),
     };
     let interval = 200;
-    let data = LikedPost::take(interval, cursor_i64)
+    let data = LikedPost::take(interval, end)
         .await
         .map_err(|e| e.to_string())?;
-    let cursor = (cursor_i64 - interval as i64).max(0);
+    let cursor = (end - interval - 1).max(0);
     Ok(LikedChunk { cursor, data })
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn copy_to_clipboard(
+    app_handle: tauri::AppHandle,
+    content: ContentToCopy,
+) -> Result<(), String> {
+    let toml_str = toml::to_string(&content).map_err(|e| e.to_string())?;
+    app_handle.clipboard().write_text(toml_str).unwrap();
+    Ok(())
 }

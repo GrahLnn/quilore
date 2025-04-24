@@ -1,6 +1,7 @@
 use super::avatar::Avatar;
-use crate::database::core::{Curd, HasId};
-use crate::domain::enums::table::Table;
+use crate::{database::enums::table::Table, utils::json_path};
+use crate::database::{Crud, HasId};
+use crate::{impl_crud, impl_id};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -14,6 +15,19 @@ pub struct User {
     pub avatar: Avatar,
 }
 
+impl User {
+    pub fn from_json(json: &serde_json::Value) -> Option<Self> {
+        Some(Self {
+            id: json_path::get_string(json, "screen_name")?,
+            name: json_path::get_string(json, "name")?,
+            avatar: Avatar {
+                url: json_path::get_string(json, "profile_image_url_https")?,
+                path: "".to_string(),
+            },
+        })
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DbUser {
     pub id: RecordId,
@@ -21,15 +35,8 @@ pub struct DbUser {
     pub avatar: Avatar,
 }
 
-impl Curd for DbUser {
-    const TABLE: &'static str = Table::User.as_str();
-}
-
-impl HasId for DbUser {
-    fn id(&self) -> RecordId {
-        self.id.clone()
-    }
-}
+impl_crud!(DbUser, Table::User);
+impl_id!(DbUser, id);
 
 impl DbUser {
     pub async fn into_domain(self) -> Result<User> {
