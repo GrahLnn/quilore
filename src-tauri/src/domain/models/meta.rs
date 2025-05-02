@@ -3,8 +3,11 @@ use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId, Result as DBResult};
 use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
 use anyhow::Result;
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::path::PathBuf;
+use std::sync::{LazyLock, RwLock};
 use surrealdb::RecordId;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -121,6 +124,7 @@ pub async fn upsert_metakv(id: MetaKey, v: &str) -> DBResult<()> {
     DbMeta::from_domain(Meta { id, v: v.into() })?
         .upsert()
         .await?;
+    GlobalVal::update().await?;
     Ok(())
 }
 
@@ -128,4 +132,43 @@ pub async fn upsert_metakv(id: MetaKey, v: &str) -> DBResult<()> {
 #[specta::specta]
 pub async fn get_meta_value(id: MetaKey) -> DBResult<Option<MetaValue>> {
     DbMeta::get(id).await
+}
+
+static GLOBAL_VAL: LazyLock<RwLock<GlobalVal>> = LazyLock::new(|| {
+    RwLock::new(GlobalVal {
+        save_dir: None,
+    })
+});
+
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+pub struct GlobalVal {
+    pub save_dir: Option<PathBuf>,
+}
+
+impl GlobalVal {
+    pub async fn init() -> Result<()> {
+        let save_dir = DbMeta::get(MetaKey::SaveDir).await?
+            .map(|v| PathBuf::from(v.into_string()));
+        let mut guard = GLOBAL_VAL.write().unwrap();
+        guard.save_dir = save_dir;
+        Ok(())
+    }
+
+    pub fn get_save_dir() -> Option<PathBuf> {
+        GLOBAL_VAL.read().unwrap().save_dir.clone()
+    }
+
+    pub async fn update() -> Result<()> {
+        let save_dir = DbMeta::get(MetaKey::SaveDir).await?
+            .map(|v| PathBuf::from(v.into_string()));
+        let mut guard = GLOBAL_VAL.write().unwrap();
+        guard.save_dir = save_dir;
+        Ok(())
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_save_dir() -> Result<Option<String>, String> {
+    Ok(GlobalVal::get_save_dir().map(|p| p.to_string_lossy().to_string()))
 }

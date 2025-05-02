@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::enums::table::Table;
 use super::error::DBError;
 use super::Result;
@@ -6,6 +8,8 @@ use super::{get_db, HasId, QueryKind};
 use async_trait::async_trait;
 use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::BTreeMap;
 use surrealdb::{RecordId, RecordIdKey, Response};
 
 #[async_trait]
@@ -68,25 +72,45 @@ pub trait Crud:
         Ok(records)
     }
 
-    async fn update(id: &str, data: Self) -> Result<Self> {
+    async fn select_limit(count: i64) -> Result<Vec<Self>> {
         let db = get_db()?;
-        let updated: Option<Self> = db.update((Self::TABLE.as_str(), id)).content(data).await?;
+        let records: Vec<Self> = db
+            .query(QueryKind::limit(Self::TABLE, count))
+            .await?
+            .take(0)?;
+        Ok(records)
+    }
+
+    async fn update(id: RecordId, data: Self) -> Result<Self>
+    where
+        Self: HasId,
+    {
+        let db = get_db()?;
+        let updated: Option<Self> = db.update(id).content(data).await?;
         updated.ok_or(DBError::NotFound.into())
     }
 
-    async fn merge(id: Option<&str>, data: Self) -> Result<Self> {
+    async fn merge(id: RecordId, data: Value) -> Result<Self> {
         let db = get_db()?;
-        let merged: Option<Self> = if let Some(id) = id {
-            db.update((Self::TABLE.as_str(), id)).merge(data).await?
-        } else {
-            db.update(Self::TABLE.as_str())
-                .merge(data)
-                .await?
-                .into_iter()
-                .next() // TODO: 兼容Vec的返回
-        };
+
+        let merged: Option<Self> = db.update(id).merge(data).await?;
         merged.ok_or(DBError::NotFound.into())
     }
+
+    // async fn patch(id: RecordId, data: Value) -> Result<Self> {
+    //     let db = get_db()?;
+
+    //     let patched: Option<Self> = db.update(id).patch(data).await?;
+    //     patched.ok_or(DBError::NotFound.into())
+    // }
+
+    // async fn replace(id: RecordId, data: Value) -> Result<Self> {
+    //     let replaced: Option<Self> = Self::query_take(&QueryKind::replace(id, data), None)
+    //         .await?
+    //         .into_iter()
+    //         .next();
+    //     replaced.ok_or(DBError::NotFound.into())
+    // }
 
     async fn insert(data: Vec<Self>) -> Result<Vec<Self>> {
         let db = get_db()?;
@@ -94,7 +118,7 @@ pub trait Crud:
         Ok(created)
     }
 
-    async fn insert_with_id(data: Vec<Self>) -> Result<Vec<Self>>
+    async fn insert_jump(data: Vec<Self>) -> Result<Vec<Self>>
     where
         Self: HasId,
     {
@@ -123,6 +147,12 @@ pub trait Crud:
     async fn delete(id: &str) -> Result<()> {
         let db = get_db()?;
         let _: Option<Self> = db.delete((Self::TABLE.as_str(), id)).await?;
+        Ok(())
+    }
+
+    async fn delete_record(id: RecordId) -> Result<()> {
+        let db = get_db()?;
+        let _: Option<Self> = db.delete(id).await?;
         Ok(())
     }
 
@@ -197,4 +227,55 @@ macro_rules! impl_id {
             }
         }
     };
+    ($t:ty, $($path:tt)+) => {
+        impl HasId for $t {
+            fn id(&self) -> RecordId {
+                self.$($path)+.clone()
+            }
+        }
+    };
+}
+
+pub struct TxStmt {
+    pub sql: String,
+    pub bindings: BTreeMap<String, Value>,
+}
+
+impl TxStmt {
+    /// 构造一个新的 SQL 语句
+    pub fn new<S: Into<String>>(sql: S) -> Self {
+        Self {
+            sql: sql.into(),
+            bindings: BTreeMap::new(),
+        }
+    }
+
+    /// 绑定一个值（会被序列化为 JSON）
+    pub fn bind<K: Into<String>, V: Serialize>(mut self, key: K, val: V) -> Self {
+        let v = serde_json::to_value(val).expect("Serialize to Value should never fail");
+        self.bindings.insert(key.into(), v);
+        self
+    }
+}
+
+pub async fn run_tx(stmts: Vec<TxStmt>) -> Result<Response> {
+    let db = get_db()?;
+    // 开始事务
+    let mut chain = db.query("BEGIN");
+
+    // 链式拼接每条语句
+    for stmt in stmts {
+        let mut q = chain.query(&stmt.sql);
+        for (k, v) in stmt.bindings {
+            // 直接把 serde_json::Value 传进去
+            q = q.bind((k, v));
+        }
+        chain = q;
+    }
+
+    // 提交事务
+    let resp = chain.query("COMMIT").await?;
+    // 检查 SQL 层面错误（若发生，会自动 CANCEL）
+    let resp = resp.check()?;
+    Ok(resp)
 }

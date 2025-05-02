@@ -28,3 +28,4 @@ impl From<anyhow::Error> for DBError {
         DBError::SurrealError(err.to_string())
     }
 }
+

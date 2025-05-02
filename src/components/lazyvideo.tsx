@@ -1,17 +1,21 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import useElementInView from "../hooks/view";
 import { clearVideo } from "../utils/media";
+import { useAssetState } from "../subpub/assetsState";
+import { Asset } from "../cmd/commands";
 
 interface LazyVideoProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
   src: string;
   poster?: string;
+  asset: Asset;
   ratio: [number, number];
 }
 
 const LazyVideo: React.FC<LazyVideoProps> = ({
   src,
   poster,
+  asset,
   ratio,
   ...props
 }) => {
@@ -21,6 +25,17 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const inView = useElementInView(containerRef, offset);
+  const [key, forceUpdate] = useReducer((x) => x + 1, 0);
+
+  const assetState = useAssetState();
+  const val = assetState.get(asset.name);
+
+  useEffect(() => {
+    if (val) {
+      console.log("val changed", val);
+      forceUpdate();
+    }
+  }, [val]);
 
   // 当 inView 为 true 且 videoRef 挂载时，保存 videoEl
   useEffect(() => {
@@ -44,6 +59,7 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
     >
       {inView && (
         <video
+          key={key}
           ref={videoRef}
           src={src}
           poster={poster}

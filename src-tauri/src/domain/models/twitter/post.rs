@@ -2,10 +2,10 @@ use super::{
     media::{DbMedia, Media},
     users::{DbUser, User},
 };
+use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
-use crate::impl_crud;
 use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
-use crate::{database::enums::table::Table, utils::json_path};
+use crate::{impl_crud, impl_id};
 use anyhow::{Error, Result};
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
@@ -45,6 +45,15 @@ pub struct Post {
     pub article: Option<Article>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+pub struct Reply(pub QuotePost);
+
+impl Reply {
+    pub fn into_db(self) -> DbReply {
+        DbReply(DbPost::from_domain(self.0.into_post(), PostType::Reply))
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DbPost {
     pub id: RecordId,
@@ -57,6 +66,7 @@ pub struct DbPost {
     pub replies: Option<Vec<DbConversation>>,
     pub card: Option<Card>,
     pub article: Option<Article>,
+    pub is_root: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -87,7 +97,13 @@ pub struct Article {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct Conversation {
-    pub conversation: Vec<Post>,
+    pub conversation: Vec<Reply>,
+}
+
+impl Conversation {
+    pub fn into_db(self) -> DbConversation {
+        DbConversation::from_domain(self)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -95,13 +111,27 @@ pub struct DbConversation {
     pub conversation: Vec<RecordId>,
 }
 
+impl DbConversation {
+    pub fn from_domain(conv: Conversation) -> Self {
+        Self {
+            conversation: conv
+                .conversation
+                .into_iter()
+                .map(|post| DbPost::record_id(post.0.rest_id))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub enum PostType {
-    Post,
+    Root,
+    Quote,
     Reply,
 }
 
 impl Card {
-    pub fn from_json(data: &Value) -> Option<Self> {
+    pub fn from_api(data: &Value) -> Option<Self> {
         match data {
             Value::Null => None,
             _ => {
@@ -253,7 +283,7 @@ impl Card {
 }
 
 impl Content {
-    pub fn from_json(json: &Value) -> Option<Self> {
+    pub fn from_api(json: &Value) -> Option<Self> {
         // 1. 获取主体文本
         let mut text = json
             .pointer("/note_tweet/note_tweet_results/result/text")
@@ -333,23 +363,32 @@ impl Content {
 }
 
 impl Article {
-    pub fn from_json(json: &Value) -> Option<Self> {
+    pub fn from_api(json: &Value) -> Option<Self> {
         match json {
             Value::Null => None,
             _ => Some(Self {
-                id: json_path::get_string(json, "id")?,
-                title: json_path::get_string(json, "title")?,
-                description: json_path::get_string(json, "preview_text").map(|text| text + "..."),
-                url: json_path::get_string(json, "rest_id")
-                    .map(|url| "https://x.com/i/status/".to_owned() + url.as_str())?,
+                id: json.get("id").and_then(|v| v.as_str())?.to_string(),
+                title: json.get("title").and_then(|v| v.as_str())?.to_string(),
+                description: json
+                    .get("preview_text")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string() + "..."),
+                url: json
+                    .get("rest_id")
+                    .and_then(|v| v.as_str())
+                    .map(|s| "https://x.com/i/status/".to_owned() + s)?,
             }),
         }
     }
 }
 
 impl Post {
+    pub fn into_db(self) -> DbPost {
+        DbPost::from_domain(self, PostType::Root)
+    }
+
     pub async fn save(&self) -> Result<DbPost> {
-        let data = DbPost::from_domain(self.clone(), PostType::Post)?;
+        let data = DbPost::from_domain(self.clone(), PostType::Root);
         DbPost::create_by_id(self.rest_id, data)
             .await
             .map_err(Error::from)
@@ -382,38 +421,40 @@ impl Post {
             article: quote.article.clone(),
         }
     }
-    pub fn from_json(json: &Value) -> Option<Self> {
-        if json.get("__typename").and_then(|v| v.as_str()) == Some("TweetTombstone")
-            || json
-                .get("source")
-                .and_then(|v| v.as_str())
-                .map_or(false, |s| s.contains("Advertisers"))
-        {
+    pub fn from_api(json: &Value) -> Option<Self> {
+        if json.get("__typename").and_then(|v| v.as_str()) == Some("TweetTombstone") {
             return None;
         } else {
+            let json = json.get("tweet").map_or(json, |v| v);
             let rest_id = json
                 .get("rest_id")
                 .and_then(|v| v.as_str())?
                 .parse::<i64>()
                 .ok()?;
-            let author = User::from_json(&json_path::get_path(
-                json,
-                "core.user_results.result.legacy",
-            ))?;
-            let created_at = json_path::get_string(json, "legacy.created_at")?;
-            let content = Content::from_json(json)?;
-            let media =
-                json_path::get_array(json, "legacy.extended_entities.media").map(|media_array| {
+            let author = json
+                .pointer("/core/user_results/result/legacy")
+                .and_then(User::from_api)?;
+            let created_at = json
+                .pointer("/legacy/created_at")
+                .and_then(|v| v.as_str())?
+                .to_string();
+            let content = Content::from_api(json)?;
+            let media = json
+                .pointer("/legacy/extended_entities/media")
+                .and_then(Value::as_array)
+                .map(|media_array| {
                     media_array
                         .iter()
-                        .filter_map(|media_item| Media::from_json(media_item))
+                        .filter_map(|media_item| Media::from_api(media_item))
                         .collect()
                 });
-            let card = Card::from_json(json);
-            let article =
-                Article::from_json(&json_path::get_path(json, "article.article_results.result"));
-            let quote =
-                QuotePost::from_json(&json_path::get_path(json, "quoted_status_result.result"));
+            let card = Card::from_api(json);
+            let article = json
+                .pointer("/article/article_results/result")
+                .and_then(Article::from_api);
+            let quote = json
+                .pointer("/quoted_status_result/result")
+                .and_then(QuotePost::from_api);
 
             Some(Self {
                 rest_id,
@@ -432,36 +473,37 @@ impl Post {
 }
 
 impl QuotePost {
-    pub fn from_json(json: &Value) -> Option<Self> {
-        if json.get("__typename").and_then(|v| v.as_str()) == Some("TweetTombstone")
-            || json
-                .get("source")
-                .and_then(|v| v.as_str())
-                .map_or(false, |s| s.contains("Advertisers"))
-        {
+    pub fn from_api(json: &Value) -> Option<Self> {
+        if json.get("__typename").and_then(|v| v.as_str()) == Some("TweetTombstone") {
             return None;
         } else {
+            let json = json.get("tweet").map_or(json, |v| v);
             let rest_id = json
                 .get("rest_id")
                 .and_then(|v| v.as_str())?
                 .parse::<i64>()
                 .ok()?;
-            let author = User::from_json(&json_path::get_path(
-                json,
-                "core.user_results.result.legacy",
-            ))?;
-            let created_at = json_path::get_string(json, "legacy.created_at")?;
-            let content = Content::from_json(json)?;
-            let media =
-                json_path::get_array(json, "legacy.extended_entities.media").map(|media_array| {
+            let author = json
+                .pointer("/core/user_results/result/legacy")
+                .and_then(User::from_api)?;
+            let created_at = json
+                .pointer("/legacy/created_at")
+                .and_then(|v| v.as_str())?
+                .to_string();
+            let content = Content::from_api(json)?;
+            let media = json
+                .pointer("/legacy/extended_entities/media")
+                .and_then(Value::as_array)
+                .map(|media_array| {
                     media_array
                         .iter()
-                        .filter_map(|media_item| Media::from_json(media_item))
+                        .filter_map(|media_item| Media::from_api(media_item))
                         .collect()
                 });
-            let card = Card::from_json(json);
-            let article =
-                Article::from_json(&json_path::get_path(json, "article.article_results.result"));
+            let card = Card::from_api(json);
+            let article = json
+                .pointer("/article/article_results/result")
+                .and_then(Article::from_api);
 
             Some(Self {
                 rest_id,
@@ -475,22 +517,18 @@ impl QuotePost {
             })
         }
     }
+    pub fn into_post(self) -> Post {
+        Post::from_quote(self)
+    }
+    pub fn into_db(self) -> DbPost {
+        DbPost::from_domain(self.into_post(), PostType::Quote)
+    }
 }
 
 impl_crud!(DbPost, Table::Post);
 impl_crud!(DbReply, Table::Reply);
-
-impl HasId for DbPost {
-    fn id(&self) -> RecordId {
-        self.id.clone()
-    }
-}
-
-impl HasId for DbReply {
-    fn id(&self) -> RecordId {
-        self.0.id.clone()
-    }
-}
+impl_id!(DbPost, id);
+impl_id!(DbReply, 0.id);
 
 impl DbPost {
     async fn convert_media(media_ids: Vec<RecordId>) -> Result<Vec<Media>> {
@@ -505,7 +543,6 @@ impl DbPost {
 
     async fn convert_quote(quote_id: RecordId) -> Result<QuotePost> {
         let db_post: DbPost = DbPost::select_record(quote_id).await?;
-
         // 处理media字段
         let media = match db_post.clone().media {
             Some(media_ids) => Some(Self::convert_media(media_ids).await?),
@@ -543,7 +580,7 @@ impl DbPost {
                     .into_iter()
                     .collect::<Result<Vec<Post>>>()?;
                 Ok(Conversation {
-                    conversation: posts,
+                    conversation: posts.into_iter().map(|p| Reply(p.to_quote())).collect(),
                 })
             }))
             .await;
@@ -557,7 +594,6 @@ impl DbPost {
             Some(media_ids) => Some(Self::convert_media(media_ids).await?),
             None => None,
         };
-
         let quote = match self.quote {
             Some(quote_id) => Some(Self::convert_quote(quote_id).await?),
             None => None,
@@ -568,6 +604,7 @@ impl DbPost {
         //     Some(replies) => Some(Self::convert_replies(replies).await?),
         //     None => None,
         // };
+        let replies = None;
 
         Ok(Post {
             rest_id: self
@@ -582,17 +619,17 @@ impl DbPost {
             media,
             quote,
             key_words: self.key_words,
-            replies: None,
+            replies,
             card: self.card,
             article: self.article,
         })
     }
 
-    pub fn from_domain(post: Post, which: PostType) -> Result<Self> {
-        Ok(Self {
+    pub fn from_domain(post: Post, which: PostType) -> Self {
+        Self {
             id: match which {
                 PostType::Reply => DbReply::record_id(post.rest_id),
-                PostType::Post => DbPost::record_id(post.rest_id),
+                PostType::Root | PostType::Quote => DbPost::record_id(post.rest_id),
             },
             created_at: post.created_at.clone(),
             author: DbUser::record_id(post.author.id.as_str()),
@@ -612,21 +649,17 @@ impl DbPost {
                 .as_ref()
                 .map(|quote| DbPost::record_id(quote.rest_id)),
             key_words: post.key_words.clone(),
-            replies: post.replies.as_ref().map(|conv_vec| {
-                conv_vec
-                    .iter()
-                    .map(|conv| DbConversation {
-                        conversation: conv
-                            .conversation
-                            .iter()
-                            .map(|post| DbReply::record_id(post.rest_id))
-                            .collect(),
-                    })
-                    .collect()
-            }),
+            replies: post
+                .replies
+                .as_ref()
+                .map(|conv_vec| conv_vec.iter().map(|conv| conv.clone().into_db()).collect()),
             card: post.card.clone(),
             article: post.article.clone(),
-        })
+            is_root: match which {
+                PostType::Root => true,
+                PostType::Quote | PostType::Reply => false,
+            },
+        }
     }
 
     pub async fn get(id: RecordId) -> Result<Post> {

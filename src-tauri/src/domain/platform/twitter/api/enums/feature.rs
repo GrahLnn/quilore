@@ -21,6 +21,21 @@ pub enum Features {
     LongformNotetweetsInlineMediaEnabled,
     ResponsiveWebMediaDownloadVideoEnabled,
     ResponsiveWebEnhanceCardsEnabled,
+    RwebVideoScreenEnabled,
+    ProfileLabelImprovementsPcfLabelInPostEnabled,
+    RwebTipjarConsumptionEnabled,
+    PremiumContentApiReadEnabled,
+    CommunitiesWebEnableTweetCommunityResultsFetch,
+    C9sTweetAnatomyModeratorBadgeEnabled,
+    ResponsiveWebGrokAnalyzeButtonFetchTrendsEnabled,
+    ResponsiveWebGrokAnalyzePostFollowupsEnabled,
+    ResponsiveWebJetfuelFrame,
+    ResponsiveWebGrokShareAttachmentEnabled,
+    ArticlesPreviewEnabled,
+    ResponsiveWebGrokShowGrokTranslatedPost,
+    ResponsiveWebGrokAnalysisButtonFromBackend,
+    CreatorSubscriptionsQuoteTweetPreviewEnabled,
+    ResponsiveWebGrokImageAnnotationEnabled,
 }
 
 impl Flag for Features {
@@ -46,6 +61,21 @@ impl Flag for Features {
             Features::LongformNotetweetsInlineMediaEnabled => "longform_notetweets_inline_media_enabled",
             Features::ResponsiveWebMediaDownloadVideoEnabled => "responsive_web_media_download_video_enabled",
             Features::ResponsiveWebEnhanceCardsEnabled => "responsive_web_enhance_cards_enabled",
+            Features::RwebVideoScreenEnabled => "rweb_video_screen_enabled",
+            Features::ProfileLabelImprovementsPcfLabelInPostEnabled => "profile_label_improvements_pcf_label_in_post_enabled",
+            Features::RwebTipjarConsumptionEnabled => "rweb_tipjar_consumption_enabled",
+            Features::PremiumContentApiReadEnabled => "premium_content_api_read_enabled",
+            Features::CommunitiesWebEnableTweetCommunityResultsFetch => "communities_web_enable_tweet_community_results_fetch",
+            Features::C9sTweetAnatomyModeratorBadgeEnabled => "c9s_tweet_anatomy_moderator_badge_enabled",
+            Features::ResponsiveWebGrokAnalyzeButtonFetchTrendsEnabled => "responsive_web_grok_analyze_button_fetch_trends_enabled",
+            Features::ResponsiveWebGrokAnalyzePostFollowupsEnabled => "responsive_web_grok_analyze_post_followups_enabled",
+            Features::ResponsiveWebJetfuelFrame => "responsive_web_jetfuel_frame",
+            Features::ResponsiveWebGrokShareAttachmentEnabled => "responsive_web_grok_share_attachment_enabled",
+            Features::ArticlesPreviewEnabled => "articles_preview_enabled",
+            Features::ResponsiveWebGrokShowGrokTranslatedPost => "responsive_web_grok_show_grok_translated_post",
+            Features::ResponsiveWebGrokAnalysisButtonFromBackend => "responsive_web_grok_analysis_button_from_backend",
+            Features::CreatorSubscriptionsQuoteTweetPreviewEnabled => "creator_subscriptions_quote_tweet_preview_enabled",
+            Features::ResponsiveWebGrokImageAnnotationEnabled => "responsive_web_grok_image_annotation_enabled",
         }
     }
 }

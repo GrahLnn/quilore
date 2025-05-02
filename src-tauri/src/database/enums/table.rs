@@ -7,7 +7,9 @@ pub enum Table {
     User,
     Meta,
     UserKV,
-
+    Asset,
+    Task,
+    Status,
 }
 
 impl Table {
@@ -20,6 +22,9 @@ impl Table {
             Table::User => "user",
             Table::Meta => "metadata",
             Table::UserKV => "user_kv",
+            Table::Asset => "asset",
+            Table::Task => "task",
+            Table::Status => "status",
         }
     }
 }

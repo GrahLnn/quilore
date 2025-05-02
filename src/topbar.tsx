@@ -3,11 +3,13 @@ import { icons, logos } from "@/src/assets/icons";
 import { platform } from "@tauri-apps/plugin-os";
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
-import { type PropsWithChildren, memo, useState } from "react";
+import { type PropsWithChildren, memo, useEffect, useState } from "react";
 import { isBarVisible } from "./state_machine/barVisible";
 import { toggleLanguageMode } from "./state_machine/language";
 import { isWindowFocus } from "./state_machine/windowFocus";
 import { useCenterTool } from "./subpub/centerTool";
+import { crab } from "./cmd/commandAdapter";
+import { events } from "./cmd/commands";
 
 const os = platform();
 
@@ -70,6 +72,21 @@ const LeftControls = memo(() => {
 });
 
 const RightControls = memo(() => {
+  const [count, setCount] = useState<number>(0);
+  const [isRuning, setIsRunning] = useState<boolean>(false);
+  useEffect(() => {
+    // 1. 订阅全局进度事件
+    const unlisten = events.scanLikesEvent.listen((event) => {
+      // event.payload 就是后端发来的数字
+      setCount(event.payload.count);
+      setIsRunning(event.payload.running);
+    });
+
+    // 2. cleanup：组件卸载时取消监听
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
   return (
     <div
       className={cn([
@@ -77,6 +94,18 @@ const RightControls = memo(() => {
         // "transition duration-300 ease-in-out",
       ])}
     >
+      <div
+        className={cn([
+          "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
+          "text-xs trim-cap dark:text-[#d4d4d4] text-[#404040]",
+          "rounded-md border dark:border-[#262626] border-[#eaeaea]",
+          "dark:bg-[#171717] bg-[#f5f5f5]",
+          "transition duration-300"
+        ])}
+      >
+        <div>{count}</div>
+        <icons.scan size={12} />
+      </div>
       <CtrlButton label="Search" icon={<icons.magnifler3 size={14} />} />
 
       <CtrlButton

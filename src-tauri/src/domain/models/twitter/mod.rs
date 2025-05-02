@@ -1,5 +1,6 @@
-pub mod avatar;
+pub mod asset;
 pub mod content_to_copy;
+pub mod entities;
 pub mod interface;
 pub mod like;
 pub mod media;

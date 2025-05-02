@@ -13,6 +13,7 @@ import {
   getGuideC,
   type CookieItem,
 } from "../subpub/guideCookie"; // 导入 getValue 和 CookieItem
+import { station } from "../subpub/buses";
 
 const transitionDebug = {
   type: "easeOut",
@@ -163,6 +164,7 @@ function SetSaveDir() {
             icon={<icons.arrowRight />}
             onClick={() => {
               crab.upsertMetakv("SaveDir", folderPath);
+              station.saveDir.setValue(folderPath);
               setGuide(Guide.AddPlatform);
             }}
           />
@@ -220,12 +222,11 @@ function CookieEntry() {
       <div className="text-[#a1a1a1] select-none cursor-default">Twitter</div>
       <div className="text-[#a1a1a1] select-none cursor-default">𝕏</div>
       {/* <div className="min-w-32 text-[#a1a1a1] select-none cursor-default">Token</div> */}
-      <input
-        type="text"
+      <textarea
         onChange={handleCookieChange}
         value={newMessage}
-        className="relative h-9 w-[250px] flex-grow rounded-full border border-gray-200 bg-white px-3 text-[15px] outline-none placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1
-            dark:border-black/60 dark:bg-black dark:text-gray-50 dark:placeholder-gray-500 dark:focus-visible:ring-blue-500/20 dark:focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-700"
+        className="relative h-24 w-[250px] flex-grow rounded-2xl border border-gray-200 bg-white px-3 py-2 text-[15px] outline-none placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 resize-none
+            dark:border-black/60 dark:bg-black dark:text-gray-50 dark:placeholder-gray-500 dark:focus-visible:ring-blue-500/20 dark:focus-visible:ring-offset-1 dark:focus-visible:ring-offset-gray-700 hide-scrollbar"
         placeholder="Paste your cookies"
       />
     </div>

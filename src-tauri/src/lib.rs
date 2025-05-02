@@ -1,41 +1,54 @@
 mod database;
 mod domain;
+mod enums;
 mod utils;
 
 use crate::domain::models::meta::DbMeta;
+use crate::domain::platform::scheduler::Scheduler;
 use anyhow::Result;
 use database::enums::meta::MetaKey;
 use database::{init_db, Crud};
-use domain::models::meta::{get_meta_value, upsert_metakv};
-use domain::models::userkv::{get_userkv_value, upsert_userkv};
+use domain::models::meta;
+use domain::models::meta::GlobalVal;
 use domain::models::twitter::{
     content_to_copy::ContentToCopy,
-    interface::LikedChunk,
-    like::{DbLikedPost, LikedPost},
+    interface,
+    like::{take_single_like, DbLikedPost, LikedPost},
     media::DbMedia,
     post::{DbPost, DbReply},
     users::DbUser,
 };
+use domain::models::userkv::{get_userkv_value, upsert_userkv};
+use domain::platform::api::user::ScanLikesEvent;
+use domain::platform::emitter::AssetDownloadBatchEvent;
+use domain::platform::job::Job;
 use domain::platform::twitter::api::user;
+use domain::platform::{handler::AssetDownloadEvent, Task};
+use utils::load::{TweetData, TweetMetaData};
 
 use specta_typescript::{formatter::prettier, Typescript};
-use tauri::async_runtime::block_on;
+use tauri::async_runtime::{self, block_on};
 use tauri::Manager;
 use tauri_plugin_clipboard_manager::ClipboardExt;
-use tauri_specta::{collect_commands, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder};
 use tokio::task::block_in_place;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder: Builder = Builder::new().commands(collect_commands![
-        take_post_chunk,
-        copy_to_clipboard,
-        upsert_metakv,
-        get_meta_value,
-        upsert_userkv,
-        get_userkv_value,
-        user::likes,
-    ]);
+    let builder: Builder = Builder::new()
+        .commands(collect_commands![
+            interface::take_post_chunk,
+            copy_to_clipboard,
+            meta::upsert_metakv,
+            meta::get_meta_value,
+            upsert_userkv,
+            get_userkv_value,
+            take_single_like,
+            save_all,
+            user::scan_likes_timeline,
+            meta::get_save_dir,
+        ])
+        .events(collect_events![ScanLikesEvent, AssetDownloadBatchEvent]);
 
     #[cfg(debug_assertions)]
     builder
@@ -50,58 +63,66 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .setup(|app| {
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_shell::init())
+        .invoke_handler(builder.invoke_handler())
+        .setup(move |app| {
             let handle = app.handle().clone();
-
+            builder.mount_events(app);
             block_in_place(|| {
                 block_on(async move {
                     let local_data_dir = handle.path().app_local_data_dir()?;
                     let db_path = local_data_dir.join("quilore.db");
                     init_db(db_path).await?;
-                    // load_scraper_data().await?;
+                    GlobalVal::init().await?;
+                    async_runtime::spawn(async move {
+                        Scheduler::<Task>::init(handle.clone()).await?;
+                        Scheduler::<Job>::init(handle.clone()).await?;
+                        Ok::<(), anyhow::Error>(())
+                    });
                     Ok(())
                 })
             })
         })
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init())
-        .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-async fn load_scraper_data() -> Result<()> {
-    let path = r#"C:\Users\grahl\quill\output\x.com.GrahLnn.likes\scraped_data.json"#;
-    let (dbposts, dbreplies, dbmedias, dbusers, dbfavs, db_metadatas) =
-        utils::load::load_data(path).await?;
-    let _ = DbPost::insert_with_id(dbposts).await?;
-
-    let _ = DbUser::insert_with_id(dbusers).await?;
-    let _ = DbLikedPost::insert_with_id(dbfavs).await?;
-    let _ = DbMedia::insert_with_id(dbmedias).await?;
-    let _ = DbReply::insert_with_id(dbreplies).await?;
-    let _ = DbMeta::insert_with_id(db_metadatas).await?;
-    Ok(())
-}
+// async fn load_scraper_data() -> Result<()> {
+//     let path = r#"C:\Users\grahl\quill\output\x.com.GrahLnn.likes\scraped_data.json"#;
+//     let (dbposts, dbreplies, dbmedias, dbusers, dbfavs, db_metadatas) =
+//         utils::load::load_data(path).await?;
+//     let _ = DbPost::insert_with_id(dbposts).await?;
+//     let _ = DbUser::insert_with_id(dbusers).await?;
+//     let _ = DbLikedPost::insert_with_id(dbfavs).await?;
+//     let _ = DbMedia::insert_with_id(dbmedias).await?;
+//     let _ = DbReply::insert_with_id(dbreplies).await?;
+//     let _ = DbMeta::insert_with_id(db_metadatas).await?;
+//     Ok(())
+// }
 
 #[tauri::command]
 #[specta::specta]
-async fn take_post_chunk(cursor: Option<u32>) -> Result<LikedChunk, String> {
-    let end = match cursor {
-        Some(cursor) => cursor as i64,
-        None => DbMeta::get(MetaKey::FirstCursor)
-            .await
-            .map_err(|e| e.to_string())?
-            .ok_or_else(|| anyhow::anyhow!("FirstCursor not found"))
-            .map_err(|e| e.to_string())?
-            .into_number(),
+async fn save_all(app: tauri::AppHandle) -> Result<(), String> {
+    dbg!("save_all");
+    let datas = LikedPost::select_all().await.map_err(|e| e.to_string())?;
+    let res = TweetData {
+        metadata: TweetMetaData {
+            item: "liked".to_string(),
+            created_at: "2023-05-10T08:00:00Z".to_string(),
+        },
+        results: datas,
     };
-    let interval = 200;
-    let data = LikedPost::take(interval, end)
-        .await
+    let json = serde_json::to_string(&res).map_err(|e| e.to_string())?;
+    let download_dir = app
+        .path()
+        .resolve("", tauri::path::BaseDirectory::Download)
         .map_err(|e| e.to_string())?;
-    let cursor = (end - interval - 1).max(0);
-    Ok(LikedChunk { cursor, data })
+    let output_path = download_dir.join("output.json");
+    dbg!(&output_path);
+    std::fs::write(output_path, json).map_err(|e| e.to_string())?;
+    dbg!("save_all done");
+    Ok(())
 }
 
 #[tauri::command]

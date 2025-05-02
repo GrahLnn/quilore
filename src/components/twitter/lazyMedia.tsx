@@ -1,15 +1,20 @@
 import { cn } from "@/lib/utils";
 import type { Media } from "@/src/cmd/commands";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { join } from "@tauri-apps/api/path";
 import type { JSX } from "react";
 import LazyImage from "../lazyimg";
 import LazyVideo from "../lazyvideo";
 import { box } from "../lightbox";
 import { TweetState, calcLayout, isLandscape } from "./utils";
 import { openLightbox, closeLightbox } from "../modalbox/lightbox";
+import { getSrc } from "@/src/utils/file";
+import { crab } from "@/src/cmd/commandAdapter";
+import { station } from "@/src/subpub/buses";
+import { useState, useEffect } from "react";
 
-const libraryPath = "C:\\Users\\grahl\\quill";
-const compath = (path: string) => `${libraryPath}\\${path}`;
+// const libraryPath = "C:\\Users\\grahl\\quill";
+// const compath = (path: string) => `${libraryPath}\\${path}`;
 
 interface LazyMediaProps {
   media: Media;
@@ -17,9 +22,11 @@ interface LazyMediaProps {
 }
 
 const MediaElement = ({ media, state }: LazyMediaProps) => {
+  const savedir = station.saveDir.useValue();
+  if (!savedir) return;
   const errcn =
     "bg-gray-50 text-gray-500 p-4 text-center rounded-lg border border-dashed border-gray-300 italic";
-  if (media.path === "media unavailable") {
+  if (media.asset.path === "media unavailable") {
     return <div className={errcn}>Media Unavailable</div>;
   }
   if (!media.width || !media.height) {
@@ -31,14 +38,26 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
     state === TweetState.Quote ? "rounded-[2px]" : "rounded-lg"
   );
 
+  const folder = () => {
+    switch (media.asset.ty) {
+      case "Media":
+        return "media";
+      case "Thumb":
+        return "thumb";
+      case "Avatar":
+        return "avatar";
+    }
+  };
+
   switch (media.type) {
     case "photo": {
+      const path = convertFileSrc(media.asset.path);
+
       const handleOpenLightbox = () => {
-        // box.open([convertFileSrc(compath(media.path))], 0);
         openLightbox({
-          images: [convertFileSrc(compath(media.path))],
+          images: [path],
           currentIndex: 0,
-        })
+        });
       };
       return (
         <LazyImage
@@ -46,7 +65,8 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
             baseMediaClass,
             "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200"
           )}
-          src={convertFileSrc(compath(media.path))}
+          src={path}
+          asset={media.asset}
           onClick={handleOpenLightbox}
           alt-label={media.description || ""}
           ratio={[media.width, media.height]}
@@ -62,10 +82,11 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           playsInline
           muted
           autoPlay
-          poster={convertFileSrc(compath(media.thumb_path || ""))}
+          poster={convertFileSrc(media.thumb.path)}
+          asset={media.asset}
           loop={isLoop}
           aria-label={media.description || "Video content"}
-          src={convertFileSrc(compath(media.path))}
+          src={convertFileSrc(media.asset.path)}
           ratio={media.aspect_ratio}
         />
       );
@@ -78,8 +99,9 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           loop
           muted
           playsInline
-          aria-label={media.description || "Video content"}
-          src={convertFileSrc(compath(media.path))}
+          asset={media.asset}
+          aria-label={media.description || "gif content"}
+          src={convertFileSrc(media.asset.path)}
           ratio={media.aspect_ratio}
         />
       );

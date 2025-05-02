@@ -4,7 +4,6 @@ use specta::Type;
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Type)]
 pub enum MetaKey {
-    FirstCursor,
     SaveDir,
     FirstLaunch,
 }
@@ -12,7 +11,6 @@ pub enum MetaKey {
 impl MetaKey {
     pub fn as_str(self) -> &'static str {
         match self {
-            MetaKey::FirstCursor => "first_cursor",
             MetaKey::SaveDir => "save_dir",
             MetaKey::FirstLaunch => "first_launch",
         }
@@ -20,7 +18,6 @@ impl MetaKey {
 
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
-            "first_cursor" => Ok(MetaKey::FirstCursor),
             "save_dir" => Ok(MetaKey::SaveDir),
             "first_launch" => Ok(MetaKey::FirstLaunch),
             _ => Err(format!("Unknown MetaKey: {}", s)),

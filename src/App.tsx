@@ -9,15 +9,22 @@ import { randerPage } from "./pages/pages";
 import { useEffect } from "react";
 import { crab } from "./cmd/commandAdapter";
 import { MetaKey } from "./cmd/commands";
-import { setPageName, Page } from "./subpub/pageBus";
+import { setPageName, Page, usePageName } from "./subpub/pageBus";
+import { cn } from "@/lib/utils";
+import { station } from "./subpub/buses";
 
 function App() {
+  const page = usePageName();
+  const shouldFlex = station.mainFlex.useValue();
   useEffect(() => {
     const fetchData = async () => {
       const result = await crab.getMetaValue("FirstLaunch");
       result.tap((v) => {
-        // console.log(v);
         if (!v) setPageName(Page.Welcome);
+      });
+      const savedir = await crab.getSaveDir();
+      savedir.tap((v) => {
+        station.saveDir.setValue(v);
       });
     };
 
@@ -27,7 +34,11 @@ function App() {
     <div className="min-h-screen flex flex-col overflow-hidden hide-scrollbar">
       <TopBar />
 
-      <main className="flex flex-1 overflow-hidden mt-8 hide-scrollbar">
+      <main
+        className={cn([
+          "flex flex-col justify-center items-center flex-1 overflow-hidden mt-8 hide-scrollbar",
+        ])}
+      >
         {/* <Posts /> */}
         {randerPage()}
       </main>

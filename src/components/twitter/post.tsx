@@ -20,7 +20,7 @@ import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 
 const libraryPath = "C:\\Users\\grahl\\quill";
-const compath = (path: string) => `${libraryPath}\\${path}`;
+// const compath = (path: string) => `${libraryPath}\\${path}`;
 
 function processText(text: string, urls: string[] | null) {
   let parts: (string | React.ReactNode)[] | string = text;
@@ -324,13 +324,18 @@ function Author({ author, size = "normal" }: AuthorProps) {
     //   rel="noreferrer"
     // >
     <div className="flex gap-2 group overflow-hidden">
-      <img
-        src={convertFileSrc(compath(author.avatar.path))}
+      {/* <img
+        src={author.avatar.path ? convertFileSrc(author.avatar.path) : ""}
         alt="Avatar"
         className={cn(["rounded-full object-cover w-8 h-8"])}
-      />
+      /> */}
 
-      <div className={cn(["flex flex-col items-start overflow-hidden", "relative -top-0.5"])}>
+      <div
+        className={cn([
+          "flex flex-col items-start overflow-hidden",
+          "relative -top-0.5",
+        ])}
+      >
         <div
           className={cn([
             "font-semibold text-[var(--content)] text-left truncate w-full",
