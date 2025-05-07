@@ -1,12 +1,19 @@
 use anyhow::{anyhow, Result};
-use chrono::Utc;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::sync::{Arc, LazyLock};
+use std::{
+    sync::{Arc, LazyLock},
+    time::Duration,
+};
+
+use chrono::Utc;
 use surrealdb::RecordId;
 use tauri::AppHandle;
-use tokio::sync::{mpsc, Semaphore};
+use tokio::sync::{
+    mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    Semaphore,
+};
 
 use super::{job::Job, Task};
 
@@ -20,85 +27,75 @@ pub enum Status {
 
 #[async_trait::async_trait]
 pub trait Schedulable: Send + Sync + Clone + 'static {
-    /// 唯一标识
     fn id(&self) -> RecordId;
-    /// 当前状态
     fn status(&self) -> Status;
-    /// 重试计数
     fn retry_count(&self) -> u32;
-    /// 将状态写回 DB
     async fn update_status(&self, status: Status, extra: Option<Value>) -> Result<()>;
-    /// 真正执行业务的入口
     async fn handle(self) -> Result<()>;
     async fn load_pending() -> Result<Vec<Self>>;
     async fn delete(self) -> Result<()>;
     async fn on_success(self) -> Result<()>;
 }
 
-/// 2. 泛型调度器
 pub struct Scheduler<T: Schedulable> {
-    tx: mpsc::Sender<T>,
+    tx: UnboundedSender<T>,
     pub app: AppHandle,
 }
 
 impl<T: Schedulable> Scheduler<T> {
-    pub fn new(app: AppHandle) -> (Arc<Self>, mpsc::Receiver<T>) {
-        let (tx, rx) = mpsc::channel(128);
+    pub fn new(app: AppHandle) -> (Arc<Self>, UnboundedReceiver<T>) {
+        let (tx, rx) = unbounded_channel::<T>();
         let sched = Arc::new(Self { tx, app });
         (sched, rx)
     }
-    pub async fn start(self: Arc<Self>, mut rx: mpsc::Receiver<T>) {
-        // let (tx, mut rx) = mpsc::channel(128);
-        // let sched = Arc::new(Self { tx });
-        // let sched = Arc::new(Self { tx, app });
 
-        // 1) 首次加载
+    pub async fn start(self: Arc<Self>, mut rx: UnboundedReceiver<T>) {
+        let tx = self.tx.clone();
+
+        // 初始化：从数据库加载 Pending 任务
         let pending = T::load_pending().await.expect("加载 Pending 失败");
-        dbg!(pending.len());
         for item in pending {
-            self.tx.send(item).await.ok();
+            if let Err(e) = tx.send(item) {
+                tracing::error!("无法发送初始化任务: {}", e);
+            }
         }
 
-        // 2) worker loop
-        let worker = Arc::clone(&self);
+        // Worker loop
         tokio::spawn(async move {
             while let Some(item) = rx.recv().await {
-                // 写 Running
-                item.update_status(Status::Running, None).await.ok();
+                let tx_inner = tx.clone();
+                tokio::spawn(async move {
+                    static WORK_SEMA: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(10));
+                    let _permit = WORK_SEMA.acquire().await.unwrap();
 
-                // 执行业务
-                let res = item.clone().handle().await;
+                    item.update_status(Status::Running, None).await.ok();
 
-                match res {
-                    Ok(()) => {
-                        item.on_success().await.ok();
-                    }
-                    Err(err) => {
-                        dbg!(&err);
-                        let rc = item.retry_count() + 1;
-                        item.update_status(
-                            Status::Failed,
-                            Some(json!({
-                                "error": err.to_string(),
-                                "retry_count": rc,
-                            })),
-                        )
-                        .await
-                        .ok();
+                    match item.clone().handle().await {
+                        Ok(()) => {
+                            item.on_success().await.ok();
+                        }
+                        Err(err) => {
+                            let rc = item.retry_count() + 1;
+                            item.update_status(
+                                Status::Failed,
+                                Some(json!({"error": err.to_string(), "retry_count": rc})),
+                            )
+                            .await
+                            .ok();
 
-                        // 如果还在重试阈值内，继续排队
-                        if rc < 5 {
-                            worker.tx.send(item).await.ok();
+                            if rc < 5 {
+                                tokio::time::sleep(Duration::from_secs(5)).await;
+                                let _ = tx_inner.send(item);
+                            }
                         }
                     }
-                }
+                });
             }
         });
     }
 
-    /// 在运行时推新任务
     pub fn enqueue(&self, item: T) {
-        let _ = self.tx.try_send(item);
+        let _ = self.tx.send(item);
     }
 }
 

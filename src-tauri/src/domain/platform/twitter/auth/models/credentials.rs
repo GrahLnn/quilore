@@ -61,7 +61,10 @@ impl AuthCredential {
 
         // Cookie
         if let Some(cookie) = &self.cookie {
-            headers.insert("cookie", HeaderValue::from_str(&cookie.collect_fields()).unwrap());
+            headers.insert(
+                "cookie",
+                HeaderValue::from_str(&cookie.collect_fields()).unwrap(),
+            );
         }
 
         headers

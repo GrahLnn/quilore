@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use crate::domain::platform::Task;
 
 use super::asset::DbAsset;
 use super::like::DbLikedPost;
 use super::media::DbMedia;
-use super::post::{DbConversation, DbPost, DbReply};
+use super::post::{DbPost, DbReply};
 use super::users::DbUser;
 
 #[derive(Debug, Clone)]

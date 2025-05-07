@@ -4,8 +4,7 @@ use crate::domain::models::meta::GlobalVal;
 use crate::enums::platform::Platform;
 use crate::{impl_crud, impl_id};
 
-use anyhow::{Error, Result};
-use log::Record;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
@@ -17,8 +16,6 @@ use super::asset::{Asset, AssetType, DbAsset};
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct MediaBase {
     pub id: String,
-    // pub url: String,
-    // pub path: String,
     pub asset: Asset,
     pub description: Option<String>,
     pub width: Option<u32>,
@@ -37,11 +34,8 @@ pub struct VideoMedia {
     pub base: MediaBase,
 
     pub aspect_ratio: (u32, u32),
-    // pub thumb: String,
-    // pub thumb_path: Option<String>,
     pub thumb: Asset,
     pub duration_millis: u32,
-    pub bitrate: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -50,10 +44,7 @@ pub struct AnimatedGifMedia {
     pub base: MediaBase,
 
     pub aspect_ratio: (u32, u32),
-    // pub thumb: String,
-    // pub thumb_path: Option<String>,
-    // pub thumb: Asset,
-    pub bitrate: Option<u32>,
+    pub thumb: Asset,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -73,8 +64,6 @@ pub enum Media {
 pub struct DbMedia {
     pub id: RecordId,
     pub media_type: String, // "photo" | "video" | "animated_gif"
-    // pub url: String,
-    // pub path: String,
     pub asset: RecordId,
     pub description: Option<String>,
     pub width: Option<u32>,
@@ -82,11 +71,8 @@ pub struct DbMedia {
 
     // 如果是 video/animated_gif 才需要
     pub aspect_ratio: Option<(u32, u32)>,
-    // pub thumb: Option<String>,
-    // pub thumb_path: Option<String>,
     pub thumb: Option<RecordId>,
     pub duration_millis: Option<u32>,
-    pub bitrate: Option<u32>,
 }
 
 impl_crud!(DbMedia, Table::Media);
@@ -187,7 +173,7 @@ impl Media {
                     .map(|v| v as u32);
                 let base_path = GlobalVal::get_save_dir()?;
                 let path = base_path
-                    .join("media")
+                    .join(AssetType::Media.as_str())
                     .join(id.clone())
                     .to_string_lossy()
                     .to_string();
@@ -222,7 +208,7 @@ impl Media {
                     .to_string();
                 let base_path = GlobalVal::get_save_dir()?;
                 let path = base_path
-                    .join("thumb")
+                    .join(AssetType::Thumb.as_str())
                     .join(thumb_name.clone())
                     .to_string_lossy()
                     .to_string();
@@ -244,20 +230,15 @@ impl Media {
                     Some(Media::Video(VideoMedia {
                         base,
                         aspect_ratio,
-                        // thumb,
-                        // thumb_path: None,
                         thumb,
                         duration_millis,
-                        bitrate,
                     }))
                 } else {
                     // animated_gif
                     Some(Media::AnimatedGif(AnimatedGifMedia {
                         base,
                         aspect_ratio,
-                        // thumb,
-                        // thumb_path: None,
-                        bitrate,
+                        thumb,
                     }))
                 }
             }
@@ -278,7 +259,7 @@ impl Media {
         match self {
             Media::Photo(_) => None,
             Media::Video(video) => Some(video.thumb),
-            Media::AnimatedGif(_) => None,
+            Media::AnimatedGif(gif) => Some(gif.thumb),
         }
     }
 
@@ -296,8 +277,6 @@ impl DbMedia {
         let asset = DbAsset::get(self.asset).await?;
         let base = MediaBase {
             id: self.id.to_string(),
-            // url: self.url,
-            // path: self.path,
             asset,
             description: self.description,
             width: self.width,
@@ -308,16 +287,14 @@ impl DbMedia {
             "video" => Ok(Media::Video(VideoMedia {
                 base,
                 aspect_ratio: self.aspect_ratio.unwrap_or((16, 9)),
-                // thumb: self.thumb.unwrap_or_default(),
-                // thumb_path: self.thumb_path,
                 thumb: DbAsset::get(self.thumb.unwrap()).await?,
                 duration_millis: self.duration_millis.unwrap_or(0),
-                bitrate: self.bitrate,
             })),
             "animated_gif" => Ok(Media::AnimatedGif(AnimatedGifMedia {
                 base,
                 aspect_ratio: self.aspect_ratio.unwrap_or((16, 9)),
-                bitrate: self.bitrate,
+
+                thumb: DbAsset::get(self.thumb.unwrap()).await?,
             })),
             _ => Err(anyhow::anyhow!("未知的 media_type: {}", self.media_type)),
         }
@@ -331,8 +308,6 @@ impl DbMedia {
                 DbMedia {
                     id: DbMedia::record_id(&base.id),
                     media_type: "photo".into(),
-                    // url: base.url,
-                    // path: base.path,
                     asset: DbAsset::from_domain(base.asset).id,
                     description: base.description,
                     width: base.width,
@@ -340,7 +315,6 @@ impl DbMedia {
                     aspect_ratio: None,
                     thumb: None,
                     duration_millis: None,
-                    bitrate: None,
                 }
             }
             Media::Video(video) => {
@@ -348,18 +322,13 @@ impl DbMedia {
                 DbMedia {
                     id: DbMedia::record_id(&base.id),
                     media_type: "video".into(),
-                    // url: base.url,
-                    // path: base.path,
                     asset: DbAsset::from_domain(base.asset).id,
                     description: base.description,
                     aspect_ratio: Some(video.aspect_ratio),
                     width: base.width,
                     height: base.height,
-                    // thumb: Some(video.thumb),
-                    // thumb_path: video.thumb_path,
                     thumb: Some(DbAsset::from_domain(video.thumb).id),
                     duration_millis: Some(video.duration_millis),
-                    bitrate: video.bitrate,
                 }
             }
             Media::AnimatedGif(gif) => {
@@ -367,18 +336,13 @@ impl DbMedia {
                 DbMedia {
                     id: DbMedia::record_id(&base.id),
                     media_type: "animated_gif".into(),
-                    // url: base.url,
-                    // path: base.path,
                     asset: DbAsset::from_domain(base.asset).id,
                     description: base.description,
                     aspect_ratio: Some(gif.aspect_ratio),
                     width: base.width,
                     height: base.height,
-                    // thumb: Some(gif.thumb),
-                    // thumb_path: gif.thumb_path,
-                    thumb: None,
+                    thumb: Some(DbAsset::from_domain(gif.thumb).id),
                     duration_millis: None,
-                    bitrate: gif.bitrate,
                 }
             }
         }

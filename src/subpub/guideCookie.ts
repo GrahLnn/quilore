@@ -2,7 +2,7 @@ import { createBus } from "./core";
 
 // 定义 Cookie 对象的接口
 export interface CookieItem {
-  platform: string;
+  platform: "Twitter";
   cookie: string;
 }
 

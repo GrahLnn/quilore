@@ -52,7 +52,7 @@ pub fn likes(id: String, count: Option<u32>, cursor: Option<String>) -> Payload 
     // 设置变量
     variable_builder
         .set("userId", id)
-        .set("count", count.unwrap_or(5))
+        .set("count", count.unwrap_or(100))
         .disable(keys![
             Variables::IncludePromotedContent,
             Variables::WithClientEventToken,

@@ -2,10 +2,10 @@ import "./App.css";
 import { Toaster } from "@/components/ui/sonner";
 // import { Lightbox } from "./components/lightbox/lightbox";
 import { Lightbox } from "./components/modalbox/lightbox";
-import { Scrollbar } from "./components/scrollbar/scrollbar";
-import Posts from "./pages/posts";
+// import { Scrollbar } from "./components/scrollbar/scrollbar";
+import Posts from "./pages/plat/posts";
 import TopBar from "./topbar";
-import { randerPage } from "./pages/pages";
+import { ContentPage } from "./pages/pages";
 import { useEffect } from "react";
 import { crab } from "./cmd/commandAdapter";
 import { MetaKey } from "./cmd/commands";
@@ -40,11 +40,11 @@ function App() {
         ])}
       >
         {/* <Posts /> */}
-        {randerPage()}
+        <ContentPage />
       </main>
       <Toaster />
       <Lightbox />
-      <Scrollbar />
+      {/* <Scrollbar /> */}
     </div>
   );
 }

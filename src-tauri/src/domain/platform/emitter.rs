@@ -5,7 +5,7 @@ use specta::Type;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::Manager;
+
 use tauri_specta::Event;
 use tokio::sync::Mutex;
 

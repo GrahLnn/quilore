@@ -17,6 +17,7 @@ interface DropdownMenuItemProps {
   shortcut?: string;
   fn?: () => void;
   data?: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 interface DropdownSettingProps extends PropsWithChildren {
@@ -83,10 +84,12 @@ export default function DropdownSettings({
                     ? "text-[#262626] dark:text-[#f5f5f5]"
                     : "text-[#737373] dark:text-[#a3a3a3]",
                   "transition duration-300",
+                  "flex justify-between items-center"
                 ])}
                 onClick={() => setActiveItem(item.name)}
               >
                 {item.name}
+                {item.icon}
               </div>
             ))}
           </div>

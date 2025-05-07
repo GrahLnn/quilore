@@ -25,5 +25,5 @@ pub enum BaseType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
 pub enum EntriesType {
-    TimelineAddEntries
+    TimelineAddEntries,
 }

@@ -1,9 +1,8 @@
 use crate::database::enums::meta::MetaKey;
 use crate::database::enums::table::Table;
-use crate::database::{Crud, HasId, Result as DBResult};
+use crate::database::{Crud, HasId};
 use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
 use anyhow::Result;
-use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::path::PathBuf;
@@ -62,7 +61,7 @@ impl DbMeta {
         Self { id, v: v.into() }
     }
 
-    pub async fn get(id: MetaKey) -> DBResult<Option<MetaValue>> {
+    pub async fn get(id: MetaKey) -> Result<Option<MetaValue>> {
         match DbMeta::select(id.as_str().to_string()).await {
             Ok(data) => Ok(Some(data.v)),
             Err(e) => {
@@ -120,25 +119,24 @@ impl From<i32> for MetaValue {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn upsert_metakv(id: MetaKey, v: &str) -> DBResult<()> {
-    DbMeta::from_domain(Meta { id, v: v.into() })?
+pub async fn upsert_metakv(id: MetaKey, v: &str) -> Result<(), String> {
+    DbMeta::from_domain(Meta { id, v: v.into() })
+        .map_err(|e| e.to_string())?
         .upsert()
-        .await?;
-    GlobalVal::update().await?;
+        .await
+        .map_err(|e| e.to_string())?;
+    GlobalVal::update().await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_meta_value(id: MetaKey) -> DBResult<Option<MetaValue>> {
-    DbMeta::get(id).await
+pub async fn get_meta_value(id: MetaKey) -> Result<Option<MetaValue>, String> {
+    DbMeta::get(id).await.map_err(|e| e.to_string())
 }
 
-static GLOBAL_VAL: LazyLock<RwLock<GlobalVal>> = LazyLock::new(|| {
-    RwLock::new(GlobalVal {
-        save_dir: None,
-    })
-});
+static GLOBAL_VAL: LazyLock<RwLock<GlobalVal>> =
+    LazyLock::new(|| RwLock::new(GlobalVal { save_dir: None }));
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct GlobalVal {
@@ -147,7 +145,8 @@ pub struct GlobalVal {
 
 impl GlobalVal {
     pub async fn init() -> Result<()> {
-        let save_dir = DbMeta::get(MetaKey::SaveDir).await?
+        let save_dir = DbMeta::get(MetaKey::SaveDir)
+            .await?
             .map(|v| PathBuf::from(v.into_string()));
         let mut guard = GLOBAL_VAL.write().unwrap();
         guard.save_dir = save_dir;
@@ -159,7 +158,8 @@ impl GlobalVal {
     }
 
     pub async fn update() -> Result<()> {
-        let save_dir = DbMeta::get(MetaKey::SaveDir).await?
+        let save_dir = DbMeta::get(MetaKey::SaveDir)
+            .await?
             .map(|v| PathBuf::from(v.into_string()));
         let mut guard = GLOBAL_VAL.write().unwrap();
         guard.save_dir = save_dir;

@@ -17,6 +17,7 @@ interface DropdownMenuItemProps {
   shortcut?: string;
   fn?: () => void;
   data?: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 interface DropdownButtonProps extends PropsWithChildren {
@@ -55,15 +56,15 @@ export default function DropdownButton({
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56 bg-popover/80 backdrop-filter backdrop-blur-[16px]">
           {label && (
-            <DropdownMenuLabel className="cursor-default select-none">
+            <DropdownMenuLabel className="cursor-default select-none dark:text-[#e5e5e5] text-xs">
               {label}
             </DropdownMenuLabel>
           )}
-          {label && <DropdownMenuSeparator />}
+          {label && <DropdownMenuSeparator className="dark:opacity-40 opacity-80"/>}
           {items?.map((item) => (
             <React.Fragment key={item.name}>
               <DropdownMenuItem
-                className="focus:bg-accent/60"
+                className="focus:bg-accent/60 flex justify-between items-center dark:text-[#e5e5e5] opacity-70 dark:opacity-60 hover:opacity-90 transition"
                 key={item.name}
                 onClick={item.fn}
               >
@@ -71,6 +72,7 @@ export default function DropdownButton({
                 {item.shortcut && (
                   <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>
                 )}
+                {item.icon}
               </DropdownMenuItem>
               {item.data}
             </React.Fragment>

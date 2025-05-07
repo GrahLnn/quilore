@@ -1,8 +1,8 @@
 use super::asset::{Asset, AssetType, DbAsset};
+use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
 use crate::domain::models::meta::GlobalVal;
 use crate::enums::platform::Platform;
-use crate::{database::enums::table::Table, utils::json_path};
 use crate::{impl_crud, impl_id};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -20,11 +20,11 @@ pub struct User {
 
 impl User {
     pub fn from_api(json: &serde_json::Value) -> Option<Self> {
-        let url = json_path::get_string(json, "profile_image_url_https")?;
+        let url = json.pointer("/profile_image_url_https")?.as_str()?.to_string();
         let name = Url::parse(&url).ok()?.path_segments()?.last()?.to_string();
         let base_path = GlobalVal::get_save_dir()?;
         let path = base_path
-            .join("avatar")
+            .join(AssetType::Avatar.as_str())
             .join(name.clone())
             .to_string_lossy()
             .to_string();
@@ -38,8 +38,8 @@ impl User {
             available: false,
         };
         Some(Self {
-            id: json_path::get_string(json, "screen_name")?,
-            name: json_path::get_string(json, "name")?,
+            id: json.pointer("/screen_name")?.as_str()?.to_string(),
+            name: json.pointer("/name")?.as_str()?.to_string(),
             avatar,
         })
     }

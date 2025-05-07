@@ -177,7 +177,7 @@ function SetSaveDir() {
 function CookieEntry() {
   const [newMessage, setNewMessage] = useState<string>("");
 
-  const handleCookieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCookieChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const cookieValue = e.target.value;
     setNewMessage(cookieValue);
 
@@ -234,6 +234,7 @@ function CookieEntry() {
 }
 
 function AddPlatform() {
+  const [clicked, setClicked] = useState(false);
   const hasCookie = viewGuideC();
   return (
     <>
@@ -283,6 +284,7 @@ function AddPlatform() {
             "opacity-70 hover:opacity-90",
             "transition duration-300",
             "select-none cursor-default",
+            clicked && "opacity-0 pointer-events-none",
           ])}
           onClick={() => {
             crab.upsertMetakv("FirstLaunch", "false");
@@ -290,6 +292,7 @@ function AddPlatform() {
               crab.upsertUserkv(cookie.platform, cookie.cookie);
             }
             setPageName(Page.Main);
+            setClicked(true);
           }}
           onKeyDown={() => {}}
         >

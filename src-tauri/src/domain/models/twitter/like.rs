@@ -1,5 +1,6 @@
 use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId, Order, QueryKind};
+use crate::domain::platform::TaskKind;
 use crate::utils::serialize::into_u32_from_string_or_number;
 
 use super::entities::DbEntitie;
@@ -104,7 +105,7 @@ impl LikedPost {
         DbLikedPost::from_domain(self)
     }
 
-    pub fn into_entities(self) -> DbEntitie {
+    pub fn into_entities(self, task_kind: TaskKind) -> DbEntitie {
         let like = self.clone().into_db();
 
         let mut posts = Vec::new();
@@ -191,7 +192,7 @@ impl LikedPost {
 
         let mut tasks = Vec::new();
 
-        tasks.extend(assets.iter().map(|a| a.clone().into_task()));
+        tasks.extend(assets.iter().map(|a| a.clone().into_task(task_kind.clone())));
 
         DbEntitie {
             like: vec![like],

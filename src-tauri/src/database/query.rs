@@ -66,13 +66,13 @@ impl QueryKind {
         let table_name = table.as_str();
         match cursor {
             Some(cursor) => format!(
-            "SELECT * FROM {table_name} WHERE id {than} {cursor} ORDER BY id {} LIMIT {count};",
-            order.as_str()
-        ),
+                "SELECT * FROM {table_name} WHERE id {than} {cursor} ORDER BY id {} LIMIT {count};",
+                order.as_str()
+            ),
             None => format!(
-            "SELECT * FROM {table_name} ORDER BY id {} LIMIT {count};",
-            order.as_str()
-        ),
+                "SELECT * FROM {table_name} ORDER BY id {} LIMIT {count};",
+                order.as_str()
+            ),
         }
     }
     pub fn limit(table: Table, count: i64) -> String {

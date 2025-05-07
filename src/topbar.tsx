@@ -87,6 +87,7 @@ const RightControls = memo(() => {
       unlisten.then((f) => f());
     };
   }, []);
+  const isVisible = isBarVisible();
   return (
     <div
       className={cn([
@@ -94,18 +95,20 @@ const RightControls = memo(() => {
         // "transition duration-300 ease-in-out",
       ])}
     >
-      <div
-        className={cn([
-          "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
-          "text-xs trim-cap dark:text-[#d4d4d4] text-[#404040]",
-          "rounded-md border dark:border-[#262626] border-[#eaeaea]",
-          "dark:bg-[#171717] bg-[#f5f5f5]",
-          "transition duration-300"
-        ])}
-      >
-        <div>{count}</div>
-        <icons.scan size={12} />
-      </div>
+      {(isVisible && isRuning) && (
+        <div
+          className={cn([
+            "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
+            "text-xs trim-cap dark:text-[#d4d4d4] text-[#404040]",
+            "rounded-md border dark:border-[#262626] border-[#eaeaea]",
+            "dark:bg-[#171717]/40 bg-[#f5f5f5]/40",
+            "transition duration-300",
+          ])}
+        >
+          <div>{count}</div>
+          <icons.scan size={13} />
+        </div>
+      )}
       <CtrlButton label="Search" icon={<icons.magnifler3 size={14} />} />
 
       <CtrlButton

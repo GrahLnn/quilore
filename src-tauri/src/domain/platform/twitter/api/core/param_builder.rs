@@ -43,7 +43,8 @@ impl<T: Flag> Builder<T> for ParamBuilder<T> {
 
     fn disable<U: IntoEnableItems<T>>(&mut self, items: U) -> &mut Self {
         for key in items.into_items() {
-            self.map.insert(key.as_str().to_string(), Value::Bool(false));
+            self.map
+                .insert(key.as_str().to_string(), Value::Bool(false));
         }
         self
     }

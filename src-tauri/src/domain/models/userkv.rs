@@ -1,5 +1,5 @@
 use crate::database::enums::table::Table;
-use crate::database::{Crud, HasId, Result as DBResult};
+use crate::database::{Crud, HasId};
 use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -80,14 +80,14 @@ impl DbUserKV {
         }
     }
 
-    pub async fn get(key: UserKey) -> DBResult<Option<UserKVValue>> {
+    pub async fn get(key: UserKey) -> Result<Option<UserKVValue>, String> {
         match DbUserKV::select(key.as_str()).await {
             Ok(data) => Ok(Some(data.value)),
             Err(e) => {
                 if e.to_string().contains("not found") {
                     Ok(None)
                 } else {
-                    Err(e.into())
+                    Err(e.to_string())
                 }
             }
         }
@@ -135,18 +135,20 @@ impl From<i32> for UserKVValue {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn upsert_userkv(key: UserKey, value: &str) -> DBResult<()> {
+pub async fn upsert_userkv(key: UserKey, value: &str) -> Result<(), String> {
     DbUserKV::from_domain(UserKV {
         key,
         value: value.into(),
-    })?
+    })
+    .map_err(|e| e.to_string())?
     .upsert()
-    .await?;
+    .await
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_userkv_value(key: UserKey) -> DBResult<Option<String>> {
+pub async fn get_userkv_value(key: UserKey) -> Result<Option<String>, String> {
     DbUserKV::get(key).await.map(|v| v.map(|v| v.into_string()))
 }

@@ -40,8 +40,15 @@ thiserror = "2.0.11"
 toml = "0.8.20"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-dialog = "2"
-reqwest = { version = "0.12.15", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["json", "stream"] }
 urlencoding = "2.1.3"
 html-escape = "0.2.13"
 url = "2.5.4"
 chrono = "0.4.40"
+tauri-plugin-fs = "2"
+tracing-subscriber = { version = "0.3.19", features = [
+    "fmt",
+    "time",
+    "env-filter",
+] }
+futures-util = "0.3.31"

@@ -3,33 +3,35 @@ mod domain;
 mod enums;
 mod utils;
 
-use crate::domain::models::meta::DbMeta;
-use crate::domain::platform::scheduler::Scheduler;
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use anyhow::Result;
-use database::enums::meta::MetaKey;
-use database::{init_db, Crud};
+use database::init_db;
 use domain::models::meta;
 use domain::models::meta::GlobalVal;
+use domain::models::twitter::entities::DbEntitie;
 use domain::models::twitter::{
     content_to_copy::ContentToCopy,
     interface,
-    like::{take_single_like, DbLikedPost, LikedPost},
-    media::DbMedia,
-    post::{DbPost, DbReply},
-    users::DbUser,
+    like::{take_single_like, LikedPost},
 };
 use domain::models::userkv::{get_userkv_value, upsert_userkv};
 use domain::platform::api::user::ScanLikesEvent;
 use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::Job;
+use domain::platform::scheduler::Scheduler;
 use domain::platform::twitter::api::user;
-use domain::platform::{handler::AssetDownloadEvent, Task};
-use utils::load::{TweetData, TweetMetaData};
+use domain::platform::{handle_entities, Task, TaskKind};
+use utils::event::ImportEvent;
+use utils::file;
+use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
 use tauri::Manager;
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};
 use tokio::task::block_in_place;
 
@@ -45,10 +47,16 @@ pub fn run() {
             get_userkv_value,
             take_single_like,
             save_all,
+            import_data,
             user::scan_likes_timeline,
             meta::get_save_dir,
+            file::exists,
         ])
-        .events(collect_events![ScanLikesEvent, AssetDownloadBatchEvent]);
+        .events(collect_events![
+            ScanLikesEvent,
+            AssetDownloadBatchEvent,
+            ImportEvent
+        ]);
 
     #[cfg(debug_assertions)]
     builder
@@ -61,6 +69,7 @@ pub fn run() {
         .expect("Failed to export typescript bindings");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_os::init())
@@ -88,19 +97,6 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
-// async fn load_scraper_data() -> Result<()> {
-//     let path = r#"C:\Users\grahl\quill\output\x.com.GrahLnn.likes\scraped_data.json"#;
-//     let (dbposts, dbreplies, dbmedias, dbusers, dbfavs, db_metadatas) =
-//         utils::load::load_data(path).await?;
-//     let _ = DbPost::insert_with_id(dbposts).await?;
-//     let _ = DbUser::insert_with_id(dbusers).await?;
-//     let _ = DbLikedPost::insert_with_id(dbfavs).await?;
-//     let _ = DbMedia::insert_with_id(dbmedias).await?;
-//     let _ = DbReply::insert_with_id(dbreplies).await?;
-//     let _ = DbMeta::insert_with_id(db_metadatas).await?;
-//     Ok(())
-// }
-
 #[tauri::command]
 #[specta::specta]
 async fn save_all(app: tauri::AppHandle) -> Result<(), String> {
@@ -110,6 +106,7 @@ async fn save_all(app: tauri::AppHandle) -> Result<(), String> {
         metadata: TweetMetaData {
             item: "liked".to_string(),
             created_at: "2023-05-10T08:00:00Z".to_string(),
+            proj_path: "".to_string(),
         },
         results: datas,
     };
@@ -133,5 +130,37 @@ async fn copy_to_clipboard(
 ) -> Result<(), String> {
     let toml_str = toml::to_string(&content).map_err(|e| e.to_string())?;
     app_handle.clipboard().write_text(toml_str).unwrap();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn import_data(path: &str) -> Result<(), String> {
+    let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
+    let data = read_tweets_from_json(path_buf).map_err(|e| e.to_string())?;
+    dbg!("read");
+    let list = data.results;
+    let entities = list
+        .iter()
+        .map(|post| post.clone().into_entities(TaskKind::AssetTransport))
+        .collect::<Vec<_>>();
+    dbg!("make entities");
+    let merged = DbEntitie::merge_all(entities);
+    dbg!("merge entities");
+    let tasks = handle_entities(merged).await.map_err(|e| e.to_string())?;
+    dbg!("handle entities");
+    for task in tasks {
+        let _ = Scheduler::<Task>::get()
+            .map_err(|e| e.to_string())?
+            .enqueue(task);
+    }
+    let app = Scheduler::<Task>::get()
+        .map_err(|e| e.to_string())?
+        .app
+        .clone();
+    ImportEvent { done: true }
+        .emit(&app)
+        .map_err(|e| e.to_string())?;
+    dbg!("done");
     Ok(())
 }

@@ -47,7 +47,7 @@ impl AuthGenerator for UserAuth {
     async fn generate(&self) -> Result<AuthCredential> {
         let raw = get_userkv_value(UserKey::Twitter)
             .await
-            .context("Failed to read stored Twitter cookie")?;
+            .map_err(|e| anyhow::anyhow!("Failed to read stored Twitter cookie: {}", e))?;
         let cookie = raw.ok_or_else(|| anyhow::anyhow!("No Twitter cookie found"))?;
         AuthCredential::user(cookie)
     }

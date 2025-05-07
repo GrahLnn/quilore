@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toggleVisibility } from "@/src/state_machine/barVisible";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 export type LightboxPayload = {
   images: string[];
@@ -74,7 +75,6 @@ export function Lightbox() {
           }}
         >
           <motion.img
-            key={currentImg}
             initial={{ scale: 0.75, filter: "blur(24px)" }}
             animate={{
               scale: 1,
@@ -93,8 +93,7 @@ export function Lightbox() {
                 : "cursor-zoom-in",
             ])}
             layout
-            src={currentImg}
-            alt=""
+            src={convertFileSrc(currentImg)}
             style={{
               maxWidth: zoomable && toMax ? "98%" : "90%",
               maxHeight: zoomable && toMax ? "none" : "90%",
@@ -103,11 +102,7 @@ export function Lightbox() {
               setToMax(!toMax);
               e.stopPropagation();
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                lightboxMachine.close();
-              }
-            }}
+
             onLoad={(e) => {
               const img = e.currentTarget;
               img.naturalHeight > img.height &&

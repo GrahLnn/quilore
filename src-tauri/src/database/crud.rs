@@ -1,10 +1,8 @@
-use std::fmt::Display;
-
 use super::enums::table::Table;
 use super::error::DBError;
-use super::Result;
-use super::{get_db, HasId, QueryKind};
 
+use super::{get_db, HasId, QueryKind};
+use anyhow::Result;
 use async_trait::async_trait;
 use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
@@ -47,7 +45,7 @@ pub trait Crud:
     {
         let db = get_db()?;
         let updated: Option<Self> = db.upsert(self.id()).content(self.clone()).await?;
-        updated.ok_or(DBError::NotFound)
+        updated.ok_or(DBError::NotFound.into())
     }
 
     async fn select<T>(id: T) -> Result<Self>
@@ -122,26 +120,22 @@ pub trait Crud:
     where
         Self: HasId,
     {
-        let db = get_db()?;
+        let db = get_db()?; 
+        let chunk_size = 50_000; 
+        let mut inserted_all = Vec::with_capacity(data.len());
 
-        let chunk_size = 50_000;
-        let chunk_vecs: Vec<Vec<Self>> = data.chunks(chunk_size).map(|c| c.to_vec()).collect();
+        // 順序处理，每次只持有一个 Vec
+        for chunk in data.chunks(chunk_size) {
+            let chunk_clone = chunk.to_vec(); // Clone the chunk to ensure it lives long enough
+            let inserted: Vec<Self> = db
+                .query(QueryKind::insert(Self::TABLE.as_str()))
+                .bind(("data", chunk_clone)) // Use the cloned chunk
+                .await?
+                .take(0)?;
+            inserted_all.extend(inserted);
+        }
 
-        let insert_futures = chunk_vecs.into_iter().map(|chunk| {
-            let db_clone = db.clone();
-            async move {
-                let inserted: Vec<Self> = db_clone
-                    .query(QueryKind::insert(Self::TABLE.as_str()))
-                    .bind(("data", chunk))
-                    .await?
-                    .take(0)?;
-                Ok::<Vec<Self>, DBError>(inserted)
-            }
-        });
-
-        let done: Vec<Vec<Self>> = try_join_all(insert_futures).await?;
-        let done: Vec<Self> = done.into_iter().flatten().collect();
-        Ok(done)
+        Ok(inserted_all)
     }
 
     async fn delete(id: &str) -> Result<()> {

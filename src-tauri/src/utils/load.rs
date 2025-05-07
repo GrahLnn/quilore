@@ -1,21 +1,25 @@
-use crate::database::enums::meta::MetaKey;
-use crate::domain::models::meta::{DbMeta, Meta, MetaValue};
-use crate::domain::models::twitter::post::DbReply;
-use crate::domain::models::twitter::{
-    like::{DbLikedPost, LikedPost},
-    media::DbMedia,
-    post::{DbPost, Post, PostType},
-    users::DbUser,
+use crate::domain::models::twitter::asset::{Asset, AssetType};
+use crate::domain::models::twitter::media::{
+    AnimatedGifMedia, Media, MediaBase, PhotoMedia, VideoMedia,
 };
+use crate::domain::models::twitter::post::QuotePost;
+use crate::domain::models::twitter::users::User;
+use crate::domain::models::twitter::{
+    like::LikedPost,
+    post::{Article, Card, Content, Conversation, Post, Reply},
+};
+use crate::enums::platform::Platform;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde_json::Value;
+use std::path::PathBuf;
 use std::{fs::File, io::BufReader};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TweetMetaData {
     pub item: String,
     pub created_at: String,
+    pub proj_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -24,146 +28,287 @@ pub struct TweetData {
     pub results: Vec<LikedPost>,
 }
 
-// fn collect_nested_posts(post: &Post) -> (Vec<Post>, Vec<Post>, Vec<Post>) {
-//     let main_posts = vec![post.clone()];
-//     let mut quote_posts = Vec::new();
-//     let mut reply_posts = Vec::new();
-
-//     // 如果有引用的推文，递归处理，把引用的内容视为引用帖
-//     if let Some(ref quoted) = post.quote {
-//         quote_posts.push(Post::from_quote(quoted.clone()));
-//     }
-
-//     // 收集回复里的quote到单独的vec，因为要比对保留main中的，避免重复时保留成非main的了
-//     if let Some(ref conversations) = post.replies {
-//         for conv in conversations {
-//             for child_post in &conv.conversation {
-//                 let (child_main, child_quotes, child_replies) = collect_nested_posts(child_post);
-//                 // 这里认为回复里的主帖也是回复内容
-//                 reply_posts.extend(child_main);
-//                 quote_posts.extend(child_quotes);
-//                 reply_posts.extend(child_replies);
-//             }
-//         }
-//     }
-
-//     (main_posts, quote_posts, reply_posts)
-// }
-
-// pub fn separate_posts(post: Post) -> () {}
-
-// pub async fn load_data(
-//     file: &str,
-// ) -> Result<(
-//     Vec<DbPost>,
-//     Vec<DbReply>,
-//     Vec<DbMedia>,
-//     Vec<DbUser>,
-//     Vec<DbLikedPost>,
-//     Vec<DbMeta>,
-// )> {
-//     let data = read_tweets_from_json(file)?;
-//     let favs = data.results;
-
-//     let mut metadatas = Vec::new();
-//     let mut dbposts_map = HashMap::new();
-//     let mut dbreplies_map = HashMap::new();
-//     let mut dbusers_map = HashMap::new();
-//     let mut dbmedias_map = HashMap::new();
-
-//     let (posts, quotes, replies): (Vec<_>, Vec<_>, Vec<_>) =
-//         favs.iter().map(|fav| collect_nested_posts(&fav.post)).fold(
-//             (Vec::new(), Vec::new(), Vec::new()),
-//             |mut acc, (p, q, r)| {
-//                 acc.0.extend(p);
-//                 acc.1.extend(q);
-//                 acc.2.extend(r);
-//                 acc
-//             },
-//         );
-//     for post in posts {
-//         let dbpost = DbPost::from_domain(post.clone(), PostType::Root)?;
-//         dbposts_map.entry(dbpost.id.clone()).or_insert(dbpost);
-
-//         if let Some(medias) = post.media {
-//             for media in medias {
-//                 let dbmedia = DbMedia::from_domain(media)?;
-//                 dbmedias_map.entry(dbmedia.id.clone()).or_insert(dbmedia);
-//             }
-//         }
-
-//         let dbdatauser = DbUser::from_domain(post.author);
-//         dbusers_map
-//             .entry(dbdatauser.id.clone())
-//             .or_insert(dbdatauser);
-//     }
-
-//     for post in quotes {
-//         let dbpost = DbPost::from_domain(post.clone(), PostType::Root)?;
-//         dbposts_map.entry(dbpost.id.clone()).or_insert(dbpost);
-
-//         if let Some(medias) = post.media {
-//             for media in medias {
-//                 let dbmedia = DbMedia::from_domain(media)?;
-//                 dbmedias_map.entry(dbmedia.id.clone()).or_insert(dbmedia);
-//             }
-//         }
-
-//         let dbdatauser = DbUser::from_domain(post.author);
-//         dbusers_map
-//             .entry(dbdatauser.id.clone())
-//             .or_insert(dbdatauser);
-//     }
-//     for reply in replies {
-//         let dbpost = DbPost::from_domain(reply.clone(), PostType::Reply)?;
-//         let dbreply = DbReply(dbpost);
-//         dbreplies_map.insert(dbreply.0.id.clone(), dbreply);
-
-//         if let Some(medias) = reply.media {
-//             for media in medias {
-//                 let dbmedia = DbMedia::from_domain(media)?;
-//                 dbmedias_map.insert(dbmedia.id.clone(), dbmedia);
-//             }
-//         }
-
-//         let dbdatauser = DbUser::from_domain(reply.author);
-//         dbusers_map.insert(dbdatauser.id.clone(), dbdatauser);
-//     }
-
-//     // 收集所有的 DbLikedPost 实例
-//     let dbfavs: Result<Vec<DbLikedPost>> = favs
-//         .iter()
-//         .map(|fav| DbLikedPost::from_domain(fav.clone()))
-//         .collect();
-//     let dbfavs = dbfavs?;
-
-//     let dbposts: Vec<DbPost> = dbposts_map.into_values().collect();
-//     let dbreplies: Vec<DbReply> = dbreplies_map.into_values().collect();
-//     let dbmedias: Vec<DbMedia> = dbmedias_map.into_values().collect();
-//     let dbusers: Vec<DbUser> = dbusers_map.into_values().collect();
-
-//     let first_cursor = favs.iter().map(|fav| fav.sortidx).max().unwrap();
-
-//     metadatas.push(Meta {
-//         id: MetaKey::FirstCursor,
-//         v: MetaValue::Number(first_cursor.into()),
-//     });
-
-//     let db_metadatas: Result<Vec<DbMeta>, _> = metadatas
-//         .iter()
-//         .map(|m| DbMeta::from_domain(m.clone()))
-//         .collect();
-//     let db_metadatas = db_metadatas?;
-
-//     Ok((dbposts, dbreplies, dbmedias, dbusers, dbfavs, db_metadatas))
-// }
-
-fn read_tweets_from_json(file_path: &str) -> Result<TweetData> {
+pub fn read_tweets_from_json(file_path: PathBuf) -> Result<TweetData> {
     // 打开文件
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
 
     // 解析JSON
-    let tweets: TweetData = serde_json::from_reader(reader)?;
-    Ok(tweets)
+    let tweets: Value = serde_json::from_reader(reader)?;
+    let metadata = TweetMetaData {
+        item: tweets
+            .pointer("/metadata/item")
+            .and_then(|v| v.as_str())
+            .unwrap()
+            .to_string(),
+        created_at: tweets
+            .pointer("/metadata/created_at")
+            .and_then(|v| v.as_str())
+            .unwrap()
+            .to_string(),
+        proj_path: tweets
+            .pointer("/metadata/media_folder")
+            .and_then(|v| v.as_str())
+            .unwrap()
+            .to_string(),
+    };
+    let results = tweets
+        .pointer("/results")
+        .and_then(|v| v.as_array())
+        .unwrap()
+        .iter()
+        .filter_map(|v| des_likedpost(v))
+        .collect();
+    Ok(TweetData { metadata, results })
+}
+
+fn des_likedpost(json: &Value) -> Option<LikedPost> {
+    let sortidx = json.pointer("/sortidx")?.as_str()?.parse::<u32>().unwrap();
+    let post = json.pointer("/post").and_then(des_post)?;
+    Some(LikedPost { sortidx, post })
+}
+
+fn des_post(json: &Value) -> Option<Post> {
+    let replies = json
+        .pointer("/replies")
+        .and_then(|v| v.as_array())
+        .map(|v| v.iter().map(des_conversation).collect());
+    let post = Post {
+        rest_id: json.pointer("/rest_id")?.as_str()?.parse::<i64>().unwrap(),
+        created_at: json.pointer("/created_at")?.as_str()?.to_string(),
+        author: json.pointer("/author").and_then(des_user)?,
+        content: json.pointer("/content").and_then(des_content)?,
+        media: json
+            .pointer("/media")
+            .and_then(|v| v.as_array())
+            .map(|v| v.iter().filter_map(des_media).collect()),
+        quote: json.pointer("/quote").and_then(des_quote),
+        key_words: json
+            .pointer("/key_words")
+            .and_then(|v| v.as_array())
+            .map(|v| {
+                v.iter()
+                    .filter_map(|v| v.as_str())
+                    .map(|v| v.to_string())
+                    .collect()
+            }),
+        replies,
+        card: json.pointer("/card").and_then(des_card),
+        article: json.pointer("/article").and_then(des_article),
+    };
+    Some(post)
+}
+
+fn des_quote(json: &Value) -> Option<QuotePost> {
+    let rest_id = json.pointer("/rest_id")?.as_str()?.parse::<i64>().unwrap();
+    let created_at = json.pointer("/created_at")?.as_str()?.to_string();
+    let author = json.pointer("/author").and_then(des_user)?;
+
+    let content = json.pointer("/content").and_then(des_content)?;
+    let media = json
+        .pointer("/media")
+        .and_then(|v| v.as_array())
+        .map(|v| v.iter().filter_map(|v| des_media(v)).collect());
+    let key_words = json
+        .pointer("/key_words")
+        .and_then(|v| v.as_array())
+        .map(|v| {
+            v.iter()
+                .filter_map(|v| v.as_str())
+                .map(|v| v.to_string())
+                .collect()
+        });
+    let card = json.pointer("/card").and_then(des_card);
+    let article = json.pointer("/article").and_then(des_article);
+    let qpost = QuotePost {
+        rest_id,
+        created_at,
+        author,
+        content,
+        media,
+        key_words,
+        card,
+        article,
+    };
+    Some(qpost)
+}
+
+fn des_user(json: &Value) -> Option<User> {
+    let user = User {
+        id: json.pointer("/screen_name")?.as_str()?.to_string(),
+        name: json.pointer("/name")?.as_str()?.to_string(),
+        avatar: json
+            .pointer("/avatar")
+            .and_then(|v| des_asset(v, AssetType::Avatar))?,
+    };
+    Some(user)
+}
+
+fn des_asset(json: &Value, ty: AssetType) -> Option<Asset> {
+    let name = match ty {
+        AssetType::Avatar => json
+            .pointer("/path")
+            .and_then(|v| v.as_str())
+            .map(PathBuf::from)
+            .and_then(|p| p.file_name()?.to_str().map(|s| s.to_string()))?,
+        AssetType::Media => json
+            .pointer("/path")
+            .and_then(|v| v.as_str())
+            .map(PathBuf::from)
+            .and_then(|p| p.file_name()?.to_str().map(|s| s.to_string()))?,
+        AssetType::Thumb => json
+            .pointer("/thumb_path")
+            .and_then(|v| v.as_str())
+            .map(PathBuf::from)
+            .and_then(|p| p.file_name()?.to_str().map(|s| s.to_string()))?,
+    };
+    let path = match ty {
+        AssetType::Avatar => json.pointer("/path")?.as_str()?.to_string(),
+        AssetType::Media => json.pointer("/path")?.as_str()?.to_string(),
+        AssetType::Thumb => json.pointer("/thumb_path")?.as_str()?.to_string(),
+    };
+    let url = match ty {
+        AssetType::Avatar => json.pointer("/url")?.as_str()?.to_string(),
+        AssetType::Media => json.pointer("/url")?.as_str()?.to_string(),
+        AssetType::Thumb => json.pointer("/thumb")?.as_str()?.to_string(),
+    };
+    Some(Asset {
+        ty: ty.clone(),
+        plat: Platform::Twitter,
+        url,
+        name,
+        path: path.clone(),
+        downloaded: true,
+        available: match path {
+            val if val == "media unavailable" => false,
+            _ => true,
+        },
+    })
+}
+
+fn des_content(json: &Value) -> Option<Content> {
+    Some(Content {
+        lang: json.pointer("/lang")?.as_str()?.to_string(),
+        text: json.pointer("/text")?.as_str()?.to_string(),
+        translation: json
+            .pointer("/translation")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        expanded_urls: json
+            .pointer("/expanded_urls")
+            .and_then(|v| v.as_array())
+            .map(|v| {
+                v.iter()
+                    .filter_map(|v| v.as_str())
+                    .map(|v| v.to_string())
+                    .collect()
+            }),
+    })
+}
+
+fn des_media(json: &Value) -> Option<Media> {
+    let ty = json.get("type")?.as_str()?;
+    match ty {
+        "photo" => Some(Media::Photo(PhotoMedia {
+            base: MediaBase {
+                id: json.pointer("/id")?.as_str()?.to_string(),
+                asset: des_asset(json, AssetType::Media)?,
+                description: json
+                    .pointer("/description")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string()),
+                width: json.pointer("/width")?.as_u64().map(|v| v as u32),
+                height: json.pointer("/height")?.as_u64().map(|v| v as u32),
+            },
+        })),
+        "video" => Some(Media::Video(VideoMedia {
+            base: MediaBase {
+                id: json.pointer("/id")?.as_str()?.to_string(),
+                asset: des_asset(json, AssetType::Media)?,
+                description: json
+                    .pointer("/description")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string()),
+                width: json.pointer("/width")?.as_u64().map(|v| v as u32),
+                height: json.pointer("/height")?.as_u64().map(|v| v as u32),
+            },
+            aspect_ratio: json
+                .pointer("/aspect_ratio")?
+                .as_array()?
+                .iter()
+                .map(|v| v.as_u64().unwrap_or(0) as u32)
+                .collect::<Vec<u32>>()
+                .as_slice()
+                .get(0..2)
+                .map(|s| (s[0], s[1]))
+                .unwrap_or((0, 0)),
+            thumb: des_asset(json, AssetType::Thumb)?,
+            duration_millis: json.pointer("/duration_millis")?.as_u64().unwrap() as u32,
+        })),
+        "animated_gif" => Some(Media::AnimatedGif(AnimatedGifMedia {
+            base: MediaBase {
+                id: json.pointer("/id")?.as_str()?.to_string(),
+                asset: des_asset(json, AssetType::Media)?,
+                description: json
+                    .pointer("/description")
+                    .and_then(|v| v.as_str())
+                    .map(|v| v.to_string()),
+                width: json.pointer("/width")?.as_u64().map(|v| v as u32),
+                height: json.pointer("/height")?.as_u64().map(|v| v as u32),
+            },
+            aspect_ratio: json
+                .pointer("/aspect_ratio")?
+                .as_array()?
+                .iter()
+                .map(|v| v.as_u64().unwrap_or(0) as u32)
+                .collect::<Vec<u32>>()
+                .as_slice()
+                .get(0..2)
+                .map(|s| (s[0], s[1]))
+                .unwrap_or((0, 0)),
+            thumb: des_asset(json, AssetType::Thumb)?,
+        })),
+        _ => panic!("未知的 media 类型: {}", ty),
+    }
+}
+
+fn des_conversation(json: &Value) -> Conversation {
+    let conversation = json
+        .pointer("/conversation")
+        .and_then(|v| v.as_array())
+        .map(|v| v.iter().filter_map(des_reply).collect())
+        .unwrap_or_default();
+    Conversation { conversation }
+}
+
+fn des_reply(json: &Value) -> Option<Reply> {
+    Some(Reply {
+        0: des_quote(json)?,
+    })
+}
+
+fn des_card(json: &Value) -> Option<Card> {
+    Some(Card {
+        title: json
+            .pointer("/title")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        description: json
+            .pointer("/description")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        url: json.pointer("/url")?.as_str()?.to_string(),
+    })
+}
+
+fn des_article(json: &Value) -> Option<Article> {
+    Some(Article {
+        id: json.pointer("/id")?.as_str()?.to_string(),
+        title: json.pointer("/title")?.as_str()?.to_string(),
+        description: json
+            .pointer("/description")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string()),
+        url: json.pointer("/url")?.as_str()?.to_string(),
+    })
 }

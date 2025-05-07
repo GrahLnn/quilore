@@ -7,6 +7,7 @@ use crate::domain::platform::job::{Job, Mission};
 use crate::domain::platform::scheduler::Scheduler;
 use crate::domain::platform::twitter::auth::auth::{self, AuthGenerator};
 use crate::domain::platform::{handle_entities, scheduler, Schedulable, Task};
+use crate::domain::platform::TaskKind;
 
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
@@ -53,6 +54,11 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
         .get("cursor")
         .and_then(Value::as_str)
         .map(|s| s.to_string());
+    let last_sortidx = job_record
+        .params
+        .get("last_sortidx")
+        .and_then(Value::as_u64)
+        .map(|v| v as u32);
     let count = (job_record
         .params
         .get("count")
@@ -83,12 +89,12 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
 
     let json_data = resp.json::<Value>().await?;
 
-    let result = CursoredData::<LikedPost>::from_response(&json_data).await?;
+    let result = CursoredData::<LikedPost>::from_response(&json_data, last_sortidx).await?;
     let next = result.clone().next;
     let list = result.clone().list;
     let entities = list
         .iter()
-        .map(|post| post.clone().into_entities())
+        .map(|post| post.clone().into_entities(TaskKind::AssetDownload))
         .collect::<Vec<_>>();
     let merged = DbEntitie::merge_all(entities);
     let checked_tasks = handle_entities(merged).await?;
@@ -97,14 +103,18 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
         .filter(|t| !matches!(t.status, scheduler::Status::Succeeded))
         .cloned()
         .collect::<Vec<_>>();
+    dbg!(excu_tasks.len());
     for task in excu_tasks {
         let _ = Scheduler::<Task>::get()?.enqueue(task);
     }
     let count = count + list.len() as u32;
     job_record
-        .update_params(
-            serde_json::json!({ "cursor": next, "count": count, "is_end": result.is_end }),
-        )
+        .update_params(serde_json::json!({
+            "cursor": next,
+            "count": count,
+            "is_end": result.is_end,
+            "last_sortidx": result.list.last().map(|p| p.sortidx)
+        }))
         .await?;
     // if !result.is_end {
     //     Scheduler::<Job>::get()?.enqueue(job);

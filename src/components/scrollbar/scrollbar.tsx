@@ -113,11 +113,13 @@ export function Scrollbar() {
 
     // 算出当前滚动在 [0 ~ maxScroll] 的一个百分比
     const scrollPercentage = maxScroll > 0 ? state.scrollTop / maxScroll : 0;
+    // 确保百分比不超过1，防止滑块溢出底部
+    const clampedScrollPercentage = Math.min(1, scrollPercentage);
 
     // 滑块在轨道上的可移动范围
     const trackSpace = track.clientHeight - thumbHeight;
     // 当前滑块在轨道中的位置
-    const thumbPosition = scrollPercentage * trackSpace;
+    const thumbPosition = clampedScrollPercentage * trackSpace;
 
     // 让滑块平滑移动到新位置
     gsap.to(thumb, {
@@ -271,3 +273,4 @@ export function Scrollbar() {
     </div>
   );
 }
+

@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
+import LazyImage from "../lazyimg";
 
 const libraryPath = "C:\\Users\\grahl\\quill";
 // const compath = (path: string) => `${libraryPath}\\${path}`;
@@ -198,7 +199,11 @@ function ContentEle({ content }: { content: Content }) {
           initial={{ filter: "blur(6px)", opacity: 0 }}
           animate={{ filter: "blur(0px)", opacity: 1 }}
           exit={{ filter: "blur(6px)", opacity: 0 }}
-          transition={{ duration: 0.3, ease: "linear" }}
+          transition={{ 
+            duration: 0.3, 
+            ease: "linear",
+            filter: { clampWhenFinished: true } 
+          }}
         >
           {parts}
         </motion.div>
@@ -324,11 +329,12 @@ function Author({ author, size = "normal" }: AuthorProps) {
     //   rel="noreferrer"
     // >
     <div className="flex gap-2 group overflow-hidden">
-      {/* <img
-        src={author.avatar.path ? convertFileSrc(author.avatar.path) : ""}
-        alt="Avatar"
+      <LazyImage
+        src={author.avatar.path}
+        asset={author.avatar}
         className={cn(["rounded-full object-cover w-8 h-8"])}
-      /> */}
+        holderCn="w-8 h-8"
+      />
 
       <div
         className={cn([
@@ -484,3 +490,4 @@ const TweetCard = memo(({ postdata }: TweetCardProps) => {
 });
 
 export default TweetCard;
+

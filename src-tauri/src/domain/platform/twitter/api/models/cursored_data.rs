@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
 use surrealdb::RecordId;
-use tokio::fs;
 
 use crate::database::Crud;
 use crate::domain::models::twitter::like::{DbLikedPost, LikedPost};
@@ -21,7 +20,7 @@ pub struct CursoredData<T> {
 }
 
 impl CursoredData<LikedPost> {
-    pub async fn from_response(response: &Value) -> Result<Self> {
+    pub async fn from_response(response: &Value, sort_ref: Option<u32>) -> Result<Self> {
         let exist = DbLikedPost::select_pagin(3, None).await?;
         let seen: HashSet<RecordId> = exist.into_iter().map(|p| p.post).collect();
 
@@ -39,7 +38,6 @@ impl CursoredData<LikedPost> {
             .get("entries")
             .and_then(Value::as_array)
             .ok_or_else(|| anyhow!("cannot find timeline.instructions[0].entries"))?;
-        dbg!(entries.len());
         let mut list = Vec::with_capacity(entries.len());
         let mut next = String::new();
         let mut is_end = false;
@@ -71,7 +69,10 @@ impl CursoredData<LikedPost> {
             }
         }
 
-        let base_ts = chrono::Utc::now().timestamp_millis();
+        let base_ts = match sort_ref {
+            Some(v) => v as i64,
+            None => chrono::Utc::now().timestamp_millis(),
+        };
         for (i, post) in list.iter_mut().enumerate() {
             post.sortidx = (base_ts - (i as i64)) as u32;
         }

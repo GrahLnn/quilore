@@ -14,7 +14,7 @@ function collectMediaAssets(media: Media | null): string[] {
     case "photo":
       return [media.asset.url];
     case "video":
-      return [media.asset.url, media.thumb.url];
+      return [media.asset.url];
     case "animated_gif":
       return [media.asset.url];
     default:

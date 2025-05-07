@@ -284,58 +284,73 @@ impl Card {
 
 impl Content {
     pub fn from_api(json: &Value) -> Option<Self> {
-        // 1. 获取主体文本
+        // ---------- 1. 取正文 ----------
         let mut text = json
             .pointer("/note_tweet/note_tweet_results/result/text")
             .or_else(|| json.pointer("/legacy/full_text"))
-            .and_then(Value::as_str)
-            .map(str::to_string)?;
+            .and_then(Value::as_str)?
+            .to_owned();
 
-        // 2. 收集所有需移除的短链和展开 URL
+        // ---------- 2. 处理 URL ----------
+        /// (json_pointer, url_key_in_obj, expanded_key_in_obj)
+        const MAP: &[(&str, Option<&str>, Option<&str>)] = &[
+            // 单独字符串，直接移除
+            ("/legacy/quoted_status_permalink/url", None, None),
+            ("/legacy/quoted_status_permalink/expanded", None, None),
+            ("/card/url", None, None),
+            // media 里只有 url，移除
+            ("/legacy/entities/media", Some("url"), None),
+            // urls -> 用 expanded_url 替换
+            ("/legacy/entities/urls", Some("url"), Some("expanded_url")),
+            (
+                "/note_tweet/note_tweet_results/result/entity_set/urls",
+                Some("url"),
+                Some("expanded_url"),
+            ),
+        ];
+
         let mut urls_for_removal = Vec::new();
-        let mut expanded_urls = Vec::new();
+        let mut expanded_urls_set = std::collections::HashSet::new();
 
-        // 2a. 简单路径：card.url 和 quoted_status_permalink.url
-        if let Some(url) = json.pointer("/card/url").and_then(Value::as_str) {
-            urls_for_removal.push(url.to_string());
-        }
-        if let Some(url) = json
-            .pointer("/legacy/quoted_status_permalink/url")
-            .and_then(Value::as_str)
-        {
-            urls_for_removal.push(url.to_string());
-        }
-
-        // 2b. 媒体 URL
-        if let Some(media_array) = json
-            .pointer("/legacy/entities/media")
-            .and_then(Value::as_array)
-        {
-            media_array
-                .iter()
-                .filter_map(|m| m.pointer("/url").and_then(Value::as_str))
-                .for_each(|url| urls_for_removal.push(url.to_string()));
-        }
-
-        // 2c. 实体 URLs（包括 legacy.entities.urls 和 note_tweet.entity_set.urls）
-        for path in &[
-            "/legacy/entities/urls",
-            "/note_tweet/note_tweet_results/result/entity_set/urls",
-        ] {
-            if let Some(url_objs) = json.pointer(path).and_then(Value::as_array) {
-                url_objs.iter().for_each(|obj| {
-                    if let (Some(short), Some(expanded)) = (
-                        obj.pointer("/url").and_then(Value::as_str),
-                        obj.pointer("/expanded_url").and_then(Value::as_str),
-                    ) {
-                        urls_for_removal.push(short.to_string());
-                        expanded_urls.push(expanded.to_string());
+        for (path, url_key, expanded_key) in MAP {
+            if let Some(node) = json.pointer(path) {
+                match node {
+                    // -------- a) 目标本身就是字符串 URL --------
+                    Value::String(s) => {
+                        urls_for_removal.push(s.clone());
                     }
-                });
+                    // -------- b) 目标是数组，每个元素是对象或字符串 --------
+                    Value::Array(arr) => {
+                        for item in arr {
+                            // 取短链
+                            let short = match url_key {
+                                Some(k) => item.get(*k).and_then(Value::as_str),
+                                None => item.as_str(),
+                            };
+                            if short.is_none() {
+                                continue;
+                            }
+                            let short = short.unwrap();
+
+                            // 如果有 expanded_url，就替换正文
+                            if let Some(exp_k) = expanded_key {
+                                if let Some(exp) = item.get(*exp_k).and_then(Value::as_str) {
+                                    text = text.replace(short, exp);
+                                    expanded_urls_set.insert(exp.to_string());
+                                    urls_for_removal.push(short.to_string());
+                                    continue;
+                                }
+                            }
+                            // 没有 expanded_url，只加入移除列表
+                            urls_for_removal.push(short.to_string());
+                        }
+                    }
+                    _ => {}
+                }
             }
         }
 
-        // 3. 按短链长度降序排序，反复移除尾部完全匹配的短链
+        // ---------- 3. 末尾短链裁剪 ----------
         urls_for_removal.sort_unstable_by_key(|u| std::cmp::Reverse(u.len()));
         for short in &urls_for_removal {
             while text.ends_with(short) {
@@ -344,14 +359,15 @@ impl Content {
             }
         }
 
-        // 4. 拼装最终结构
+        // ---------- 4. 整理输出 ----------
         let text = html_escape::decode_html_entities(&text).trim().to_string();
         let lang = json
             .pointer("/legacy/lang")
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_string();
-        let expanded_urls = (!expanded_urls.is_empty()).then_some(expanded_urls);
+        let expanded_urls: Option<Vec<String>> =
+            (!expanded_urls_set.is_empty()).then_some(expanded_urls_set.into_iter().collect());
 
         Some(Self {
             text,
@@ -359,6 +375,58 @@ impl Content {
             translation: None,
             expanded_urls,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_content_from_api() {
+        let json = json!({
+            "legacy": {
+                "full_text": "got tempted to rebuild this in webgl using my volumetric lighting shader work\n\nnot as good but still a fun one to build\n\nhttps://t.co/c0Q8rL0GA0 https://t.co/PmkI0IKvku",
+                "entities": {
+                    "urls": [
+                        {
+                        "display_url": "r3f.maximeheckel.com/tunnel",
+                        "expanded_url": "https://r3f.maximeheckel.com/tunnel",
+                        "url": "https://t.co/c0Q8rL0GA0",
+                        "indices": [121, 144]
+                        }
+                    ],
+                    "media": [
+                                  {
+                                    "display_url": "pic.x.com/PmkI0IKvku",
+                                    "expanded_url": "https://x.com/MaximeHeckel/status/1918381753963798678/video/1",
+                                    "id_str": "1918381354879680512",
+                                    "indices": [145, 168],
+                                    "media_key": "13_1918381354879680512",
+                                    "media_url_https": "https://pbs.twimg.com/amplify_video_thumb/1918381354879680512/img/JYccEHcHz1QS3_BX.jpg",
+                                    "type": "video",
+                                    "url": "https://t.co/PmkI0IKvku",
+
+                                  }
+                                ],
+                },
+                "quoted_status_permalink": {
+                    "url": "https://t.co/tV1D2NoaAQ",
+                    "expanded": "https://twitter.com/5tr4n0/status/1916838779081441618",
+                    "display": "x.com/5tr4n0/status/…"
+                    },
+
+            }
+        });
+
+        let content = Content::from_api(&json).unwrap();
+        dbg!(&content);
+        assert_eq!(content.text, "got tempted to rebuild this in webgl using my volumetric lighting shader work\n\nnot as good but still a fun one to build\n\nhttps://r3f.maximeheckel.com/tunnel");
+        assert_eq!(
+            content.expanded_urls,
+            Some(vec!["https://r3f.maximeheckel.com/tunnel".to_string()])
+        );
     }
 }
 

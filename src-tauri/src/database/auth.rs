@@ -2,7 +2,7 @@ use crate::database::query_raw;
 
 use super::{get_db, query_return, QueryKind};
 
-use super::Result;
+use anyhow::Result;
 use serde::Serialize;
 use surrealdb::opt::auth::Namespace;
 use surrealdb::opt::auth::Record;

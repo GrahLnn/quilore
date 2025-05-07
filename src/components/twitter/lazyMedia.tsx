@@ -5,16 +5,12 @@ import { join } from "@tauri-apps/api/path";
 import type { JSX } from "react";
 import LazyImage from "../lazyimg";
 import LazyVideo from "../lazyvideo";
-import { box } from "../lightbox";
 import { TweetState, calcLayout, isLandscape } from "./utils";
 import { openLightbox, closeLightbox } from "../modalbox/lightbox";
 import { getSrc } from "@/src/utils/file";
 import { crab } from "@/src/cmd/commandAdapter";
 import { station } from "@/src/subpub/buses";
 import { useState, useEffect } from "react";
-
-// const libraryPath = "C:\\Users\\grahl\\quill";
-// const compath = (path: string) => `${libraryPath}\\${path}`;
 
 interface LazyMediaProps {
   media: Media;
@@ -51,7 +47,7 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
 
   switch (media.type) {
     case "photo": {
-      const path = convertFileSrc(media.asset.path);
+      const path = media.asset.path;
 
       const handleOpenLightbox = () => {
         openLightbox({
@@ -59,6 +55,7 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           currentIndex: 0,
         });
       };
+
       return (
         <LazyImage
           className={cn(
@@ -68,8 +65,9 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           src={path}
           asset={media.asset}
           onClick={handleOpenLightbox}
-          alt-label={media.description || ""}
+          alt={media.description || ""}
           ratio={[media.width, media.height]}
+          full
         />
       );
     }
@@ -82,11 +80,11 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           playsInline
           muted
           autoPlay
-          poster={convertFileSrc(media.thumb.path)}
+          poster={media.thumb.path}
           asset={media.asset}
           loop={isLoop}
-          aria-label={media.description || "Video content"}
-          src={convertFileSrc(media.asset.path)}
+          ariaLabel={media.description || "Video content"}
+          src={media.asset.path}
           ratio={media.aspect_ratio}
         />
       );
@@ -100,8 +98,8 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
           muted
           playsInline
           asset={media.asset}
-          aria-label={media.description || "gif content"}
-          src={convertFileSrc(media.asset.path)}
+          ariaLabel={media.description || "gif content"}
+          src={media.asset.path}
           ratio={media.aspect_ratio}
         />
       );

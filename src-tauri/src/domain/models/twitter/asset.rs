@@ -11,11 +11,21 @@ use crate::domain::platform::{scheduler, Task, TaskKind};
 use crate::enums::platform::Platform;
 use crate::{impl_crud, impl_id};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+#[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, Eq)]
 pub enum AssetType {
     Avatar,
     Media,
     Thumb,
+}
+
+impl AssetType {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            AssetType::Avatar => "avatar",
+            AssetType::Media => "media",
+            AssetType::Thumb => "thumb",
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -79,11 +89,11 @@ impl DbAsset {
         let data: DbAsset = DbAsset::select_record(id).await?;
         Ok(data.into_domain())
     }
-    pub fn into_task(self) -> Task {
+    pub fn into_task(self, kind: TaskKind) -> Task {
         Task {
             id: Task::record_id(self.id.key().to_owned()),
             tar: self.id,
-            kind: TaskKind::AssetDownload,
+            kind,
             payload: None,
             status: scheduler::Status::Pending,
             result: None,
@@ -93,15 +103,4 @@ impl DbAsset {
             finished_at: None,
         }
     }
-}
-
-pub fn build_local_path(asset: &Asset) -> Result<String> {
-    let base_path = GlobalVal::get_save_dir().ok_or_else(|| anyhow!("保存目录未设置"))?;
-    let subfolder = match asset.ty {
-        AssetType::Avatar => "avatar",
-        AssetType::Media => "media",
-        AssetType::Thumb => "thumb",
-    };
-    let save_path = base_path.join(subfolder).join(asset.name.clone());
-    Ok(save_path.to_string_lossy().to_string())
 }

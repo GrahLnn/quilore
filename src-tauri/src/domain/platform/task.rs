@@ -4,21 +4,19 @@ use super::scheduler::Status;
 use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
 use crate::{impl_crud, impl_id};
-use anyhow::{anyhow, Result};
-use async_trait::async_trait;
+use anyhow::Result;
 use chrono::{DateTime, Utc};
-use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use specta::Type;
 use surrealdb::RecordId;
-use tokio::sync::Semaphore;
 
 use super::{handler, Schedulable};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub enum TaskKind {
     AssetDownload,
+    AssetTransport,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -80,17 +78,8 @@ impl Schedulable for Task {
 
     async fn handle(self) -> Result<()> {
         match self.kind {
-            TaskKind::AssetDownload => {
-                // 使用固定大小的线程池处理下载任务
-                static DOWNLOAD_SEMAPHORE: LazyLock<Semaphore> =
-                    LazyLock::new(|| Semaphore::new(10));
-
-                // 获取信号量许可
-                let _permit = DOWNLOAD_SEMAPHORE.acquire().await;
-
-                // 执行下载任务
-                handler::download_asset(self).await.map_err(|e| e.into())
-            }
+            TaskKind::AssetDownload => handler::download_asset(self).await.map_err(|e| e.into()),
+            TaskKind::AssetTransport => handler::transport_asset(self).await.map_err(|e| e.into()),
         }
     }
 }

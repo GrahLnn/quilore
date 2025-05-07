@@ -1,6 +1,4 @@
-use crate::utils::serialize::{
-    i64_from_string_or_number, i64_to_string, into_u32_from_string_or_number,
-};
+use crate::utils::serialize::into_u32_from_string_or_number;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -23,6 +21,5 @@ pub async fn take_post_chunk(cursor: Option<u32>) -> Result<LikedChunk, String> 
         .last()
         .map(|p| p.sortidx)
         .ok_or_else(|| "No data found".to_string())?;
-    dbg!(&data.len());
     Ok(LikedChunk { cursor, data })
 }

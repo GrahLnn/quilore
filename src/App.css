@@ -188,10 +188,31 @@ h1 {
   }
 }
 
-[data-rounded-scroll='true'] div::-webkit-scrollbar {
+[data-rounded-scroll="true"] div::-webkit-scrollbar {
   display: none;
 }
-[data-rounded-scroll='true'] div {
+[data-rounded-scroll="true"] div {
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+@keyframes bg-slide {
+  0% {
+    background-position: -100% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+@keyframes bgmove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
