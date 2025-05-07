@@ -28,6 +28,7 @@ use tokio::time::sleep;
 use utils::event::ImportEvent;
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
+use utils::macos_window;
 
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
@@ -108,18 +109,17 @@ pub fn run() {
                             window.set_decorations(false).unwrap();
                         }
 
-                        // #[cfg(target_os = "macos")]
-                        // unsafe {
-                        //     // 这里用前面示例里写的 macos_titlebar 模块
-                        //     macos_titlebar::set_titlebar_style(
-                        //         &window.ns_window().expect("NSWindow 必须存在"),
-                        //         true, // true 表示透明/隐藏 titlebar
-                        //     );
-                        //     macos_titlebar::disable_app_nap(
-                        //         &NSString::alloc(nil)
-                        //             .init_str("File indexer needs to run unimpeded"),
-                        //     );
-                        // }
+                        #[cfg(target_os = "macos")]
+                        unsafe {
+                            macos_window::set_titlebar_style(
+                                &window.ns_window().expect("NSWindow 必须存在"),
+                                false,
+                            );
+                            macos_window::disable_app_nap(
+                                &NSString::alloc(nil)
+                                    .init_str("File indexer needs to run unimpeded"),
+                            );
+                        }
                     }
                     async_runtime::spawn(async move {
                         Scheduler::<Task>::init(handle.clone()).await?;
