@@ -5,6 +5,7 @@ mod utils;
 
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::time::Duration;
 
 use anyhow::Result;
 use database::init_db;
@@ -23,13 +24,14 @@ use domain::platform::job::Job;
 use domain::platform::scheduler::Scheduler;
 use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind};
+use tokio::time::sleep;
 use utils::event::ImportEvent;
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};
@@ -51,6 +53,7 @@ pub fn run() {
             user::scan_likes_timeline,
             meta::get_save_dir,
             file::exists,
+            app_ready,
         ])
         .events(collect_events![
             ScanLikesEvent,
@@ -84,6 +87,40 @@ pub fn run() {
                     let db_path = local_data_dir.join("quilore.db");
                     init_db(db_path).await?;
                     GlobalVal::init().await?;
+
+                    if let Some(window) = handle.get_webview_window("main") {
+                        tokio::spawn({
+                            let window = window.clone();
+                            async move {
+                                sleep(Duration::from_secs(5)).await;
+                                if !window.is_visible().unwrap_or(true) {
+                                    // This happens if the JS bundle crashes and hence doesn't send ready event.
+                                    println!(
+										"Window did not emit `app_ready` event fast enough. Showing window..."
+									);
+                                    window.show().expect("Main window should show");
+                                }
+                            }
+                        });
+
+                        #[cfg(target_os = "windows")]
+                        {
+                            window.set_decorations(false).unwrap();
+                        }
+
+                        // #[cfg(target_os = "macos")]
+                        // unsafe {
+                        //     // 这里用前面示例里写的 macos_titlebar 模块
+                        //     macos_titlebar::set_titlebar_style(
+                        //         &window.ns_window().expect("NSWindow 必须存在"),
+                        //         true, // true 表示透明/隐藏 titlebar
+                        //     );
+                        //     macos_titlebar::disable_app_nap(
+                        //         &NSString::alloc(nil)
+                        //             .init_str("File indexer needs to run unimpeded"),
+                        //     );
+                        // }
+                    }
                     async_runtime::spawn(async move {
                         Scheduler::<Task>::init(handle.clone()).await?;
                         Scheduler::<Job>::init(handle.clone()).await?;
@@ -163,4 +200,11 @@ async fn import_data(path: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     dbg!("done");
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn app_ready(app_handle: AppHandle) {
+    let window = app_handle.get_webview_window("main").unwrap();
+    window.show().unwrap();
 }

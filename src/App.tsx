@@ -17,6 +17,7 @@ function App() {
   const page = usePageName();
   const shouldFlex = station.mainFlex.useValue();
   useEffect(() => {
+    crab.appReady();
     const fetchData = async () => {
       const result = await crab.getMetaValue("FirstLaunch");
       result.tap((v) => {
