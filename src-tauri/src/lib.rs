@@ -3,11 +3,13 @@ mod domain;
 mod enums;
 mod utils;
 
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::Result;
+
 use database::init_db;
 use domain::models::meta;
 use domain::models::meta::GlobalVal;
@@ -24,19 +26,31 @@ use domain::platform::job::Job;
 use domain::platform::scheduler::Scheduler;
 use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind};
+
+use objc2::MainThreadMarker;
 use tokio::time::sleep;
 use utils::event::ImportEvent;
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
-use utils::macos_window;
 
+use once_cell::sync::OnceCell;
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
+use tauri::Window;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_decorum::WebviewWindowExt;
 use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};
 use tokio::task::block_in_place;
+
+#[cfg(target_os = "macos")]
+use utils::macos_titlebar;
+
+#[cfg(target_os = "macos")]
+thread_local! {
+    static MAIN_WINDOW_OBSERVER: RefCell<Option<macos_titlebar::FullscreenStateManager>> = RefCell::new(None);
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -59,7 +73,8 @@ pub fn run() {
         .events(collect_events![
             ScanLikesEvent,
             AssetDownloadBatchEvent,
-            ImportEvent
+            ImportEvent,
+            macos_titlebar::FullScreenEvent
         ]);
 
     #[cfg(debug_assertions)]
@@ -78,6 +93,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
+        // .plugin(tauri_plugin_decorum::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -108,17 +124,63 @@ pub fn run() {
                         {
                             window.set_decorations(false).unwrap();
                         }
-
                         #[cfg(target_os = "macos")]
-                        unsafe {
-                            macos_window::set_titlebar_style(
-                                &window.ns_window().expect("NSWindow 必须存在"),
-                                false,
-                            );
-                            macos_window::disable_app_nap(
-                                &NSString::alloc(nil)
-                                    .init_str("File indexer needs to run unimpeded"),
-                            );
+                        {
+                            // Call the setup function from your new module
+                            macos_titlebar::setup_custom_macos_titlebar(&window);
+
+                            // Manage the FullscreenObserver's lifetime.
+                            // This is a bit tricky because you need to store it somewhere
+                            // so it doesn't get dropped immediately.
+                            // One way is to put it in Tauri's state management if you have complex needs,
+                            // or for a single main window, you might 'leak' it if it needs to live
+                            // for the duration of the app and its Drop impl handles cleanup.
+                            // A better way is to have a struct that holds it and is managed by Tauri's state.
+                            if let Some(mtm) = MainThreadMarker::new() {
+                                // Get MTM for the observer
+                                if let Some(observer) =
+                                    macos_titlebar::FullscreenStateManager::new(&window, mtm)
+                                {
+                                    // How to store `observer`?
+                                    // Option 1: Put it in Tauri's managed state
+                                    MAIN_WINDOW_OBSERVER.with(|cell| {
+                                        let mut observer_ref = cell.borrow_mut();
+                                        *observer_ref = Some(observer);
+                                    });
+                                // Option 2: If you absolutely must leak it (less ideal, but works for app lifetime objects)
+                                // std::mem::forget(observer);
+                                // println!("Fullscreen observer created and forgotten (will live for app duration).");
+                                } else {
+                                    eprintln!("Failed to create FullscreenObserver.");
+                                }
+                            } else {
+                                eprintln!(
+                                    "Failed to get MainThreadMarker for FullscreenObserver setup."
+                                );
+                            }
+
+                            // Example: Listening for window events to re-hide traffic lights if needed (alternative to FullscreenObserver for other events)
+                            let window_clone = window.clone();
+                            window.on_window_event(move |event| {
+                                match event {
+                                    tauri::WindowEvent::Resized(_) => { // Or other relevant events
+                                         // This is a more generic way, but NSWindowDidExitFullScreenNotification is more specific
+                                         // For instance, if some other action makes them reappear.
+                                         // #[cfg(target_os = "macos")]
+                                         // {
+                                         //     if let Some(mtm) = MainThreadMarker::new() {
+                                         //         let ns_window_ptr = window_clone.ns_window().unwrap_or(std::ptr::null_mut()) as *mut objc2_app_kit::NSWindow;
+                                         //         if !ns_window_ptr.is_null() {
+                                         //             if let Some(ns_window_id) = unsafe { Id::retain(ns_window_ptr) } {
+                                         //                 // unsafe { macos_titlebar::hide_native_traffic_lights(&ns_window_id, mtm); }
+                                         //             }
+                                         //         }
+                                         //     }
+                                         // }
+                                    }
+                                    _ => {}
+                                }
+                            });
                         }
                     }
                     async_runtime::spawn(async move {

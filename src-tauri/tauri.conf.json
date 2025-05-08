@@ -10,9 +10,11 @@
     "beforeBuildCommand": "bun build"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "quilore",
+        "hiddenTitle": true,
         "width": 1400,
         "height": 750,
         "minWidth": 768,

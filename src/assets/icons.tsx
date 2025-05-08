@@ -898,4 +898,97 @@ export const icons = {
       </svg>
     );
   },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9IiMyMTIxMjEiPjxwYXRoIGQ9Ik05LjU3LDMuNjE3Yy0uMTU2LS4zNzUtLjUxOS0uNjE3LS45MjQtLjYxN0g0Yy0uNTUyLDAtMSwuNDQ5LTEsMXY0LjY0NmMwLC40MDYsLjI0MiwuNzY5LC42MTgsLjkyNCwuMTI0LC4wNTEsLjI1NSwuMDc2LC4zODMsLjA3NiwuMjYxLDAsLjUxNS0uMTAyLC43MDYtLjI5M2w0LjY0Ny00LjY0N2MuMjg2LS4yODcsLjM3MS0uNzE1LC4yMTYtMS4wODlaIj48L3BhdGg+PHBhdGggZD0iTTE0LjM4Miw4LjQyOWMtLjM3Ny0uMTU2LS44MDQtLjA2OC0xLjA4OSwuMjE3bC00LjY0Nyw0LjY0N2MtLjI4NiwuMjg3LS4zNzEsLjcxNS0uMjE2LDEuMDg5LC4xNTYsLjM3NSwuNTE5LC42MTcsLjkyNCwuNjE3aDQuNjQ2Yy41NTIsMCwxLS40NDksMS0xdi00LjY0NmMwLS40MDYtLjI0Mi0uNzY5LS42MTgtLjkyNFoiPjwvcGF0aD48L2c+PC9zdmc+)
+   * @returns
+   */
+  caretMaximizeDiagonal2({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 12}
+        height={size || 12}
+        viewBox="0 0 12 12"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            d="m10.383,4.93c-.375-.155-.803-.07-1.09.217l-4.146,4.146c-.287.287-.372.715-.217,1.09s.518.617.924.617h4.146c.551,0,1-.449,1-1v-4.146c0-.406-.242-.769-.617-.924Z"
+            strokeWidth="0"
+          />
+          <path
+            d="m6.146,1H2c-.551,0-1,.449-1,1v4.146c0,.406.242.769.617.924.125.052.255.077.384.077.26,0,.514-.102.706-.293L6.854,2.707c.287-.287.372-.715.217-1.09s-.518-.617-.924-.617Z"
+            strokeWidth="0"
+          />
+        </g>
+      </svg>
+    );
+  },
+  crateMinimizeDiagonal2({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 12}
+        height={size || 12}
+        viewBox="0 0 12 12"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            d="m10.896,6h-3.896c-.551,0-1,.449-1,1v3.896c0,.406.243.769.618.924.125.051.254.076.383.076.26,0,.515-.102.706-.293l3.896-3.896c.287-.287.372-.715.217-1.09s-.518-.617-.924-.617Z"
+            strokeWidth="0"
+          />
+          <path
+            d="m5.383.18c-.375-.156-.802-.071-1.09.217L.396,4.293c-.287.287-.372.715-.217,1.09s.518.617.924.617h3.896c.551,0,1-.449,1-1V1.104c0-.406-.242-.769-.617-.924Z"
+            strokeWidth="0"
+          />
+        </g>
+      </svg>
+    );
+  },
+
+  minussm({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 12}
+        height={size || 12}
+        viewBox="0 0 12 12"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <line x1="10.75" y1="6" x2="1.25" y2="6" />
+        </g>
+      </svg>
+    );
+  },
+  xmarksm({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 12}
+        height={size || 12}
+        viewBox="0 0 12 12"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            d="m2.25,10.5c-.192,0-.384-.073-.53-.22-.293-.293-.293-.768,0-1.061L9.22,1.72c.293-.293.768-.293,1.061,0s.293.768,0,1.061l-7.5,7.5c-.146.146-.338.22-.53.22Z"
+            strokeWidth="0"
+          />
+          <path
+            d="m9.75,10.5c-.192,0-.384-.073-.53-.22L1.72,2.78c-.293-.293-.293-.768,0-1.061s.768-.293,1.061,0l7.5,7.5c.293.293.293.768,0,1.061-.146.146-.338.22-.53.22Z"
+            strokeWidth="0"
+          />
+        </g>
+      </svg>
+    );
+  },
 };
