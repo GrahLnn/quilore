@@ -66,7 +66,8 @@ function CtrlButton({
 const LeftControls = memo(() => {
   return (
     <div className="flex items-center px-2 text-[var(--content)]">
-      <logos.tauri className="h-4 w-4 opacity-60" />
+      {os === "macos" && <div className="w-[84px]" />}
+      {/* <logos.tauri className="h-4 w-4 opacity-60" /> */}
     </div>
   );
 });
@@ -95,7 +96,7 @@ const RightControls = memo(() => {
         // "transition duration-300 ease-in-out",
       ])}
     >
-      {(isVisible && isRuning) && (
+      {isVisible && isRuning && (
         <div
           className={cn([
             "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
@@ -119,7 +120,8 @@ const RightControls = memo(() => {
 
       <CtrlButton label="Update" icon={<icons.arrowDown size={14} />} />
 
-      <div className="w-[138px]" />
+      {os === "windows" && <div className="w-[138px]" />}
+      {os === "macos" && <div className="w-[8px]" />}
     </div>
   );
 });
@@ -196,7 +198,7 @@ const TopBar = memo(() => {
 
   return (
     <>
-      {os === "windows" && (
+      {
         <div
           className={cn([
             "fixed top-0 left-0 flex",
@@ -232,7 +234,7 @@ const TopBar = memo(() => {
             </div>
           </div>
         </div>
-      )}
+      }
     </>
   );
 });

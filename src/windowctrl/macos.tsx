@@ -47,6 +47,7 @@ function WindowButton({ className, onClick, icon }: WindowButtonProps) {
 
 function Core() {
   const is_fullscreen = useState<boolean>(false);
+  const windowFocused = isWindowFocus();
   useEffect(() => {
     const unlisten = events.fullScreenEvent.listen((event) => {
       is_fullscreen[1](event.payload.is_fullscreen);
@@ -64,6 +65,8 @@ function Core() {
       className={cn([
         "group flex items-center h-8 mx-4 gap-2",
         is_fullscreen[0] && "opacity-0",
+        !windowFocused && "opacity-30 hover:opacity-100",
+        "transition-all duration-300",
       ])}
     >
       <WindowButton
