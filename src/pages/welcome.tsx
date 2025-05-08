@@ -102,7 +102,7 @@ function OperationButton({
   onClick: () => void;
 }) {
   return (
-    <motion.button
+    <button
       type="submit"
       className={cn([
         "ml-2 flex h-9 min-w-9",
@@ -112,10 +112,9 @@ function OperationButton({
         "transition duration-300",
       ])}
       onClick={onClick}
-      layout
     >
-      {icon}
-    </motion.button>
+      <span style={{ transform: "translateZ(0)" }}>{icon}</span>
+    </button>
   );
 }
 
