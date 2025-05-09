@@ -34,17 +34,6 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
     state === TweetState.Quote ? "rounded-[2px]" : "rounded-lg"
   );
 
-  const folder = () => {
-    switch (media.asset.ty) {
-      case "Media":
-        return "media";
-      case "Thumb":
-        return "thumb";
-      case "Avatar":
-        return "avatar";
-    }
-  };
-
   switch (media.type) {
     case "photo": {
       const path = media.asset.path;
@@ -60,7 +49,7 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
         <LazyImage
           className={cn(
             baseMediaClass,
-            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200"
+            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200 will-change-auto"
           )}
           src={path}
           asset={media.asset}

@@ -48,9 +48,11 @@ export default function DropdownButton({
             "hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-100",
             "data-[state=open]:bg-black/5 dark:data-[state=open]:bg-white/5 data-[state=open]:opacity-100",
             "transition duration-300 ease-in-out",
+            "transform-gpu",
             !isVisible && "opacity-0 pointer-events-none",
             className,
           ])}
+          // style={{ transform: "translateZ(0)" }}
         >
           {children}
         </DropdownMenuTrigger>
@@ -60,7 +62,9 @@ export default function DropdownButton({
               {label}
             </DropdownMenuLabel>
           )}
-          {label && <DropdownMenuSeparator className="dark:opacity-40 opacity-80"/>}
+          {label && (
+            <DropdownMenuSeparator className="dark:opacity-40 opacity-80" />
+          )}
           {items?.map((item) => (
             <React.Fragment key={item.name}>
               <DropdownMenuItem

@@ -102,6 +102,7 @@ pub fn run() {
                 block_on(async move {
                     let local_data_dir = handle.path().app_local_data_dir()?;
                     let db_path = local_data_dir.join("quilore.db");
+                    println!("db_path: {:?}", db_path);
                     init_db(db_path).await?;
                     GlobalVal::init().await?;
 

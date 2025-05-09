@@ -50,7 +50,7 @@ function CtrlButton({
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className={cn(["flex items-center gap-1"])}>
-          {icon}
+          <span style={{ transform: "translateZ(0)" }}>{icon}</span>
           {/* <motion.span
             className={cn(["text-xs trim-cap overflow-hidden", !isHovered && "w-0"])}
             layout

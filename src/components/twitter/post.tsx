@@ -20,9 +20,6 @@ import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 import LazyImage from "../lazyimg";
 
-const libraryPath = "C:\\Users\\grahl\\quill";
-// const compath = (path: string) => `${libraryPath}\\${path}`;
-
 function processText(text: string, urls: string[] | null) {
   let parts: (string | React.ReactNode)[] | string = text;
   if (urls && urls.length > 0) {
@@ -466,7 +463,7 @@ const TweetCard = memo(({ postdata }: TweetCardProps) => {
         "flex flex-col p-3 cursor-default bg-white dark:bg-[#0f0f0f]",
         "border border-[#e1e8ed] dark:border-[#212121] rounded-xl",
         "transition-all duration-500",
-        "select-none"
+        "select-none transform-gpu"
       )}
     >
       <div className="flex flex-col text-[14px]">

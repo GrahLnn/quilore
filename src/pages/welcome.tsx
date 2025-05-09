@@ -109,11 +109,12 @@ function OperationButton({
         "items-center justify-center rounded-full",
         "bg-gray-200 hover:bg-[#d4d4d4] dark:bg-[#171717] dark:hover:bg-[#212121]",
         "opacity-70 hover:opacity-90",
+        "transform-gpu",
         "transition duration-300",
       ])}
       onClick={onClick}
     >
-      <span style={{ transform: "translateZ(0)" }}>{icon}</span>
+      {icon}
     </button>
   );
 }

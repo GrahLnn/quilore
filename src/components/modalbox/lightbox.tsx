@@ -62,7 +62,8 @@ export function Lightbox() {
           }}
           className={cn([
             "fixed top-0 left-0 w-screen h-screen z-100 select-none pt-8",
-            "flex justify-center ",
+            "flex justify-center",
+            "transform-gpu",
             zoomable && toMax ? "items-start" : "items-center",
             "overflow-auto hide-scrollbar",
             isExiting ? "pointer-events-none" : "pointer-events-auto",

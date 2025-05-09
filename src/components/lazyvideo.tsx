@@ -38,6 +38,9 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   const [exists, setExists] = useState(false);
   const assetState = useAssetState();
   const val = assetState.get(asset.name);
+  const [storedRatio, setStoredRatio] = useState<[number, number] | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     if (val) {
@@ -56,6 +59,12 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   useEffect(() => {
     if (inView && videoRef.current) {
       setVideoEl(videoRef.current);
+      if (inView && containerRef.current) {
+        setStoredRatio([
+          containerRef.current.clientWidth,
+          containerRef.current.clientHeight,
+        ]);
+      }
     }
   }, [inView]);
 
@@ -70,7 +79,12 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   return (
     <div
       ref={containerRef}
-      style={{ width: "100%", aspectRatio: `${w} / ${h}` }}
+      className="transform-gpu"
+      style={{
+        width: "100%",
+        aspectRatio: `${w} / ${h}`,
+        height: storedRatio && `${storedRatio[1]}px`,
+      }}
     >
       {inView && exists ? (
         <motion.video
