@@ -113,6 +113,11 @@ pub async fn download_asset(task: Task) -> Result<()> {
     finish_asset_download(&asset)
         .await
         .context("finish_asset_download 失败")?;
+    println!(
+        "下载完成: {:?}, chunk_count: {}",
+        asset.id.key().to_owned(),
+        chunk_count
+    );
     Ok(())
 }
 

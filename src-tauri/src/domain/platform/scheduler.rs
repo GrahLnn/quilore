@@ -7,7 +7,6 @@ use std::{
     time::Duration,
 };
 
-use chrono::Utc;
 use surrealdb::RecordId;
 use tauri::AppHandle;
 use tokio::sync::{
@@ -82,7 +81,7 @@ impl<T: Schedulable> Scheduler<T> {
                             )
                             .await
                             .ok();
-
+                            println!("任务失败: {:?}, 重试次数: {}", item.id(), rc);
                             if rc < 5 {
                                 tokio::time::sleep(Duration::from_secs(5)).await;
                                 let _ = tx_inner.send(item);
