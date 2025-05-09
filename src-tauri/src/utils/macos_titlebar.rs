@@ -1,3 +1,4 @@
+#![cfg(target_os = "macos")]
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, NSObject, ProtocolObject};
@@ -17,7 +18,6 @@ use tauri::WebviewWindow; // Manager for emit
 use tauri_specta::Event;
 
 // --- Helper to show/hide traffic lights ---
-#[cfg(target_os = "macos")]
 unsafe fn set_native_traffic_lights_hidden(
     ns_window: &Retained<NSWindow>,
     hidden: bool,
@@ -37,14 +37,12 @@ unsafe fn set_native_traffic_lights_hidden(
     // println!("[macos_titlebar] Native traffic lights hidden: {}", hidden);
 }
 
-#[cfg(target_os = "macos")]
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 pub struct FullScreenEvent {
     pub is_fullscreen: bool,
 }
 
 // --- Public function to initially hide (called once) ---
-#[cfg(target_os = "macos")]
 unsafe fn hide_native_traffic_lights_initial(
     ns_window: &Retained<NSWindow>,
     mtm: MainThreadMarker,
@@ -52,7 +50,6 @@ unsafe fn hide_native_traffic_lights_initial(
     set_native_traffic_lights_hidden(ns_window, true, mtm);
 }
 
-#[cfg(target_os = "macos")]
 pub fn setup_custom_macos_titlebar(window: &WebviewWindow) {
     window
         .set_title_bar_style(tauri::TitleBarStyle::Overlay)
@@ -88,14 +85,12 @@ pub fn setup_custom_macos_titlebar(window: &WebviewWindow) {
     }
 }
 
-#[cfg(target_os = "macos")]
 pub struct FullscreenStateManager {
     enter_fullscreen_token: Option<Retained<ProtocolObject<dyn NSObjectProtocol>>>,
     will_exit_fullscreen_token: Option<Retained<ProtocolObject<dyn NSObjectProtocol>>>, // New token
     exit_fullscreen_token: Option<Retained<ProtocolObject<dyn NSObjectProtocol>>>,
 }
 
-#[cfg(target_os = "macos")]
 impl FullscreenStateManager {
     pub fn new(webview_window: &WebviewWindow, mtm: MainThreadMarker) -> Option<Self> {
         let ns_window_ptr = webview_window.ns_window().ok()? as *mut objc2_app_kit::NSWindow;
@@ -194,7 +189,6 @@ impl FullscreenStateManager {
     }
 }
 
-#[cfg(target_os = "macos")]
 impl Drop for FullscreenStateManager {
     fn drop(&mut self) {
         let center = unsafe { NSNotificationCenter::defaultCenter() };

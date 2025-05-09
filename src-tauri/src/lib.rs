@@ -27,7 +27,6 @@ use domain::platform::scheduler::Scheduler;
 use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind};
 
-use objc2::MainThreadMarker;
 use tokio::time::sleep;
 use utils::event::ImportEvent;
 use utils::file;
@@ -74,8 +73,10 @@ pub fn run() {
             ScanLikesEvent,
             AssetDownloadBatchEvent,
             ImportEvent,
-            macos_titlebar::FullScreenEvent
         ]);
+
+    #[cfg(target_os = "macos")]
+    let builder = builder.events(collect_events![macos_titlebar::FullScreenEvent]);
 
     #[cfg(debug_assertions)]
     builder
@@ -129,6 +130,7 @@ pub fn run() {
                         {
                             // Call the setup function from your new module
                             macos_titlebar::setup_custom_macos_titlebar(&window);
+                            use objc2::MainThreadMarker;
 
                             // Manage the FullscreenObserver's lifetime.
                             // This is a bit tricky because you need to store it somewhere
