@@ -28,17 +28,14 @@ use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind};
 
 use tokio::time::sleep;
-use utils::event::ImportEvent;
+use utils::event;
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 
-use once_cell::sync::OnceCell;
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
-use tauri::Window;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
-use tauri_plugin_decorum::WebviewWindowExt;
 use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};
 use tokio::task::block_in_place;
@@ -53,30 +50,33 @@ thread_local! {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder: Builder = Builder::new()
-        .commands(collect_commands![
-            interface::take_post_chunk,
-            copy_to_clipboard,
-            meta::upsert_metakv,
-            meta::get_meta_value,
-            upsert_userkv,
-            get_userkv_value,
-            take_single_like,
-            save_all,
-            import_data,
-            user::scan_likes_timeline,
-            meta::get_save_dir,
-            file::exists,
-            app_ready,
-        ])
-        .events(collect_events![
-            ScanLikesEvent,
-            AssetDownloadBatchEvent,
-            ImportEvent,
-        ]);
+    let events = collect_events![
+        ScanLikesEvent,
+        AssetDownloadBatchEvent,
+        event::ImportEvent,
+        event::FullScreenEvent,
+    ];
 
-    #[cfg(target_os = "macos")]
-    let builder = builder.events(collect_events![macos_titlebar::FullScreenEvent]);
+    let commands = collect_commands![
+        interface::take_post_chunk,
+        copy_to_clipboard,
+        meta::upsert_metakv,
+        meta::get_meta_value,
+        upsert_userkv,
+        get_userkv_value,
+        take_single_like,
+        save_all,
+        import_data,
+        user::scan_likes_timeline,
+        meta::get_save_dir,
+        file::exists,
+        app_ready,
+    ];
+
+    // #[cfg(target_os = "macos")]
+    // events.extend(collect_events![macos_titlebar::FullScreenEvent]);
+
+    let builder: Builder = Builder::new().commands(commands).events(events);
 
     #[cfg(debug_assertions)]
     builder
@@ -260,7 +260,7 @@ async fn import_data(path: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())?
         .app
         .clone();
-    ImportEvent { done: true }
+    event::ImportEvent { done: true }
         .emit(&app)
         .map_err(|e| e.to_string())?;
     dbg!("done");

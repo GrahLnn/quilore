@@ -154,7 +154,7 @@ export function convertToBase64HeaderCookie(input: string): string | undefined {
 }
 
 export function isTwitterLoginCookie(input: string): boolean {
-  const requiredKeys = ["kdt", "twid", "ct0", "auth_token"];
+  const requiredKeys = ["twid", "ct0", "auth_token"];
   const format = detectCookieFormat(input);
 
   let cookieMap: Record<string, string> = {};

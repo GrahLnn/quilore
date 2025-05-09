@@ -161,6 +161,7 @@ export function PlatPage() {
   const page = usePlatformName();
 
   useEffect(() => {
+    station.allowBarInteraction.setValue(true);
     setCenterTool({
       key: "posts",
       node: (

@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 import { open } from "@tauri-apps/plugin-dialog";
-// import { PlusIcon } from '@radix-ui/react-icons';
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { icons } from "../assets/icons";
@@ -14,6 +13,7 @@ import {
   type CookieItem,
 } from "../subpub/guideCookie"; // 导入 getValue 和 CookieItem
 import { station } from "../subpub/buses";
+import { setCenterTool } from "../subpub/centerTool";
 
 const transitionDebug = {
   type: "easeOut",
@@ -304,6 +304,10 @@ function AddPlatform() {
 }
 
 export default function Welcome() {
+  useEffect(()=>{
+    setCenterTool(null);
+    station.allowBarInteraction.setValue(false);
+  })
   const guide = useGuide();
   return (
     <div

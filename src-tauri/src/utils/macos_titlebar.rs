@@ -12,10 +12,10 @@ use objc2_app_kit::{
 use objc2_foundation::{
     MainThreadMarker, NSNotification, NSNotificationCenter, NSObjectProtocol, NSOperationQueue,
 };
-use serde::{Deserialize, Serialize};
-use specta::Type;
 use tauri::WebviewWindow; // Manager for emit
 use tauri_specta::Event;
+
+use crate::utils::event::FullScreenEvent;
 
 // --- Helper to show/hide traffic lights ---
 unsafe fn set_native_traffic_lights_hidden(
@@ -35,11 +35,6 @@ unsafe fn set_native_traffic_lights_hidden(
         zoom_button.setHidden(hidden);
     }
     // println!("[macos_titlebar] Native traffic lights hidden: {}", hidden);
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
-pub struct FullScreenEvent {
-    pub is_fullscreen: bool,
 }
 
 // --- Public function to initially hide (called once) ---

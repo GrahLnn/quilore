@@ -10,6 +10,7 @@ import { isWindowFocus } from "./state_machine/windowFocus";
 import { useCenterTool } from "./subpub/centerTool";
 import { crab } from "./cmd/commandAdapter";
 import { events } from "./cmd/commands";
+import { station } from "./subpub/buses";
 
 const os = platform();
 
@@ -148,6 +149,7 @@ const MiddleControls = memo(() => {
 const TopBar = memo(() => {
   const windowFocused = isWindowFocus();
   const barVisible = isBarVisible();
+  const allowBarInteraction = station.allowBarInteraction.useValue();
 
   // useEffect(() => {
   //   if (!windowFocused) {
@@ -217,21 +219,32 @@ const TopBar = memo(() => {
             className={cn([
               "grid grid-cols-[1fr_auto_1fr] w-full h-full",
               !windowFocused && "opacity-30",
+
               "transition duration-300 ease-in-out",
             ])}
           >
-            <div
-              data-tauri-drag-region
-              className={cn(["flex justify-start pl-1"])}
-            >
-              <LeftControls />
-            </div>
-            <div data-tauri-drag-region className={cn(["flex justify-center"])}>
-              <MiddleControls />
-            </div>
-            <div data-tauri-drag-region className={cn(["flex justify-end"])}>
-              <RightControls />
-            </div>
+            {allowBarInteraction && (
+              <>
+                <div
+                  data-tauri-drag-region
+                  className={cn(["flex justify-start pl-1"])}
+                >
+                  <LeftControls />
+                </div>
+                <div
+                  data-tauri-drag-region
+                  className={cn(["flex justify-center"])}
+                >
+                  <MiddleControls />
+                </div>
+                <div
+                  data-tauri-drag-region
+                  className={cn(["flex justify-end"])}
+                >
+                  <RightControls />
+                </div>
+              </>
+            )}
           </div>
         </div>
       }
