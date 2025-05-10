@@ -13,6 +13,8 @@ import { useAssetState } from "../subpub/assetsState";
 import { Asset } from "../cmd/commands";
 import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
+import { icons } from "../assets/icons";
+import { motion, AnimatePresence } from "motion/react";
 
 const formatTime = (t: number): string => {
   const m = Math.floor(t / 60)
@@ -56,6 +58,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     externalRef
   ) => {
     const innerRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // 把内部 ref 暴露给父组件
     useImperativeHandle(externalRef, () => innerRef.current!, []);
@@ -66,7 +69,40 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const [duration, setDuration] = useState<number>(0);
     const [bufferedEnd, setBufferedEnd] = useState<number>(0);
     const [hoverTime, setHoverTime] = useState<number | null>(null);
-    const [showControls, setShowControls] = useState<boolean>(controls);
+    const [firstClick, setFirstClick] = useState<boolean>(true);
+    const [isHovering, setIsHovering] = useState<boolean>(false);
+
+    // 处理鼠标进入和离开
+    const handleMouseEnter = () => {
+      setIsHovering(true);
+    };
+
+    const handleMouseLeave = () => {
+      setIsHovering(false);
+    };
+
+    // 处理视频区域点击
+    const handleVideoClick = () => {
+      const v = innerRef.current;
+      if (!v) return;
+
+      if (firstClick && muted) {
+        // 第一次点击：解除静音
+        v.muted = false;
+        setMuted(false);
+        setFirstClick(false);
+
+        // 如果视频是暂停状态，同时开始播放
+        if (v.paused) {
+          v.play().catch(() => {
+            setPaused(true);
+          });
+        }
+      } else {
+        // 后续点击：切换播放/暂停状态
+        togglePlay();
+      }
+    };
 
     // 播放 / 暂停
     const togglePlay = () => {
@@ -82,6 +118,11 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       if (!v) return;
       v.muted = !v.muted;
       setMuted(v.muted);
+
+      // 如果是解除静音，标记第一次点击已完成
+      if (!v.muted) {
+        setFirstClick(false);
+      }
     };
 
     // 初始化视频属性和事件监听
@@ -122,7 +163,21 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       const v = innerRef.current;
       if (!v) return;
 
-      const onTimeUpdate = () => setCurrentTime(v.currentTime);
+      let animationFrameId: number;
+
+      const updateProgress = () => {
+        if (v && !v.paused) {
+          setCurrentTime(v.currentTime);
+          animationFrameId = requestAnimationFrame(updateProgress);
+        }
+      };
+
+      const onTimeUpdate = () => {
+        if (v.paused) {
+          setCurrentTime(v.currentTime);
+        }
+      };
+
       const onDurationChange = () => setDuration(v.duration);
       const onProgress = () => {
         const buf = v.buffered;
@@ -130,22 +185,37 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
           setBufferedEnd(buf.end(buf.length - 1));
         }
       };
-      const onPlayPause = () => setPaused(v.paused);
+
+      const onPlay = () => {
+        setPaused(false);
+        animationFrameId = requestAnimationFrame(updateProgress);
+      };
+
+      const onPause = () => {
+        setPaused(true);
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+
       const onVolumeChange = () => setMuted(v.muted);
 
       v.addEventListener("timeupdate", onTimeUpdate);
       v.addEventListener("durationchange", onDurationChange);
       v.addEventListener("progress", onProgress);
-      v.addEventListener("play", onPlayPause);
-      v.addEventListener("pause", onPlayPause);
+      v.addEventListener("play", onPlay);
+      v.addEventListener("pause", onPause);
       v.addEventListener("volumechange", onVolumeChange);
 
       return () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
         v.removeEventListener("timeupdate", onTimeUpdate);
         v.removeEventListener("durationchange", onDurationChange);
         v.removeEventListener("progress", onProgress);
-        v.removeEventListener("play", onPlayPause);
-        v.removeEventListener("pause", onPlayPause);
+        v.removeEventListener("play", onPlay);
+        v.removeEventListener("pause", onPause);
         v.removeEventListener("volumechange", onVolumeChange);
       };
     }, []);
@@ -175,180 +245,196 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       setHoverTime(pct * duration);
     };
 
+    const onFullScreen = (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      const v = innerRef.current;
+      if (!v) return;
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch((err) => {
+          console.error("退出全屏失败:", err);
+        });
+      } else {
+        v.requestFullscreen().catch((err) => {
+          console.error("进入全屏失败:", err);
+        });
+      }
+    };
+
     return (
-      <div className="vc-wrapper">
+      <div
+        ref={containerRef}
+        className={cn(
+          "relative w-full text-base text-white bg-transparent overflow-hidden",
+          className
+        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <video
           ref={innerRef}
-          className={cn("vc-video", className)}
+          className={cn([
+            "w-full block",
+            // controls && "cursor-pointer",
+            className,
+          ])}
           src={convertFileSrc(src)}
           poster={poster ? convertFileSrc(poster) : undefined}
           crossOrigin="anonymous"
+          onClick={handleVideoClick}
         />
 
-        {!controls ? (
-          <>
-            <button className="vc-play-btn" onClick={togglePlay}>
-              {paused ? "▶️" : "⏸️"}
-            </button>
-
-            <div className="vc-controls">
-              <button className="vc-mute-btn" onClick={toggleMute}>
-                {muted ? "🔇" : "🔊"}
+        {controls && (
+          <div
+            className={cn([
+              "transition duration-300",
+              !isHovering && !paused ? "opacity-0" : "opacity-100",
+            ])}
+          >
+            <div className={cn(["absolute top-2 right-2"])}>
+              <button
+                className="bg-[rgba(38,38,38,0.3)] p-1 rounded-full cursor-pointer"
+                onClick={onFullScreen}
+              >
+                <icons.arrowExpandDiagonal />
               </button>
+            </div>
+            {/* 底部控制栏 */}
+            <div
+              className={cn([
+                "absolute bottom-0 left-0 right-0 w-full flex items-center px-3 py-2",
+                "bg-gradient-to-t from-[rgba(0,0,0,0.6)] to-transparent",
+              ])}
+            >
+              {/* 底部小播放按钮 */}
+              <button
+                className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
+                onClick={togglePlay}
+                style={{ filter: "contrast(200)" }}
+              >
+                <AnimatePresence>
+                  <motion.span
+                    key={paused ? "play" : "pause"}
+                    initial={{
+                      opacity: 0,
+                      filter: "blur(10px)",
+                    }}
+                    animate={{
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      transition: {
+                        opacity: { duration: 0.15, delay: 0, ease: "linear" },
+                        filter: { duration: 0.4, delay: 0, ease: "linear" },
+                      },
+                    }}
+                    exit={{
+                      opacity: 0,
+                      filter: "blur(10px)",
+                      transition: {
+                        filter: { duration: 0.4, delay: 0, ease: "linear" },
+                        opacity: { duration: 0.15, delay: 0.3, ease: "linear" },
+                      },
+                    }}
+                    className="absolute inset-0 flex items-center justify-center"
+                  >
+                    {paused ? (
+                      <icons.mediaPlay size={12} />
+                    ) : (
+                      <icons.mediaPause size={12} />
+                    )}
+                  </motion.span>
+                </AnimatePresence>
+              </button>
+
+              {/* 音量按钮 */}
+              <button
+                className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
+                onClick={toggleMute}
+                style={{ filter: "contrast(200)" }}
+              >
+                <AnimatePresence>
+                  <motion.span
+                    key={muted ? "muted" : "unmuted"}
+                    initial={{ opacity: 0, filter: "blur(10px)" }}
+                    animate={{
+                      opacity: 1,
+                      filter: "blur(0px)",
+                      transition: {
+                        opacity: { duration: 0.15, delay: 0, ease: "linear" },
+                        filter: { duration: 0.4, delay: 0, ease: "linear" },
+                      },
+                    }}
+                    exit={{
+                      opacity: 0,
+                      filter: "blur(10px)",
+                      transition: {
+                        filter: { duration: 0.4, delay: 0, ease: "linear" },
+                        opacity: { duration: 0.15, delay: 0.3, ease: "linear" },
+                      },
+                    }}
+                    transition={{
+                      opacity: { duration: 0.15, ease: "linear" },
+                      filter: { duration: 0.4, ease: "linear" },
+                    }}
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ filter: "contrast(200) blur(0.2px)" }}
+                  >
+                    {muted ? (
+                      <icons.volumeOff size={12} />
+                    ) : (
+                      <icons.volumeUp size={12} />
+                    )}
+                  </motion.span>
+                </AnimatePresence>
+              </button>
+
+              {/* 进度条 */}
               <div
-                className="vc-range"
+                className={cn([
+                  "relative flex-1 h-0.5 mx-3 cursor-pointer rounded-full transition shadow",
+                  "hover:shadow-[0_1px_3px_rgba(238,238,238,0.06),0_3px_6px_rgba(235,235,235,0.06),0_6px_12px_rgba(236,236,236,0.06)]",
+                  "before:absolute before:content-[''] before:left-0 before:right-0 before:h-[12px] before:top-[-5px] before:z-10",
+                ])}
                 onClick={onSeek}
                 onMouseMove={onHover}
                 onMouseLeave={() => setHoverTime(null)}
               >
                 <div
-                  className="vc-buffered"
+                  className="absolute top-0 left-0 h-full bg-[rgba(38,38,38,0.5)] rounded-full"
                   style={{
                     width: `${
                       duration > 0 ? (bufferedEnd / duration) * 100 : 0
                     }%`,
+                    transition: bufferedEnd > 0 ? "width 0.25s linear" : "none",
                   }}
                 />
                 <div
-                  className="vc-played"
+                  className="absolute top-0 left-0 h-full bg-white/70 rounded-full"
                   style={{
                     width: `${
                       duration > 0 ? (currentTime / duration) * 100 : 0
                     }%`,
+                    transition:
+                      currentTime > 0.1 ? "width 0.25s linear" : "none",
                   }}
                 />
                 {hoverTime !== null && (
                   <div
-                    className="vc-preview-time"
+                    className="absolute top-[-2em] -translate-x-1/2 bg-[rgba(38,38,38,0.45)] px-1.5 py-0.5 rounded text-sm text-white/70"
                     style={{ left: `${(hoverTime / duration) * 100}%` }}
                   >
                     {formatTime(hoverTime)}
                   </div>
                 )}
               </div>
-            </div>
-          </>
-        ) : (
-          <div className="vc-native-controls">
-            <button className="vc-play-btn" onClick={togglePlay}>
-              {paused ? "▶️" : "⏸️"}
-            </button>
-            <button className="vc-mute-btn" onClick={toggleMute}>
-              {muted ? "🔇" : "🔊"}
-            </button>
-            <div
-              className="vc-range"
-              onClick={onSeek}
-              onMouseMove={onHover}
-              onMouseLeave={() => setHoverTime(null)}
-            >
-              <div
-                className="vc-buffered"
-                style={{
-                  width: `${
-                    duration > 0 ? (bufferedEnd / duration) * 100 : 0
-                  }%`,
-                }}
-              />
-              <div
-                className="vc-played"
-                style={{
-                  width: `${
-                    duration > 0 ? (currentTime / duration) * 100 : 0
-                  }%`,
-                }}
-              />
-              {hoverTime !== null && (
-                <div
-                  className="vc-preview-time"
-                  style={{ left: `${(hoverTime / duration) * 100}%` }}
-                >
-                  {formatTime(hoverTime)}
-                </div>
-              )}
+
+              {/* 时间显示 */}
+              <div className="text-xs font-mono text-white ml-2">
+                {formatTime(duration - currentTime)}
+              </div>
             </div>
           </div>
         )}
-
-        <style>{`
-          .vc-wrapper {
-            position: relative;
-            width: 100%;
-            font-size: 16px;
-            color: #fff;
-            background: #000;
-          }
-          .vc-video {
-            width: 100%;
-            display: block;
-          }
-          .vc-play-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(38, 38, 38, 0.75);
-            border: none;
-            border-radius: 50%;
-            padding: 0.7em;
-            font-size: 1.5em;
-            color: #fff;
-            cursor: pointer;
-          }
-          .vc-controls, .vc-native-controls {
-            position: absolute;
-            bottom: 0.5em;
-            left: 0;
-            right: 0;
-            display: flex;
-            align-items: center;
-            padding: 0 0.8em;
-            background: rgba(0, 0, 0, 0.5);
-          }
-          .vc-native-controls {
-            padding: 0.8em;
-          }
-          .vc-mute-btn {
-            background: rgba(38, 38, 38, 0.75);
-            border: none;
-            border-radius: 50%;
-            padding: 0.3em;
-            font-size: 1.2em;
-            color: #fff;
-            cursor: pointer;
-          }
-          .vc-range {
-            position: relative;
-            flex: 1;
-            height: 4px;
-            margin: 0 0.8em;
-            background: rgba(38, 38, 38, 0.25);
-            cursor: pointer;
-          }
-          .vc-buffered {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: rgba(38, 38, 38, 0.3);
-          }
-          .vc-played {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            background: #fff;
-          }
-          .vc-preview-time {
-            position: absolute;
-            top: -1.6em;
-            transform: translateX(-50%);
-            background: rgba(38, 38, 38, 0.75);
-            padding: 0.2em 0.4em;
-            border-radius: 4px;
-            font-size: 0.8em;
-          }
-        `}</style>
       </div>
     );
   }

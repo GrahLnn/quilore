@@ -816,7 +816,7 @@ export const icons = {
         <g fill={color || "currentColor"}>
           <path
             d="M8.51046 1.83451C8.50224 1.61843 8.40116 1.41641 8.23315 1.28028C8.06513 1.14415 7.84654 1.08716 7.63345 1.12394C3.86817 1.77373 1 5.04655 1 9.00001C1 13.4182 4.58179 17 9 17C13.4182 17 17 13.4182 17 9.00001C17 8.51409 16.9496 8.04679 16.8706 7.59877C16.8314 7.3767 16.6944 7.18403 16.4975 7.07412C16.3006 6.96421 16.0647 6.94874 15.8551 7.03198C15.5058 7.17073 15.1346 7.25001 14.75 7.25001C13.2284 7.25001 11.9789 6.10864 11.7911 4.62575C11.7399 4.22216 11.3764 3.93293 10.9716 3.97381C10.8789 3.98317 10.8187 4.00001 10.75 4.00001C9.54035 4.00001 8.55634 3.04092 8.51046 1.83451Z"
-            fill-opacity="0.4"
+            fillOpacity="0.4"
           />
           <path d="M12.25 2.5C12.664 2.5 13 2.1642 13 1.75C13 1.3358 12.664 1 12.25 1C11.836 1 11.5 1.3358 11.5 1.75C11.5 2.1642 11.836 2.5 12.25 2.5Z" />
           <path d="M14.75 5C15.164 5 15.5 4.6642 15.5 4.25C15.5 3.8358 15.164 3.5 14.75 3.5C14.336 3.5 14 3.8358 14 4.25C14 4.6642 14.336 5 14.75 5Z" />
@@ -987,6 +987,206 @@ export const icons = {
             d="m9.75,10.5c-.192,0-.384-.073-.53-.22L1.72,2.78c-.293-.293-.293-.768,0-1.061s.768-.293,1.061,0l7.5,7.5c.293.293.293.768,0,1.061-.146.146-.338.22-.53.22Z"
             strokeWidth="0"
           />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHBhdGggZD0iTTUuMjUgMi43NUgzLjc1QzMuMTk3NzIgMi43NSAyLjc1IDMuMTk3NzIgMi43NSAzLjc1VjE0LjI1QzIuNzUgMTQuODAyMyAzLjE5NzcyIDE1LjI1IDMuNzUgMTUuMjVINS4yNUM1LjgwMjI4IDE1LjI1IDYuMjUgMTQuODAyMyA2LjI1IDE0LjI1VjMuNzVDNi4yNSAzLjE5NzcyIDUuODAyMjggMi43NSA1LjI1IDIuNzVaIiBmaWxsPSIjMjEyMTIxIiBmaWxsLW9wYWNpdHk9IjAuMyIgZGF0YS1zdHJva2U9Im5vbmUiIHN0cm9rZT0ibm9uZSI+PC9wYXRoPjxwYXRoIGQ9Ik0xNC4yNSAyLjc1SDEyLjc1QzEyLjE5NzcgMi43NSAxMS43NSAzLjE5NzcyIDExLjc1IDMuNzVWMTQuMjVDMTEuNzUgMTQuODAyMyAxMi4xOTc3IDE1LjI1IDEyLjc1IDE1LjI1SDE0LjI1QzE0LjgwMjMgMTUuMjUgMTUuMjUgMTQuODAyMyAxNS4yNSAxNC4yNVYzLjc1QzE1LjI1IDMuMTk3NzIgMTQuODAyMyAyLjc1IDE0LjI1IDIuNzVaIiBmaWxsPSIjMjEyMTIxIiBmaWxsLW9wYWNpdHk9IjAuMyIgZGF0YS1zdHJva2U9Im5vbmUiIHN0cm9rZT0ibm9uZSI+PC9wYXRoPjxwYXRoIGQ9Ik01LjI1IDIuNzVIMy43NUMzLjE5NzcyIDIuNzUgMi43NSAzLjE5NzcyIDIuNzUgMy43NVYxNC4yNUMyLjc1IDE0LjgwMjMgMy4xOTc3MiAxNS4yNSAzLjc1IDE1LjI1SDUuMjVDNS44MDIyOCAxNS4yNSA2LjI1IDE0LjgwMjMgNi4yNSAxNC4yNVYzLjc1QzYuMjUgMy4xOTc3MiA1LjgwMjI4IDIuNzUgNS4yNSAyLjc1WiI+PC9wYXRoPjxwYXRoIGQ9Ik0xNC4yNSAyLjc1SDEyLjc1QzEyLjE5NzcgMi43NSAxMS43NSAzLjE5NzcyIDExLjc1IDMuNzVWMTQuMjVDMTEuNzUgMTQuODAyMyAxMi4xOTc3IDE1LjI1IDEyLjc1IDE1LjI1SDE0LjI1QzE0LjgwMjMgMTUuMjUgMTUuMjUgMTQuODAyMyAxNS4yNSAxNC4yNVYzLjc1QzE1LjI1IDMuMTk3NzIgMTQuODAyMyAyLjc1IDE0LjI1IDIuNzVaIj48L3BhdGg+PC9nPjwvc3ZnPg==)
+   */
+  mediaPause({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path
+            d="M5.25 2.75H3.75C3.19772 2.75 2.75 3.19772 2.75 3.75V14.25C2.75 14.8023 3.19772 15.25 3.75 15.25H5.25C5.80228 15.25 6.25 14.8023 6.25 14.25V3.75C6.25 3.19772 5.80228 2.75 5.25 2.75Z"
+            fill={color || "currentColor"}
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke="none"
+          />
+          <path
+            d="M14.25 2.75H12.75C12.1977 2.75 11.75 3.19772 11.75 3.75V14.25C11.75 14.8023 12.1977 15.25 12.75 15.25H14.25C14.8023 15.25 15.25 14.8023 15.25 14.25V3.75C15.25 3.19772 14.8023 2.75 14.25 2.75Z"
+            fill={color || "currentColor"}
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke="none"
+          />
+          <path d="M5.25 2.75H3.75C3.19772 2.75 2.75 3.19772 2.75 3.75V14.25C2.75 14.8023 3.19772 15.25 3.75 15.25H5.25C5.80228 15.25 6.25 14.8023 6.25 14.25V3.75C6.25 3.19772 5.80228 2.75 5.25 2.75Z" />
+          <path d="M14.25 2.75H12.75C12.1977 2.75 11.75 3.19772 11.75 3.75V14.25C11.75 14.8023 12.1977 15.25 12.75 15.25H14.25C14.8023 15.25 15.25 14.8023 15.25 14.25V3.75C15.25 3.19772 14.8023 2.75 14.25 2.75Z" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHBhdGggZD0iTTUuMjQ1IDIuODc4TDE0LjczNyA4LjEzNEMxNS40MjIgOC41MTMgMTUuNDIyIDkuNDg3IDE0LjczNyA5Ljg2Nkw1LjI0NSAxNS4xMjJDNC41NzYgMTUuNDkzIDMuNzUgMTUuMDE0IDMuNzUgMTQuMjU2VjMuNzQ0QzMuNzUgMi45ODYgNC41NzUgMi41MDcgNS4yNDUgMi44NzhaIiBmaWxsPSIjMjEyMTIxIiBmaWxsLW9wYWNpdHk9IjAuMyIgZGF0YS1zdHJva2U9Im5vbmUiIHN0cm9rZT0ibm9uZSI+PC9wYXRoPjxwYXRoIGQ9Ik01LjI0NSAyLjg3OEwxNC43MzcgOC4xMzRDMTUuNDIyIDguNTEzIDE1LjQyMiA5LjQ4NyAxNC43MzcgOS44NjZMNS4yNDUgMTUuMTIyQzQuNTc2IDE1LjQ5MyAzLjc1IDE1LjAxNCAzLjc1IDE0LjI1NlYzLjc0NEMzLjc1IDIuOTg2IDQuNTc1IDIuNTA3IDUuMjQ1IDIuODc4WiI+PC9wYXRoPjwvZz48L3N2Zz4=)
+   * @returns
+   */
+  mediaPlay({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path
+            d="M5.245 2.878L14.737 8.134C15.422 8.513 15.422 9.487 14.737 9.866L5.245 15.122C4.576 15.493 3.75 15.014 3.75 14.256V3.744C3.75 2.986 4.575 2.507 5.245 2.878Z"
+            fill={color || "currentColor"}
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke="none"
+          />
+          <path d="M5.245 2.878L14.737 8.134C15.422 8.513 15.422 9.487 14.737 9.866L5.245 15.122C4.576 15.493 3.75 15.014 3.75 14.256V3.744C3.75 2.986 4.575 2.507 5.245 2.878Z" />
+        </g>
+      </svg>
+    );
+  },
+  volumeOff({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            d="M14.5 4.41963V2.664C14.5 1.67539 13.4072 1.07941 12.5759 1.61119L7.28056 5H3.75C2.50779 5 1.5 6.00778 1.5 7.25V10.75C1.5 11.9922 2.50779 13 3.75 13H5.60184L14.5 4.41963Z"
+            fillOpacity="0.4"
+          />
+          <path
+            d="M14.5 7.54529L8.21976 13.6012L12.5759 16.3898C13.4072 16.9216 14.5 16.3256 14.5 15.337V7.54529Z"
+            fillOpacity="0.4"
+          />
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M17.2899 1.7294C17.5774 2.02757 17.5688 2.50236 17.2706 2.78988L3.2706 16.2899C2.97243 16.5774 2.49764 16.5688 2.21012 16.2706C1.9226 15.9724 1.93123 15.4976 2.2294 15.2101L16.2294 1.71012C16.5276 1.4226 17.0024 1.43123 17.2899 1.7294Z"
+          />
+        </g>
+      </svg>
+    );
+  },
+  volumeUp({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g fill={color || "currentColor"}>
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M10.0759 1.61119C10.9072 1.07941 12 1.67539 12 2.664V15.337C12 16.3256 10.9072 16.9216 10.0759 16.3898L4.78051 13H2.25C1.00779 13 0 11.9922 0 10.75V7.25C0 6.00778 1.00779 5 2.25 5H4.78056L10.0759 1.61119Z"
+            fillOpacity="0.4"
+          ></path>
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M15.3287 5.11066C15.6216 4.81777 16.0964 4.81777 16.3893 5.11066C18.5372 7.25855 18.5372 10.7414 16.3893 12.8893C16.0964 13.1822 15.6216 13.1822 15.3287 12.8893C15.0358 12.5964 15.0358 12.1215 15.3287 11.8287C16.8908 10.2665 16.8908 7.73343 15.3287 6.17132C15.0358 5.87843 15.0358 5.40355 15.3287 5.11066Z"
+          ></path>
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M13.9454 7.17258C14.2615 7.07665 14.6031 7.19882 14.7867 7.47344C15.403 8.39538 15.403 9.60456 14.7867 10.5265C14.6031 10.8011 14.2615 10.9233 13.9454 10.8274C13.6293 10.7314 13.4132 10.44 13.4132 10.1097V7.89026C13.4132 7.55993 13.6293 7.2685 13.9454 7.17258Z"
+          ></path>
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgdmlld0JveD0iMCAwIDEyIDEyIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PGxpbmUgeDE9IjcuMjY4IiB5MT0iNC43MzIiIHgyPSIxMC41NzMiIHkyPSIxLjQyNyI+PC9saW5lPjxwb2x5bGluZSBwb2ludHM9IjEwLjc1IDUgMTAuNzUgMS4yNSA3IDEuMjUiPjwvcG9seWxpbmU+PGxpbmUgeDE9IjQuNzMyIiB5MT0iNy4yNjgiIHgyPSIxLjQyNyIgeTI9IjEwLjU3MyI+PC9saW5lPjxwb2x5bGluZSBwb2ludHM9IjEuMjUgNyAxLjI1IDEwLjc1IDUgMTAuNzUiPjwvcG9seWxpbmU+PHBhdGggZD0ibTEuMjUsNC4yNXYtMWMwLTEuMTA1Ljg5NS0yLDItMmgxIj48L3BhdGg+PHBhdGggZD0ibTEwLjc1LDcuNzV2MWMwLDEuMTA1LS44OTUsMi0yLDJoLTEiPjwvcGF0aD48L2c+PC9zdmc+)
+   * @returns
+   */
+  expand2({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 12}
+        height={size || 12}
+        viewBox="0 0 12 12"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <line x1="7.268" y1="4.732" x2="10.573" y2="1.427" />
+          <polyline points="10.75 5 10.75 1.25 7 1.25" />
+          <line x1="4.732" y1="7.268" x2="1.427" y2="10.573" />
+          <polyline points="1.25 7 1.25 10.75 5 10.75" />
+          <path d="m1.25,4.25v-1c0-1.105.895-2,2-2h1" />
+          <path d="m10.75,7.75v1c0,1.105-.895,2-2,2h-1" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iIzIxMjEyMSIgZmlsbC1vcGFjaXR5PSIwLjMiIGRhdGEtc3Ryb2tlPSJub25lIiBzdHJva2U9Im5vbmUiPjwvcmVjdD48cGF0aCBkPSJNMTAuNzUgMi43NUgxNS4yNVY3LjI1Ij48L3BhdGg+PHBhdGggZD0iTTE1LjI1IDIuNzVMMTAuNzUgNy4yNSI+PC9wYXRoPjxwYXRoIGQ9Ik0yLjc1IDEwLjc1VjE1LjI1SDcuMjUiPjwvcGF0aD48cGF0aCBkPSJNMi43NSAxNS4yNUw3LjI1IDEwLjc1Ij48L3BhdGg+PC9nPjwvc3ZnPg==)
+   * @returns
+   */
+  arrowExpandDiagonal({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <rect
+            x="3"
+            y="3"
+            width="12"
+            height="12"
+            rx="2"
+            fill={color || "currentColor"}
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke="none"
+          ></rect>
+          <path d="M10.75 2.75H15.25V7.25" />
+          <path d="M15.25 2.75L10.75 7.25" />
+          <path d="M2.75 10.75V15.25H7.25" />
+          <path d="M2.75 15.25L7.25 10.75" />
         </g>
       </svg>
     );
