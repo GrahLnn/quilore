@@ -15,6 +15,8 @@ import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { icons } from "../assets/icons";
 import { motion, AnimatePresence } from "motion/react";
+import { useOSName } from "../subpub/whichos";
+import { Window } from "@tauri-apps/api/window";
 
 const formatTime = (t: number): string => {
   const m = Math.floor(t / 60)
@@ -59,6 +61,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
   ) => {
     const innerRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const os = useOSName();
 
     // 把内部 ref 暴露给父组件
     useImperativeHandle(externalRef, () => innerRef.current!, []);
@@ -250,15 +253,40 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       const v = innerRef.current;
       if (!v) return;
 
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch((err) => {
-          console.error("退出全屏失败:", err);
-        });
-      } else {
-        v.requestFullscreen().catch((err) => {
-          console.error("进入全屏失败:", err);
-        });
+      console.log("尝试全屏前的视频状态:");
+      console.log("  src:", v.src);
+      console.log(
+        "  readyState:",
+        v.readyState,
+        "(0=HAVE_NOTHING, 1=HAVE_METADATA, 2=HAVE_CURRENT_DATA, 3=HAVE_FUTURE_DATA, 4=HAVE_ENOUGH_DATA)"
+      );
+      console.log(
+        "  networkState:",
+        v.networkState,
+        "(0=NETWORK_EMPTY, 1=NETWORK_IDLE, 2=NETWORK_LOADING, 3=NETWORK_NO_SOURCE)"
+      );
+      console.log("  duration:", v.duration);
+      console.log("  paused:", v.paused);
+      console.log("  ended:", v.ended);
+      if (v.error) {
+        console.error(
+          "  视频错误 Video Error:",
+          v.error.message,
+          "代码 Code:",
+          v.error.code
+        );
       }
+      console.log("  videoWidth:", v.videoWidth, "videoHeight:", v.videoHeight);
+
+      os.match({
+        windows: () => {
+          v.requestFullscreen().catch((err) => {
+            console.error("进入全屏失败:", err);
+          });
+        },
+        macos: () => {},
+        _: () => {},
+      });
     };
 
     return (
