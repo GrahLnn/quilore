@@ -94,7 +94,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
         aspectRatio: `${w} / ${h}`,
         height: storedRatio && `${storedRatio[1]}px`,
       }}
-      layout
+      // layout
     >
       {inView && exists ? (
         <motion.img
