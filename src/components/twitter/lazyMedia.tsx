@@ -49,7 +49,7 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
         <LazyImage
           className={cn(
             baseMediaClass,
-            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200 will-change-auto z-[9999]"
+            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200 will-change-auto"
           )}
           src={path}
           asset={media.asset}

@@ -15,10 +15,11 @@ import { useLanguageState } from "@/src/state_machine/language";
 import { DataTag } from "@/src/utils/enums";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "motion/react";
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 import LazyImage from "../lazyimg";
+import { station } from "@/src/subpub/buses";
 
 function processText(text: string, urls: string[] | null) {
   let parts: (string | React.ReactNode)[] | string = text;
@@ -196,10 +197,10 @@ function ContentEle({ content }: { content: Content }) {
           initial={{ filter: "blur(6px)", opacity: 0 }}
           animate={{ filter: "blur(0px)", opacity: 1 }}
           exit={{ filter: "blur(6px)", opacity: 0 }}
-          transition={{ 
-            duration: 0.3, 
+          transition={{
+            duration: 0.3,
             ease: "linear",
-            filter: { clampWhenFinished: true } 
+            filter: { clampWhenFinished: true },
           }}
         >
           {parts}
@@ -457,14 +458,37 @@ interface TweetCardProps {
 
 const TweetCard = memo(({ postdata }: TweetCardProps) => {
   if (!postdata) return null;
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const curIntractID = station.intractID.watch();
+  const handleInteraction = () => {
+    station.intractID.set(postdata.rest_id);
+  };
+  useEffect(() => {
+    const wrap = wrapperRef.current;
+    if (!wrap) return;
+    const cell = wrap.closest<HTMLElement>('[role="gridcell"]');
+    if (!cell) return;
+    if (curIntractID === postdata.rest_id) {
+      cell.style.zIndex = "100"; // 激活时提高层级
+    } else {
+      cell.style.zIndex = ""; // 恢复默认
+    }
+  }, [curIntractID, postdata.rest_id]);
   return (
     <div
+      ref={wrapperRef}
       className={cn(
         "flex flex-col p-3 cursor-default bg-white dark:bg-[#0f0f0f]",
         "border border-[#e1e8ed] dark:border-[#212121] rounded-xl",
         "transition-all duration-500",
-        "select-none transform-gpu"
+        "select-none"
       )}
+      onClick={handleInteraction}
+      onContextMenu={handleInteraction}
+      onMouseEnter={handleInteraction}
+      onMouseLeave={handleInteraction}
+      onFocusCapture={handleInteraction}
+      onBlurCapture={handleInteraction}
     >
       <div className="flex flex-col text-[14px]">
         <div className="mb-2 flex justify-between items-start gap-4">
@@ -487,4 +511,3 @@ const TweetCard = memo(({ postdata }: TweetCardProps) => {
 });
 
 export default TweetCard;
-

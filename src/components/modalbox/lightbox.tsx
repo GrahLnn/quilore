@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toggleVisibility } from "@/src/state_machine/barVisible";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Asset } from "@/src/cmd/commands";
+import { createPortal } from "react-dom";
 
 export type LightboxPayload = {
   images: Asset[];
@@ -45,7 +46,7 @@ export function Lightbox() {
     }
   }, [isExiting]);
 
-  return (
+  return createPortal(
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -115,6 +116,7 @@ export function Lightbox() {
             />
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+    document.body
   );
 }

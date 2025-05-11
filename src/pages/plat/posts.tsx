@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { crab } from "@/src/cmd/commandAdapter";
 import type { LikedPost, Post } from "@/src/cmd/commands";
 import TweetCard from "@/src/components/twitter/post";
-import { Masonry } from "masonic";
+import { Masonry, useMasonry } from "masonic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scrollbar } from "../../components/scrollbar";
 import { useScrollYRef } from "../../hooks/scroll";
@@ -194,6 +194,7 @@ export default function Posts({
       {sortedIdxList.length > 0 ? (
         <Masonry
           items={sortedIdxList}
+          itemKey={({ id }) => id}
           overscanBy={6}
           columnGutter={16}
           columnWidth={340}
