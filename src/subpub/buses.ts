@@ -6,6 +6,7 @@ export const station = {
   mainFlex: createBus<boolean>(false),
   saveDir: createBus<string | null>(null),
   allowBarInteraction: createBus<boolean>(true),
+  curExpandImg: createBus<string | null>(null),
 };
 
 export const sizeMap: Map<string, [number, number]> = new Map();

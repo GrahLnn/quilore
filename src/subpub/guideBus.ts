@@ -7,9 +7,9 @@ export enum Guide {
 }
 
 export const {
-  useValue: useGuide,
-  setValue: setRawGuide,
-  getValue: getRawGuide,
+  watch: useGuide,
+  set: setRawGuide,
+  get: getRawGuide,
 } = createBus<Matchable<Guide>>(matchable(Guide.SetSaveDir));
 
 export const setGuide = (guide: Guide) => setRawGuide(matchable(guide));

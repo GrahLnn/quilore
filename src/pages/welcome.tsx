@@ -11,7 +11,7 @@ import {
   viewGuideC,
   getGuideC,
   type CookieItem,
-} from "../subpub/guideCookie"; // 导入 getValue 和 CookieItem
+} from "../subpub/guideCookie"; // 导入 get 和 CookieItem
 import { station } from "../subpub/buses";
 import { setCenterTool } from "../subpub/centerTool";
 
@@ -164,7 +164,7 @@ function SetSaveDir() {
             icon={<icons.arrowRight />}
             onClick={() => {
               crab.upsertMetakv("SaveDir", folderPath);
-              station.saveDir.setValue(folderPath);
+              station.saveDir.set(folderPath);
               setGuide(Guide.AddPlatform);
             }}
           />
@@ -306,7 +306,7 @@ function AddPlatform() {
 export default function Welcome() {
   useEffect(()=>{
     setCenterTool(null);
-    station.allowBarInteraction.setValue(false);
+    station.allowBarInteraction.set(false);
   })
   const guide = useGuide();
   return (

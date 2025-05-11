@@ -13,7 +13,7 @@ import DropdownSettings from "@/src/components/dropdownSettings";
 import { open } from "@tauri-apps/plugin-dialog";
 
 const Title = () => {
-  const title = station.postsTitle.useValue();
+  const title = station.postsTitle.watch();
   return <div className="text-trim-cap">{title}</div>;
 };
 const EditCookies = () => {
@@ -161,7 +161,7 @@ export function PlatPage() {
   const page = usePlatformName();
 
   useEffect(() => {
-    station.allowBarInteraction.setValue(true);
+    station.allowBarInteraction.set(true);
     setCenterTool({
       key: "posts",
       node: (

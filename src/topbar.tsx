@@ -149,7 +149,7 @@ const MiddleControls = memo(() => {
 const TopBar = memo(() => {
   const windowFocused = isWindowFocus();
   const barVisible = isBarVisible();
-  const allowBarInteraction = station.allowBarInteraction.useValue();
+  const allowBarInteraction = station.allowBarInteraction.watch();
 
   // useEffect(() => {
   //   if (!windowFocused) {

@@ -6,7 +6,7 @@ export interface CookieItem {
   cookie: string;
 }
 
-const { useValue: useGuideC, setValue: setGuideC, getValue: getGuideC } = createBus<CookieItem[]>([]);
+const { watch: useGuideC, set: setGuideC, get: getGuideC } = createBus<CookieItem[]>([]);
 
 function viewGuideC() {
   const v = useGuideC();

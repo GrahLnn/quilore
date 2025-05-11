@@ -9,9 +9,9 @@ export enum Page {
 }
 
 export const {
-  useValue: usePageName,
-  setValue: setRawPageName,
-  getValue: getRawPageName,
+  watch: usePageName,
+  set: setRawPageName,
+  get: getRawPageName,
 } = createBus<Matchable<Page>>(matchable(Page.Main));
 
 // 提供更方便的设置页面方法，自动转换为 Matchable

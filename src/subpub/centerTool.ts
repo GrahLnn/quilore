@@ -6,7 +6,7 @@ export interface CenterToolProp {
 }
 
 export const {
-  useValue: useCenterTool,
-  setValue: setCenterTool,
-  getValue: getCenterTool,
+  watch: useCenterTool,
+  set: setCenterTool,
+  get: getCenterTool,
 } = createBus<CenterToolProp | null>(null);

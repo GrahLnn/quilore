@@ -1,7 +1,7 @@
 import { createBus } from "./core";
 
 export const {
-  useValue: useAssetState,
-  setValue: setAssetState,
-  getValue: getAssetState,
+  watch: useAssetState,
+  set: setAssetState,
+  get: getAssetState,
 } = createBus<Map<string, boolean>>(new Map());

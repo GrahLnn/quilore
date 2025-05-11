@@ -15,7 +15,7 @@ import { station } from "./subpub/buses";
 
 function App() {
   const page = usePageName();
-  const shouldFlex = station.mainFlex.useValue();
+  const shouldFlex = station.mainFlex.watch();
   useEffect(() => {
     crab.appReady();
     const fetchData = async () => {
@@ -25,7 +25,7 @@ function App() {
       });
       const savedir = await crab.getSaveDir();
       savedir.tap((v) => {
-        station.saveDir.setValue(v);
+        station.saveDir.set(v);
       });
     };
 

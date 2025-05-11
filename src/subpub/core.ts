@@ -33,26 +33,26 @@ export class Bus<T> {
 export function createBus<T>(initialValue: T) {
   const bus = new Bus<T>(initialValue);
 
-  function useValue() {
-    const [value, setValue] = useState(() => bus.get());
+  function watch() {
+    const [value, set] = useState(() => bus.get());
     useEffect(() => {
-      const unsubscribe = bus.subscribe(setValue);
+      const unsubscribe = bus.subscribe(set);
       return unsubscribe;
     }, []);
     return value;
   }
 
-  function setValue(value: T) {
+  function set(value: T) {
     bus.set(value);
   }
 
-  function getValue() {
+  function get() {
     return bus.get();
   }
 
   return {
-    useValue,
-    setValue,
-    getValue,
+    watch,
+    set,
+    get,
   };
 }

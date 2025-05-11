@@ -18,7 +18,7 @@ interface LazyMediaProps {
 }
 
 const MediaElement = ({ media, state }: LazyMediaProps) => {
-  const savedir = station.saveDir.useValue();
+  const savedir = station.saveDir.watch();
   if (!savedir) return;
   const errcn =
     "bg-gray-50 text-gray-500 p-4 text-center rounded-lg border border-dashed border-gray-300 italic";

@@ -6,9 +6,9 @@ export enum Platform {
 }
 
 export const {
-  useValue: usePlatformName,
-  setValue: setRawPlatformName,
-  getValue: getRawPlatformName,
+  watch: usePlatformName,
+  set: setRawPlatformName,
+  get: getRawPlatformName,
 } = createBus<Matchable<Platform>>(matchable(Platform.Twitter));
 
 // 提供更方便的设置页面方法，自动转换为 Matchable

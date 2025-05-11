@@ -134,9 +134,9 @@ export default function Posts({
 
   useEffect(() => {
     if (sortedIdxList.length === 0 && !isLoading) {
-      station.postsTitle.setValue("Welcome");
+      station.postsTitle.set("Welcome");
     } else {
-      station.postsTitle.setValue("X.Likes");
+      station.postsTitle.set("X.Likes");
     }
   });
 

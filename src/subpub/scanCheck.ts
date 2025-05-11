@@ -1,7 +1,7 @@
 import { createBus } from "./core";
 
 export const {
-  useValue: useScanCheck,
-  setValue: setScanCheck,
-  getValue: getScanCheck,
+  watch: useScanCheck,
+  set: setScanCheck,
+  get: getScanCheck,
 } = createBus<boolean>(false);

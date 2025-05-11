@@ -8,7 +8,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
-import { sizeMap } from "../subpub/buses";
+import { sizeMap, station } from "../subpub/buses";
 import { createPortal } from "react-dom";
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -45,9 +45,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   const assetState = useAssetState();
   const val = assetState.get(asset.name);
 
-  const [isCleared, setClear] = useState(false);
-
-  const [expand, setExpand] = useState(false);
+  const curExpandImg = station.curExpandImg.watch();
 
   // 当 val 变化且不是 undefined 时触发重绘
   useEffect(() => {
@@ -78,7 +76,6 @@ const LazyImage: React.FC<LazyImageProps> = ({
   useEffect(() => {
     if (imgEl && !inView) {
       clearImg(imgEl);
-      setClear(true);
     }
     return () => {
       if (imgEl && !inView) clearImg(imgEl);
@@ -94,13 +91,17 @@ const LazyImage: React.FC<LazyImageProps> = ({
         aspectRatio: `${w} / ${h}`,
         height: storedRatio && `${storedRatio[1]}px`,
       }}
-      // layout
     >
-      {inView && exists ? (
+      {inView && exists && curExpandImg !== asset.name ? (
         <motion.img
           ref={imgRef}
           src={convertFileSrc(src)}
-          onClick={onClick}
+          onClick={(e) => {
+            if (onClick) {
+              onClick(e);
+              station.curExpandImg.set(asset.name);
+            }
+          }}
           className={className}
           alt={alt}
           layoutId={asset.name}
