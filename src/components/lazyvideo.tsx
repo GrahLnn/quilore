@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { icons } from "../assets/icons";
 import { motion, AnimatePresence } from "motion/react";
 import { useOSName } from "../subpub/whichos";
-import { Window } from "@tauri-apps/api/window";
 
 const formatTime = (t: number): string => {
   const m = Math.floor(t / 60)
@@ -61,6 +60,10 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
   ) => {
     const innerRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const progressRef = useRef<HTMLDivElement>(null);
+    const bufferRef = useRef<HTMLDivElement>(null);
+    const hoverTooltipRef = useRef<HTMLDivElement>(null);
+    const timeDisplayRef = useRef<HTMLDivElement>(null);
     const os = useOSName();
 
     // 把内部 ref 暴露给父组件
@@ -68,24 +71,27 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
 
     const [paused, setPaused] = useState<boolean>(!autoPlay);
     const [muted, setMuted] = useState<boolean>(initialMuted);
-    const [currentTime, setCurrentTime] = useState<number>(0);
+    // const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
     const [bufferedEnd, setBufferedEnd] = useState<number>(0);
-    const [hoverTime, setHoverTime] = useState<number | null>(null);
+    // const [hoverTime, setHoverTime] = useState<number | null>(null);
     const [firstClick, setFirstClick] = useState<boolean>(true);
     const [isHovering, setIsHovering] = useState<boolean>(false);
 
     // 处理鼠标进入和离开
     const handleMouseEnter = () => {
+      if (!controls) return;
       setIsHovering(true);
     };
 
     const handleMouseLeave = () => {
+      if (!controls) return;
       setIsHovering(false);
     };
 
     // 处理视频区域点击
     const handleVideoClick = () => {
+      if (!controls) return;
       const v = innerRef.current;
       if (!v) return;
 
@@ -169,23 +175,41 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       let animationFrameId: number;
 
       const updateProgress = () => {
-        if (v && !v.paused) {
-          setCurrentTime(v.currentTime);
+        if (v && !v.paused && progressRef.current && timeDisplayRef.current) {
+          // 直接更新 DOM 而不是设置 state
+          const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
+          progressRef.current.style.width = `${pct}%`;
+          timeDisplayRef.current.textContent = formatTime(
+            v.duration - v.currentTime
+          );
+
           animationFrameId = requestAnimationFrame(updateProgress);
         }
       };
+      const onLoaded = () => {
+        setDuration(v.duration);
+        updateProgress();
+      };
+      
 
       const onTimeUpdate = () => {
-        if (v.paused) {
-          setCurrentTime(v.currentTime);
+        if (v.paused && progressRef.current && timeDisplayRef.current) {
+          const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
+          progressRef.current.style.width = `${pct}%`;
+          timeDisplayRef.current.textContent = formatTime(
+            v.duration - v.currentTime
+          );
         }
       };
 
       const onDurationChange = () => setDuration(v.duration);
       const onProgress = () => {
         const buf = v.buffered;
-        if (buf.length) {
-          setBufferedEnd(buf.end(buf.length - 1));
+        if (buf.length && bufferRef.current) {
+          const bufEnd = buf.end(buf.length - 1);
+          const pct = v.duration > 0 ? (bufEnd / v.duration) * 100 : 0;
+          bufferRef.current.style.width = `${pct}%`;
+          setBufferedEnd(bufEnd);
         }
       };
 
@@ -203,17 +227,21 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
 
       const onVolumeChange = () => setMuted(v.muted);
 
-      v.addEventListener("timeupdate", onTimeUpdate);
-      v.addEventListener("durationchange", onDurationChange);
-      v.addEventListener("progress", onProgress);
-      v.addEventListener("play", onPlay);
-      v.addEventListener("pause", onPause);
-      v.addEventListener("volumechange", onVolumeChange);
+      if (controls) {
+        v.addEventListener("loadedmetadata", onLoaded);
+        v.addEventListener("timeupdate", onTimeUpdate);
+        v.addEventListener("durationchange", onDurationChange);
+        v.addEventListener("progress", onProgress);
+        v.addEventListener("play", onPlay);
+        v.addEventListener("pause", onPause);
+        v.addEventListener("volumechange", onVolumeChange);
+      }
 
       return () => {
-        if (animationFrameId) {
+        if (animationFrameId && controls) {
           cancelAnimationFrame(animationFrameId);
         }
+        v.removeEventListener("loadedmetadata", onLoaded);
         v.removeEventListener("timeupdate", onTimeUpdate);
         v.removeEventListener("durationchange", onDurationChange);
         v.removeEventListener("progress", onProgress);
@@ -225,6 +253,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
 
     // 点击进度条跳转
     const onSeek = (e: MouseEvent<HTMLDivElement>) => {
+      if (!controls) return;
       const v = innerRef.current;
       const target = e.currentTarget;
       const rect = target.getBoundingClientRect();
@@ -239,44 +268,30 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
 
     // hover 计算预览时间
     const onHover = (e: MouseEvent<HTMLDivElement>) => {
+      if (!controls) return;
       const target = e.currentTarget;
       const rect = target.getBoundingClientRect();
       const pct = Math.min(
         Math.max((e.clientX - rect.left) / rect.width, 0),
         1
       );
-      setHoverTime(pct * duration);
+      const tip = hoverTooltipRef.current;
+      if (!tip) return;
+      const sec = pct * duration;
+      tip.style.display = "block";
+      tip.style.left = `${pct * 100}%`;
+      tip.textContent = formatTime(sec);
+    };
+    const onHoverLeave = () => {
+      if (hoverTooltipRef.current && controls) {
+        hoverTooltipRef.current.style.display = "none";
+      }
     };
 
     const onFullScreen = (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       const v = innerRef.current;
       if (!v) return;
-
-      console.log("尝试全屏前的视频状态:");
-      console.log("  src:", v.src);
-      console.log(
-        "  readyState:",
-        v.readyState,
-        "(0=HAVE_NOTHING, 1=HAVE_METADATA, 2=HAVE_CURRENT_DATA, 3=HAVE_FUTURE_DATA, 4=HAVE_ENOUGH_DATA)"
-      );
-      console.log(
-        "  networkState:",
-        v.networkState,
-        "(0=NETWORK_EMPTY, 1=NETWORK_IDLE, 2=NETWORK_LOADING, 3=NETWORK_NO_SOURCE)"
-      );
-      console.log("  duration:", v.duration);
-      console.log("  paused:", v.paused);
-      console.log("  ended:", v.ended);
-      if (v.error) {
-        console.error(
-          "  视频错误 Video Error:",
-          v.error.message,
-          "代码 Code:",
-          v.error.code
-        );
-      }
-      console.log("  videoWidth:", v.videoWidth, "videoHeight:", v.videoHeight);
 
       os.match({
         windows: () => {
@@ -425,9 +440,10 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                 ])}
                 onClick={onSeek}
                 onMouseMove={onHover}
-                onMouseLeave={() => setHoverTime(null)}
+                onMouseLeave={onHoverLeave}
               >
                 <div
+                  ref={bufferRef}
                   className="absolute top-0 left-0 h-full bg-[rgba(38,38,38,0.5)] rounded-full"
                   style={{
                     width: `${
@@ -437,29 +453,20 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                   }}
                 />
                 <div
+                  ref={progressRef}
                   className="absolute top-0 left-0 h-full bg-white/70 rounded-full"
-                  style={{
-                    width: `${
-                      duration > 0 ? (currentTime / duration) * 100 : 0
-                    }%`,
-                    transition:
-                      currentTime > 0.1 ? "width 0.25s linear" : "none",
-                  }}
                 />
-                {hoverTime !== null && (
-                  <div
-                    className="absolute top-[-2em] -translate-x-1/2 bg-[rgba(38,38,38,0.45)] px-1.5 py-0.5 rounded text-sm text-white/70"
-                    style={{ left: `${(hoverTime / duration) * 100}%` }}
-                  >
-                    {formatTime(hoverTime)}
-                  </div>
-                )}
+                <div
+                  ref={hoverTooltipRef}
+                  className="absolute top-[-2em] -translate-x-1/2 bg-[rgba(38,38,38,0.45)] px-1.5 py-0.5 rounded text-sm text-white/70 pointer-events-none"
+                />
               </div>
 
               {/* 时间显示 */}
-              <div className="text-xs font-mono text-white ml-2">
-                {formatTime(duration - currentTime)}
-              </div>
+              <div
+                ref={timeDisplayRef}
+                className="text-xs font-mono text-white ml-2"
+              />
             </div>
           </div>
         )}

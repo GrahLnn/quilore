@@ -9,6 +9,7 @@ import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { sizeMap } from "../subpub/buses";
+import { createPortal } from "react-dom";
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -45,6 +46,8 @@ const LazyImage: React.FC<LazyImageProps> = ({
   const val = assetState.get(asset.name);
 
   const [isCleared, setClear] = useState(false);
+
+  const [expand, setExpand] = useState(false);
 
   // 当 val 变化且不是 undefined 时触发重绘
   useEffect(() => {
@@ -83,7 +86,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   }, [inView, imgEl]);
 
   return (
-    <div
+    <motion.div
       ref={containerRef}
       className="transform-gpu"
       style={{
@@ -91,15 +94,16 @@ const LazyImage: React.FC<LazyImageProps> = ({
         aspectRatio: `${w} / ${h}`,
         height: storedRatio && `${storedRatio[1]}px`,
       }}
+      layout
     >
       {inView && exists ? (
-        // biome-ignore lint/a11y/useAltText: <explanation>
         <motion.img
           ref={imgRef}
           src={convertFileSrc(src)}
           onClick={onClick}
           className={className}
           alt={alt}
+          layoutId={asset.name}
         />
       ) : (
         <div
@@ -113,7 +117,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
           )}
         />
       )}
-    </div>
+    </motion.div>
   );
 };
 

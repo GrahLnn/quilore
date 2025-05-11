@@ -40,7 +40,7 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
 
       const handleOpenLightbox = () => {
         openLightbox({
-          images: [path],
+          images: [media.asset],
           currentIndex: 0,
         });
       };
@@ -49,7 +49,7 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
         <LazyImage
           className={cn(
             baseMediaClass,
-            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200 will-change-auto"
+            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200 will-change-auto z-[9999]"
           )}
           src={path}
           asset={media.asset}
