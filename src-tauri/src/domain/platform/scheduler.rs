@@ -52,12 +52,12 @@ impl<T: Schedulable> Scheduler<T> {
         let tx = self.tx.clone();
 
         // 初始化：从数据库加载 Pending 任务
-        let pending = T::load_pending().await.expect("加载 Pending 失败");
-        for item in pending {
-            if let Err(e) = tx.send(item) {
-                tracing::error!("无法发送初始化任务: {}", e);
-            }
-        }
+        // let pending = T::load_pending().await.expect("加载 Pending 失败");
+        // for item in pending {
+        //     if let Err(e) = tx.send(item) {
+        //         tracing::error!("无法发送初始化任务: {}", e);
+        //     }
+        // }
 
         // Worker loop
         tokio::spawn(async move {

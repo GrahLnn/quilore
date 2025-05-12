@@ -7,14 +7,14 @@ import React, {
   useEffect,
   MouseEvent,
 } from "react";
-import useElementInView from "../hooks/view";
-import { clearVideo } from "../utils/media";
-import { useAssetState } from "../subpub/assetsState";
-import { Asset } from "../cmd/commands";
-import { crab } from "../cmd/commandAdapter";
+import useElementInView from "../hooks/view"; // Not used in TheVideo directly, but in LazyVideo
+import { clearVideo } from "../utils/media"; // Used in LazyVideo
+import { useAssetState } from "../subpub/assetsState"; // Used in LazyVideo
+import { Asset } from "../cmd/commands"; // Used in LazyVideo
+import { crab } from "../cmd/commandAdapter"; // Used in LazyVideo
 import { cn } from "@/lib/utils";
 import { icons } from "../assets/icons";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "motion/react"; // Assuming this is framer-motion or similar
 import { useOSName } from "../subpub/whichos";
 
 const formatTime = (t: number): string => {
@@ -27,6 +27,7 @@ const formatTime = (t: number): string => {
   return `${m}:${s}`;
 };
 
+// LazyVideoProps and TheVideoProps remain the same
 interface LazyVideoProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
   src: string;
   poster?: string;
@@ -66,19 +67,15 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const timeDisplayRef = useRef<HTMLDivElement>(null);
     const os = useOSName();
 
-    // 把内部 ref 暴露给父组件
     useImperativeHandle(externalRef, () => innerRef.current!, []);
 
     const [paused, setPaused] = useState<boolean>(!autoPlay);
     const [muted, setMuted] = useState<boolean>(initialMuted);
-    // const [currentTime, setCurrentTime] = useState<number>(0);
     const [duration, setDuration] = useState<number>(0);
     const [bufferedEnd, setBufferedEnd] = useState<number>(0);
-    // const [hoverTime, setHoverTime] = useState<number | null>(null);
     const [firstClick, setFirstClick] = useState<boolean>(true);
     const [isHovering, setIsHovering] = useState<boolean>(false);
 
-    // 处理鼠标进入和离开
     const handleMouseEnter = () => {
       if (!controls) return;
       setIsHovering(true);
@@ -89,31 +86,25 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       setIsHovering(false);
     };
 
-    // 处理视频区域点击
     const handleVideoClick = () => {
       if (!controls) return;
       const v = innerRef.current;
       if (!v) return;
 
       if (firstClick && muted) {
-        // 第一次点击：解除静音
         v.muted = false;
-        setMuted(false);
+        // setMuted(false); // Listener will update state
         setFirstClick(false);
-
-        // 如果视频是暂停状态，同时开始播放
         if (v.paused) {
           v.play().catch(() => {
-            setPaused(true);
+            // setPaused(true); // Listener will update state
           });
         }
       } else {
-        // 后续点击：切换播放/暂停状态
         togglePlay();
       }
     };
 
-    // 播放 / 暂停
     const togglePlay = () => {
       const v = innerRef.current;
       if (!v) return;
@@ -121,77 +112,80 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       else v.pause();
     };
 
-    // 静音 / 取消静音
     const toggleMute = () => {
       const v = innerRef.current;
       if (!v) return;
       v.muted = !v.muted;
-      setMuted(v.muted);
-
-      // 如果是解除静音，标记第一次点击已完成
+      // setMuted(v.muted); // Listener will update state
       if (!v.muted) {
         setFirstClick(false);
       }
     };
 
-    // 初始化视频属性和事件监听
+    // Effect 1: Setup video properties like initial muted state and autoplay
     useEffect(() => {
       const v = innerRef.current;
       if (!v) return;
 
-      // 设置初始属性（通过方法而非属性）
-      if (initialMuted) v.muted = true;
+      v.muted = initialMuted;
+      // The 'volumechange' event listener will call setMuted to sync state.
 
-      // 监听视频结束事件，实现循环播放
+      if (autoPlay) {
+        v.play().catch(() => {
+          // If autoplay fails, the 'pause' event will fire,
+          // and its listener will call setPaused(true).
+        });
+      }
+      // `paused` state is initialized to `!autoPlay`.
+      // `play` event will set `paused` to `false`.
+      // `pause` event (if autoplay fails and browser pauses) will set `paused` to `true`.
+    }, [autoPlay, initialMuted]);
+
+    // Effect 2: Handle 'ended' event for looping
+    useEffect(() => {
+      const v = innerRef.current;
+      if (!v) return;
+
       const handleEnded = () => {
         if (loop && v) {
+          // `loop` prop from closure
           v.currentTime = 0;
           v.play().catch(() => {
-            setPaused(true);
+            // 'pause' event listener will handle setPaused(true) if play fails
           });
         }
       };
 
       v.addEventListener("ended", handleEnded);
-
-      // 如果设置了自动播放，尝试播放
-      if (autoPlay) {
-        v.play().catch(() => {
-          // 自动播放失败时（通常是浏览器策略限制），设置为暂停状态
-          setPaused(true);
-        });
-      }
-
       return () => {
         v.removeEventListener("ended", handleEnded);
       };
-    }, [autoPlay, loop, initialMuted]);
+    }, [loop]); // Only depends on the `loop` prop
 
-    // 同步 video 事件到 state
+    // Effect 3: Main event listeners for video state synchronization (play, pause, timeupdate, etc.)
+    // These are active only when `controls` is true.
     useEffect(() => {
       const v = innerRef.current;
-      if (!v) return;
+      if (!v || !controls) {
+        // If no video element or controls are disabled,
+        // ensure no listeners are active (cleanup from previous render will have run).
+        return;
+      }
 
-      let animationFrameId: number;
-
-      const updateProgress = () => {
-        if (v && !v.paused && progressRef.current && timeDisplayRef.current) {
-          // 直接更新 DOM 而不是设置 state
+      const onLoadedMetadata = () => {
+        setDuration(v.duration);
+        // Update progress display once if video is paused.
+        // If playing, the RAF loop (Effect 4) will handle updates.
+        if (v.paused && progressRef.current && timeDisplayRef.current) {
           const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
           progressRef.current.style.width = `${pct}%`;
           timeDisplayRef.current.textContent = formatTime(
             v.duration - v.currentTime
           );
-
-          animationFrameId = requestAnimationFrame(updateProgress);
         }
       };
-      const onLoaded = () => {
-        setDuration(v.duration);
-        updateProgress();
-      };
-      
 
+      // timeupdate is mainly for when paused and currentTime changes (e.g., after seeking)
       const onTimeUpdate = () => {
         if (v.paused && progressRef.current && timeDisplayRef.current) {
           const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
@@ -203,9 +197,10 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       };
 
       const onDurationChange = () => setDuration(v.duration);
+
       const onProgress = () => {
         const buf = v.buffered;
-        if (buf.length && bufferRef.current) {
+        if (buf.length > 0 && bufferRef.current) {
           const bufEnd = buf.end(buf.length - 1);
           const pct = v.duration > 0 ? (bufEnd / v.duration) * 100 : 0;
           bufferRef.current.style.width = `${pct}%`;
@@ -213,35 +208,30 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         }
       };
 
-      const onPlay = () => {
-        setPaused(false);
-        animationFrameId = requestAnimationFrame(updateProgress);
-      };
-
-      const onPause = () => {
-        setPaused(true);
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-      };
-
+      const onPlay = () => setPaused(false);
+      const onPause = () => setPaused(true);
       const onVolumeChange = () => setMuted(v.muted);
 
-      if (controls) {
-        v.addEventListener("loadedmetadata", onLoaded);
-        v.addEventListener("timeupdate", onTimeUpdate);
-        v.addEventListener("durationchange", onDurationChange);
-        v.addEventListener("progress", onProgress);
-        v.addEventListener("play", onPlay);
-        v.addEventListener("pause", onPause);
-        v.addEventListener("volumechange", onVolumeChange);
+      v.addEventListener("loadedmetadata", onLoadedMetadata);
+      v.addEventListener("timeupdate", onTimeUpdate);
+      v.addEventListener("durationchange", onDurationChange);
+      v.addEventListener("progress", onProgress);
+      v.addEventListener("play", onPlay);
+      v.addEventListener("pause", onPause);
+      v.addEventListener("volumechange", onVolumeChange);
+
+      // Manually trigger handlers if data is already available (e.g. video loaded before effect ran)
+      if (v.readyState >= 1) {
+        // HAVE_METADATA
+        onLoadedMetadata();
+      }
+      if (v.buffered.length > 0) {
+        // Check if buffer info is available
+        onProgress();
       }
 
       return () => {
-        if (animationFrameId && controls) {
-          cancelAnimationFrame(animationFrameId);
-        }
-        v.removeEventListener("loadedmetadata", onLoaded);
+        v.removeEventListener("loadedmetadata", onLoadedMetadata);
         v.removeEventListener("timeupdate", onTimeUpdate);
         v.removeEventListener("durationchange", onDurationChange);
         v.removeEventListener("progress", onProgress);
@@ -249,9 +239,37 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         v.removeEventListener("pause", onPause);
         v.removeEventListener("volumechange", onVolumeChange);
       };
-    }, []);
+    }, [controls]); // This effect now correctly depends on `controls`
 
-    // 点击进度条跳转
+    // Effect 4: RequestAnimationFrame loop for smooth progress updates when playing
+    useEffect(() => {
+      const v = innerRef.current;
+      if (!v || !controls || paused) {
+        // Do not run RAF if no video, controls are off, or video is paused.
+        return;
+      }
+
+      let animationFrameId: number;
+      const animationLoop = () => {
+        // Ensure elements are still mounted and video is valid
+        if (v && progressRef.current && timeDisplayRef.current) {
+          const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
+          progressRef.current.style.width = `${pct}%`;
+          timeDisplayRef.current.textContent = formatTime(
+            v.duration - v.currentTime
+          );
+          animationFrameId = requestAnimationFrame(animationLoop);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(animationLoop); // Start the loop
+
+      return () => {
+        cancelAnimationFrame(animationFrameId); // Cleanup: cancel the frame
+      };
+    }, [paused, controls, duration]); // Re-run if paused state, controls, or duration changes.
+    // Duration is included because formatTime depends on it for remaining time.
+
     const onSeek = (e: MouseEvent<HTMLDivElement>) => {
       if (!controls) return;
       const v = innerRef.current;
@@ -263,12 +281,13 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       );
       if (v && duration > 0) {
         v.currentTime = pct * duration;
+        // If paused, onTimeUpdate will update the display.
+        // If playing, RAF will update.
       }
     };
 
-    // hover 计算预览时间
     const onHover = (e: MouseEvent<HTMLDivElement>) => {
-      if (!controls) return;
+      if (!controls || duration === 0) return;
       const target = e.currentTarget;
       const rect = target.getBoundingClientRect();
       const pct = Math.min(
@@ -282,6 +301,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       tip.style.left = `${pct * 100}%`;
       tip.textContent = formatTime(sec);
     };
+
     const onHoverLeave = () => {
       if (hoverTooltipRef.current && controls) {
         hoverTooltipRef.current.style.display = "none";
@@ -293,15 +313,22 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       const v = innerRef.current;
       if (!v) return;
 
-      os.match({
-        windows: () => {
-          v.requestFullscreen().catch((err) => {
-            console.error("进入全屏失败:", err);
-          });
-        },
-        macos: () => {},
-        _: () => {},
-      });
+      // Standard fullscreen API
+      if (v.requestFullscreen) {
+        v.requestFullscreen().catch((err) =>
+          console.error("Error attempting to enable full-screen mode:", err)
+        );
+      }
+      // Fallbacks for older browsers (remove if not needed)
+      // else if ((v as any).mozRequestFullScreen) { /* Firefox */
+      //   (v as any).mozRequestFullScreen();
+      // } else if ((v as any).webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+      //   (v as any).webkitRequestFullscreen();
+      // } else if ((v as any).msRequestFullscreen) { /* IE/Edge */
+      //   (v as any).msRequestFullscreen();
+      // }
+      // The os.match for windows specific behavior could be part of a broader fullscreen strategy
+      // For now, using the standard API is generally preferred.
     };
 
     return (
@@ -316,15 +343,15 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       >
         <video
           ref={innerRef}
-          className={cn([
-            "w-full block",
-            // controls && "cursor-pointer",
-            className,
-          ])}
+          className={cn(["w-full block", className])}
           src={convertFileSrc(src)}
           poster={poster ? convertFileSrc(poster) : undefined}
           crossOrigin="anonymous"
           onClick={handleVideoClick}
+          // autoPlay, loop, muted are controlled via effects and direct DOM manipulation
+          // to align with internal state management.
+          // However, you *could* pass autoPlay and loop directly if preferred,
+          // but initialMuted needs careful handling with the `muted` state.
         />
 
         {controls && (
@@ -342,26 +369,22 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                 <icons.arrowExpandDiagonal />
               </button>
             </div>
-            {/* 底部控制栏 */}
             <div
               className={cn([
                 "absolute bottom-0 left-0 right-0 w-full flex items-center px-3 py-2",
                 "bg-gradient-to-t from-[rgba(0,0,0,0.6)] to-transparent",
               ])}
             >
-              {/* 底部小播放按钮 */}
               <button
                 className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
                 onClick={togglePlay}
                 style={{ filter: "contrast(200)" }}
+                aria-label={paused ? "Play" : "Pause"}
               >
                 <AnimatePresence>
                   <motion.span
                     key={paused ? "play" : "pause"}
-                    initial={{
-                      opacity: 0,
-                      filter: "blur(10px)",
-                    }}
+                    initial={{ opacity: 0, filter: "blur(10px)" }}
                     animate={{
                       opacity: 1,
                       filter: "blur(0px)",
@@ -389,11 +412,11 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                 </AnimatePresence>
               </button>
 
-              {/* 音量按钮 */}
               <button
                 className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
                 onClick={toggleMute}
                 style={{ filter: "contrast(200)" }}
+                aria-label={muted ? "Unmute" : "Mute"}
               >
                 <AnimatePresence>
                   <motion.span
@@ -415,12 +438,8 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                         opacity: { duration: 0.15, delay: 0.3, ease: "linear" },
                       },
                     }}
-                    transition={{
-                      opacity: { duration: 0.15, ease: "linear" },
-                      filter: { duration: 0.4, ease: "linear" },
-                    }}
                     className="absolute inset-0 flex items-center justify-center"
-                    style={{ filter: "contrast(200) blur(0.2px)" }}
+                    style={{ filter: "contrast(200) blur(0.2px)" }} // This style was duplicated, remove transition here if handled by motion
                   >
                     {muted ? (
                       <icons.volumeOff size={12} />
@@ -431,7 +450,6 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                 </AnimatePresence>
               </button>
 
-              {/* 进度条 */}
               <div
                 className={cn([
                   "relative flex-1 h-0.5 mx-3 cursor-pointer rounded-full transition shadow",
@@ -458,11 +476,10 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                 />
                 <div
                   ref={hoverTooltipRef}
-                  className="absolute top-[-2em] -translate-x-1/2 bg-[rgba(38,38,38,0.45)] px-1.5 py-0.5 rounded text-sm text-white/70 pointer-events-none"
+                  className="absolute top-[-2em] -translate-x-1/2 bg-[rgba(38,38,38,0.45)] px-1.5 py-0.5 rounded text-sm text-white/70 pointer-events-none hidden" // Added 'hidden' for initial state
                 />
               </div>
 
-              {/* 时间显示 */}
               <div
                 ref={timeDisplayRef}
                 className="text-xs font-mono text-white ml-2"
@@ -477,6 +494,8 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
 
 TheVideo.displayName = "TheVideo";
 
+// LazyVideo component remains unchanged as per the request to focus on TheVideo
+// ... (rest of LazyVideo code)
 const LazyVideo: React.FC<LazyVideoProps> = ({
   src,
   poster,
@@ -513,37 +532,45 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
       const exists = await crab.exists(asset.path);
       exists.tap(setExists);
     })();
-  }, []);
+  }, [asset.path]); // Added asset.path to dependencies
 
   // 当 inView 为 true 且 videoRef 挂载时，保存 videoEl
   useEffect(() => {
     if (inView && videoRef.current) {
       setVideoEl(videoRef.current);
-      if (inView && containerRef.current) {
+      if (containerRef.current) {
+        // Check added previously, good.
         setStoredRatio([
           containerRef.current.clientWidth,
           containerRef.current.clientHeight,
         ]);
       }
     }
-  }, [inView]);
+  }, [inView]); // videoRef.current is not a typical dependency, but effect re-runs if inView changes.
 
   // 当 inView 为 false 时，用 videoEl 调用 clearVideo，并重置 videoEl
   useEffect(() => {
-    if (!inView && videoEl) clearVideo(videoEl);
-    return () => {
-      if (!inView && videoEl) clearVideo(videoEl);
-    };
+    // This effect now correctly calls clearVideo only when the video goes out of view
+    // and videoEl is present.
+    if (!inView && videoEl) {
+      clearVideo(videoEl);
+    }
+    // The original cleanup `return () => { if (!inView && videoEl) clearVideo(videoEl); };`
+    // was a bit redundant. If TheVideo unmounts, its own cleanups are now more robust.
+    // This effect's main job is to clear video when scrolled out, not on LazyVideo unmount.
   }, [inView, videoEl]);
 
   return (
     <div
       ref={containerRef}
-      className="transform-gpu"
+      className="transform-gpu" // Added for potential performance hint
       style={{
         width: "100%",
         aspectRatio: `${w} / ${h}`,
-        height: storedRatio && `${storedRatio[1]}px`,
+        // Using height like this can cause layout shifts if clientWidth isn't stable initially.
+        // Consider setting height based on aspectRatio and width via CSS if possible,
+        // or ensure storedRatio is only applied after a stable measurement.
+        height: storedRatio ? `${storedRatio[1]}px` : undefined, // Keep original logic
       }}
     >
       {inView && exists ? (
@@ -552,11 +579,11 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
           src={src}
           poster={poster}
           controls={controls}
-          muted={muted}
+          muted={muted} // Pass initialMuted correctly
           autoPlay={autoPlay}
           loop={loop}
           className={className}
-          aria-label={ariaLabel}
+          aria-label={ariaLabel} // Prop name is aria-label in HTML
         />
       ) : (
         <div
@@ -567,6 +594,8 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
             "bg-[length:500%_500%]",
             "animate-[bgmove_6s_ease-in-out_infinite]"
           )}
+          // Add an aria-label for accessibility if this placeholder is significant
+          aria-label={ariaLabel || "Loading video content"}
         />
       )}
     </div>

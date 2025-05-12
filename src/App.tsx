@@ -12,6 +12,7 @@ import { MetaKey } from "./cmd/commands";
 import { setPageName, Page, usePageName } from "./subpub/pageBus";
 import { cn } from "@/lib/utils";
 import { station } from "./subpub/buses";
+import { LayoutGroup } from "motion/react";
 
 function App() {
   const page = usePageName();
@@ -32,21 +33,23 @@ function App() {
     fetchData();
   }, []);
   return (
-    <div className="min-h-screen flex flex-col overflow-hidden hide-scrollbar">
-      <TopBar />
+    // <LayoutGroup>
+      <div className="min-h-screen flex flex-col overflow-hidden hide-scrollbar">
+        <TopBar />
 
-      <main
-        className={cn([
-          "flex flex-col justify-center items-center flex-1 overflow-hidden mt-8 hide-scrollbar",
-        ])}
-      >
-        {/* <Posts /> */}
-        <ContentPage />
-      </main>
-      <Toaster />
-      <Lightbox />
-      {/* <Scrollbar /> */}
-    </div>
+        <main
+          className={cn([
+            "flex flex-col justify-center items-center flex-1 overflow-hidden mt-8 hide-scrollbar",
+          ])}
+        >
+          {/* <Posts /> */}
+          <ContentPage />
+        </main>
+        <Toaster />
+        <Lightbox />
+        {/* <Scrollbar /> */}
+      </div>
+    // </LayoutGroup>
   );
 }
 

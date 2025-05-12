@@ -36,8 +36,8 @@ export function newModalMachine<TPayload = unknown>(name: string) {
           },
         },
         [State.closing]: {
-          after: {
-            200: State.closed,
+          on: {
+            [Signal.exit.into()]: State.closed,
           },
         },
       },
@@ -68,13 +68,21 @@ export function newModalMachine<TPayload = unknown>(name: string) {
     station.curExpandImg.set(null);
   }
 
+  function exit() {
+    modalActor.send(Signal.exit);
+  }
+
   function useModalState() {
     return useSelector(modalActor, (state) => ({
       isOpen: state.matches(State.opened) || state.matches(State.opening),
-      isExiting: state.matches(State.closing),
+      isExiting: {
+        state: state.matches(State.closing),
+        data: state.context.payload,
+      },
+      isClosed: state.matches(State.closed),
       payload: state.context.payload,
     }));
   }
 
-  return { open, close, useModalState };
+  return { open, close, exit, useModalState };
 }

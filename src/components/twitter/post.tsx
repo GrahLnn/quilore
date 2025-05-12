@@ -20,6 +20,7 @@ import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 import LazyImage from "../lazyimg";
 import { station } from "@/src/subpub/buses";
+import md5 from "md5";
 
 function processText(text: string, urls: string[] | null) {
   let parts: (string | React.ReactNode)[] | string = text;
@@ -105,7 +106,7 @@ function ContentEle({ content }: { content: Content }) {
   const { displayText, animationKey, symmetryText } = langState.match({
     original: () => ({
       displayText: content.text,
-      animationKey: LangStateKey.original,
+      animationKey: LangStateKey.original + md5(content.text),
       symmetryText:
         content.translation && content.translation !== DataTag.NO_TRANSLATION
           ? content.translation
@@ -118,8 +119,8 @@ function ContentEle({ content }: { content: Content }) {
           : content.text,
       animationKey:
         content.translation && content.translation !== DataTag.NO_TRANSLATION
-          ? LangStateKey.translated
-          : LangStateKey.original,
+          ? LangStateKey.translated + md5(content.translation)
+          : LangStateKey.original + md5(content.text),
       symmetryText: content.text,
     }),
   });
@@ -326,7 +327,7 @@ function Author({ author, size = "normal" }: AuthorProps) {
     //   target="_blank"
     //   rel="noreferrer"
     // >
-    <div className="flex gap-2 group overflow-hidden">
+    <div className="flex gap-2 group overflow-hidden z-0">
       <LazyImage
         src={author.avatar.path}
         asset={author.avatar}
@@ -459,21 +460,21 @@ interface TweetCardProps {
 const TweetCard = memo(({ postdata }: TweetCardProps) => {
   if (!postdata) return null;
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const curIntractID = station.intractID.watch();
+  // const curIntractID = station.intractID.watch();
   const handleInteraction = () => {
     station.intractID.set(postdata.rest_id);
   };
-  useEffect(() => {
-    const wrap = wrapperRef.current;
-    if (!wrap) return;
-    const cell = wrap.closest<HTMLElement>('[role="gridcell"]');
-    if (!cell) return;
-    if (curIntractID === postdata.rest_id) {
-      cell.style.zIndex = "100"; // 激活时提高层级
-    } else {
-      cell.style.zIndex = ""; // 恢复默认
-    }
-  }, [curIntractID, postdata.rest_id]);
+  // useEffect(() => {
+  //   const wrap = wrapperRef.current;
+  //   if (!wrap) return;
+  //   const cell = wrap.closest<HTMLElement>('[role="gridcell"]');
+  //   if (!cell) return;
+  //   if (curIntractID === postdata.rest_id) {
+  //     cell.style.zIndex = "100"; // 激活时提高层级
+  //   } else {
+  //     cell.style.zIndex = ""; // 恢复默认
+  //   }
+  // }, [curIntractID, postdata.rest_id]);
   return (
     <div
       ref={wrapperRef}
@@ -483,12 +484,12 @@ const TweetCard = memo(({ postdata }: TweetCardProps) => {
         "transition-all duration-500",
         "select-none"
       )}
-      onClick={handleInteraction}
-      onContextMenu={handleInteraction}
-      onMouseEnter={handleInteraction}
-      onMouseLeave={handleInteraction}
-      onFocusCapture={handleInteraction}
-      onBlurCapture={handleInteraction}
+      // onClick={handleInteraction}
+      // onContextMenu={handleInteraction}
+      // onMouseEnter={handleInteraction}
+      // onMouseLeave={handleInteraction}
+      // onFocusCapture={handleInteraction}
+      // onBlurCapture={handleInteraction}
     >
       <div className="flex flex-col text-[14px]">
         <div className="mb-2 flex justify-between items-start gap-4">

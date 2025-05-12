@@ -1,16 +1,10 @@
 import { cn } from "@/lib/utils";
 import type { Media } from "@/src/cmd/commands";
-import { convertFileSrc } from "@tauri-apps/api/core";
-import { join } from "@tauri-apps/api/path";
 import type { JSX } from "react";
 import LazyImage from "../lazyimg";
 import LazyVideo from "../lazyvideo";
 import { TweetState, calcLayout, isLandscape } from "./utils";
-import { openLightbox, closeLightbox } from "../modalbox/lightbox";
-import { getSrc } from "@/src/utils/file";
-import { crab } from "@/src/cmd/commandAdapter";
 import { station } from "@/src/subpub/buses";
-import { useState, useEffect } from "react";
 
 interface LazyMediaProps {
   media: Media;
@@ -36,27 +30,14 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
 
   switch (media.type) {
     case "photo": {
-      const path = media.asset.path;
-
-      const handleOpenLightbox = () => {
-        openLightbox({
-          images: [media.asset],
-          currentIndex: 0,
-        });
-      };
-
       return (
         <LazyImage
-          className={cn(
-            baseMediaClass,
-            "object-cover cursor-pointer hover:opacity-90 transition-opacity duration-200 will-change-auto"
-          )}
-          src={path}
+          className={cn(baseMediaClass, "object-cover cursor-pointer")}
           asset={media.asset}
-          onClick={handleOpenLightbox}
           alt={media.description || ""}
           ratio={[media.width, media.height]}
           full
+          allowbox
         />
       );
     }
