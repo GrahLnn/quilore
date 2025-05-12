@@ -7,8 +7,13 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Asset } from "@/src/cmd/commands";
 import { createPortal } from "react-dom";
 
+export type HashAsset = {
+  asset: Asset;
+  hash: string;
+};
+
 export type LightboxPayload = {
-  images: Asset[];
+  images: HashAsset[];
   currentIndex: number;
 };
 
@@ -83,12 +88,10 @@ export function Lightbox() {
             initial={{ scale: 0.75 }}
             animate={{
               scale: 1,
-              // filter: "blur(0px)",
             }}
             transition={{
               scale: { type: "spring", visualDuration: 0.3, bounce: 0.5 },
             }}
-            // exit={{ filter: "blur(0px)" }}
             className={cn([
               "my-4",
               !zoomable
@@ -97,10 +100,9 @@ export function Lightbox() {
                 ? "cursor-zoom-out"
                 : "cursor-zoom-in",
             ])}
-            // layout
-            layoutId={currentImg.name}
-            key={currentImg.name}
-            src={convertFileSrc(currentImg.path)}
+            layoutId={currentImg.asset.name + currentImg.hash}
+            key={currentImg.asset.name}
+            src={convertFileSrc(currentImg.asset.path)}
             style={{
               maxWidth: zoomable && toMax ? "98%" : "90%",
               maxHeight: zoomable && toMax ? "none" : "90%",

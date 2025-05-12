@@ -20,6 +20,11 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   allowbox?: boolean;
 }
 
+interface BoxPayload {
+  images: Asset[];
+  currentIndex: number;
+}
+
 const LazyImage: React.FC<LazyImageProps> = memo(
   ({
     allowbox = false,
@@ -34,6 +39,9 @@ const LazyImage: React.FC<LazyImageProps> = memo(
     const offset = 1000;
     const [exists, setExists] = useState(false);
     const [rect, setRect] = useState<DOMRect | null>(null);
+    const [animationInstanceHash] = useState(() =>
+      Math.random().toString(36).substring(2, 10)
+    );
     const containerRef = useRef<HTMLImageElement>(null);
     const imgRef = useRef<HTMLImageElement>(null);
     const imgmRef = useRef<ReturnType<typeof newBundimgMachine>>(
@@ -72,7 +80,7 @@ const LazyImage: React.FC<LazyImageProps> = memo(
 
     useEffect(() => {
       const { state, data } = boxState.isExiting;
-      if (state && asset.name === data?.images[data.currentIndex].name)
+      if (state && asset.name === data?.images[data.currentIndex].asset.name)
         imgm.toGhost();
     }, [boxState.isExiting.state]);
 
@@ -129,8 +137,8 @@ const LazyImage: React.FC<LazyImageProps> = memo(
               onLoad={handleMotionImgLoad}
             />
           ),
-          ghost: () =>
-            createPortal(
+          ghost: () => {
+            return createPortal(
               rect && (
                 <motion.img
                   id="ghost"
@@ -144,12 +152,17 @@ const LazyImage: React.FC<LazyImageProps> = memo(
                     pointerEvents: "none",
                     zIndex: 60,
                   }}
-                  layoutId={asset.name}
+                  layoutId={asset.name + animationInstanceHash}
                   className={className}
                   onLoad={() => {
                     if (boxState.isExiting.state) return;
                     openLightbox({
-                      images: [asset],
+                      images: [
+                        {
+                          asset,
+                          hash: animationInstanceHash,
+                        },
+                      ],
                       currentIndex: 0,
                     });
                     imgm.toNone();
@@ -157,7 +170,8 @@ const LazyImage: React.FC<LazyImageProps> = memo(
                 />
               ),
               document.body
-            ),
+            );
+          },
           holder: () => (
             <div
               className={cn(
