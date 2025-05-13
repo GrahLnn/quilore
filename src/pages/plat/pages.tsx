@@ -134,10 +134,12 @@ const actions = [
     fn: () => {
       open({
         directory: false,
-        filters: [{
-          name: 'JSON',
-          extensions: ['json']
-        }]
+        filters: [
+          {
+            name: "JSON",
+            extensions: ["json"],
+          },
+        ],
       }).then((path) => {
         console.log(path);
       });
@@ -190,7 +192,7 @@ export function PlatPage() {
         </div>
       ),
     });
-  });
+}, []);
 
   return page.match({
     [Platform.Twitter]: () => <Posts />,

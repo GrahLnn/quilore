@@ -304,10 +304,10 @@ function AddPlatform() {
 }
 
 export default function Welcome() {
-  useEffect(()=>{
+  useEffect(() => {
     setCenterTool(null);
     station.allowBarInteraction.set(false);
-  })
+  }, []);
   const guide = useGuide();
   return (
     <div

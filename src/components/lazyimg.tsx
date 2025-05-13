@@ -20,11 +20,6 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   allowbox?: boolean;
 }
 
-interface BoxPayload {
-  images: Asset[];
-  currentIndex: number;
-}
-
 const LazyImage: React.FC<LazyImageProps> = memo(
   ({
     allowbox = false,

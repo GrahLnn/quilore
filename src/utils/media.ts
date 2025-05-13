@@ -49,7 +49,6 @@ export function clearVideo(videoEl: HTMLVideoElement) {
   videoEl.preload = "none"; // 防止视频重新加载
   videoEl.poster = "";
   videoEl.volume = 1.0;
-  videoEl.replaceWith(videoEl.cloneNode() as HTMLVideoElement);
 
   // 5. 清除视频轨道
   if (videoEl.textTracks) {

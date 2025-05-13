@@ -138,7 +138,7 @@ export default function Posts({
     } else {
       station.postsTitle.set("X.Likes");
     }
-  });
+  }, []);
 
   // 加载更多
   const loadMorePosts = useCallback(async () => {

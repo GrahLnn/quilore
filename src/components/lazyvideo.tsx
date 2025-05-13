@@ -6,16 +6,18 @@ import React, {
   useState,
   useEffect,
   MouseEvent,
+  useCallback,
+  memo,
 } from "react";
-import useElementInView from "../hooks/view"; // Not used in TheVideo directly, but in LazyVideo
-import { clearVideo } from "../utils/media"; // Used in LazyVideo
-import { useAssetState } from "../subpub/assetsState"; // Used in LazyVideo
-import { Asset } from "../cmd/commands"; // Used in LazyVideo
-import { crab } from "../cmd/commandAdapter"; // Used in LazyVideo
+import useElementInView from "../hooks/view";
+import { clearVideo } from "../utils/media";
+import { useAssetState } from "../subpub/assetsState";
+import { Asset } from "../cmd/commands";
+import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { icons } from "../assets/icons";
-import { motion, AnimatePresence } from "motion/react"; // Assuming this is framer-motion or similar
-import { useOSName } from "../subpub/whichos";
+import { motion, AnimatePresence } from "motion/react";
+import { throttle } from "lodash";
 
 const formatTime = (t: number): string => {
   const m = Math.floor(t / 60)
@@ -27,7 +29,98 @@ const formatTime = (t: number): string => {
   return `${m}:${s}`;
 };
 
-// LazyVideoProps and TheVideoProps remain the same
+interface MorphButton {
+  state: boolean;
+  onClick: () => void;
+  icona: React.ReactNode;
+  iconb: React.ReactNode;
+}
+
+const MorphButton = memo(({ state, onClick, icona, iconb }: MorphButton) => {
+  return (
+    <button
+      className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
+      onClick={onClick}
+      style={{ filter: "contrast(200)" }}
+      aria-label={state ? "Play" : "Pause"}
+    >
+      <AnimatePresence>
+        <motion.span
+          key={state ? "play" : "pause"}
+          initial={{ opacity: 0, filter: "blur(10px)" }}
+          animate={{
+            opacity: 1,
+            filter: "blur(0px)",
+            transition: {
+              opacity: { duration: 0.15, delay: 0, ease: "linear" },
+              filter: { duration: 0.4, delay: 0, ease: "linear" },
+            },
+          }}
+          exit={{
+            opacity: 0,
+            filter: "blur(10px)",
+            transition: {
+              filter: { duration: 0.4, delay: 0, ease: "linear" },
+              opacity: { duration: 0.15, delay: 0.3, ease: "linear" },
+            },
+          }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {state ? icona : iconb}
+        </motion.span>
+      </AnimatePresence>
+    </button>
+  );
+});
+
+interface FullScreenProp {
+  is_fullscreen: boolean;
+  onClick: () => void;
+}
+
+const FullScreenButton = memo(({ is_fullscreen, onClick }: FullScreenProp) => {
+  return (
+    <button
+      className="bg-[rgba(38,38,38,0.3)] p-1 rounded-full cursor-pointer"
+      onClick={onClick}
+    >
+      <icons.arrowExpandDiagonal />
+    </button>
+  );
+});
+
+interface PauseButtonProp {
+  paused: boolean;
+  onClick: () => void;
+}
+
+const PauseButton = memo(({ paused, onClick }: PauseButtonProp) => {
+  return (
+    <MorphButton
+      state={paused}
+      onClick={onClick}
+      icona={<icons.mediaPlay size={12} />}
+      iconb={<icons.mediaPause size={12} />}
+    />
+  );
+});
+
+interface MuteButtonProp {
+  muted: boolean;
+  onClick: () => void;
+}
+
+const MuteButton = memo(({ muted, onClick }: MuteButtonProp) => {
+  return (
+    <MorphButton
+      state={muted}
+      onClick={onClick}
+      icona={<icons.volumeOff size={12} />}
+      iconb={<icons.volumeUp size={12} />}
+    />
+  );
+});
+
 interface LazyVideoProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
   src: string;
   poster?: string;
@@ -65,7 +158,6 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const bufferRef = useRef<HTMLDivElement>(null);
     const hoverTooltipRef = useRef<HTMLDivElement>(null);
     const timeDisplayRef = useRef<HTMLDivElement>(null);
-    const os = useOSName();
 
     useImperativeHandle(externalRef, () => innerRef.current!, []);
 
@@ -75,52 +167,65 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const [bufferedEnd, setBufferedEnd] = useState<number>(0);
     const [firstClick, setFirstClick] = useState<boolean>(true);
     const [isHovering, setIsHovering] = useState<boolean>(false);
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [displayTime, setDisplayTime] = useState("00:00");
 
-    const handleMouseEnter = () => {
+    // console.log("LazyVideo RENDERED. Props:", {
+    //   src,
+    //   autoPlay,
+    //   loop,
+    //   muted,
+    //   controls,
+    // });
+
+    const handleMouseEnter = useCallback(() => {
       if (!controls) return;
       setIsHovering(true);
-    };
+    }, [controls]);
 
-    const handleMouseLeave = () => {
+    const handleMouseLeave = useCallback(() => {
       if (!controls) return;
       setIsHovering(false);
-    };
+    }, [controls]);
 
-    const handleVideoClick = () => {
+    const handleVideoClick = useCallback(() => {
       if (!controls) return;
       const v = innerRef.current;
       if (!v) return;
 
       if (firstClick && muted) {
         v.muted = false;
-        // setMuted(false); // Listener will update state
         setFirstClick(false);
         if (v.paused) {
-          v.play().catch(() => {
-            // setPaused(true); // Listener will update state
-          });
+          v.play().catch(() => {});
         }
       } else {
         togglePlay();
       }
-    };
+    }, [controls, firstClick, muted]);
 
-    const togglePlay = () => {
+    const togglePlay = useCallback(() => {
       const v = innerRef.current;
       if (!v) return;
-      if (v.paused) v.play();
+      if (v.paused) v.play().catch((err) => console.error("Play error", err));
       else v.pause();
-    };
+    }, []);
 
-    const toggleMute = () => {
+    const toggleMute = useCallback(() => {
       const v = innerRef.current;
       if (!v) return;
       v.muted = !v.muted;
-      // setMuted(v.muted); // Listener will update state
       if (!v.muted) {
         setFirstClick(false);
       }
-    };
+    }, []);
+
+    const toggleFullScreen = useCallback(() => {
+      const v = innerRef.current;
+      if (!v) return;
+
+      // [TODO]
+    }, []);
 
     // Effect 1: Setup video properties like initial muted state and autoplay
     useEffect(() => {
@@ -131,10 +236,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       // The 'volumechange' event listener will call setMuted to sync state.
 
       if (autoPlay) {
-        v.play().catch(() => {
-          // If autoplay fails, the 'pause' event will fire,
-          // and its listener will call setPaused(true).
-        });
+        v.play();
       }
       // `paused` state is initialized to `!autoPlay`.
       // `play` event will set `paused` to `false`.
@@ -150,9 +252,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         if (loop && v) {
           // `loop` prop from closure
           v.currentTime = 0;
-          v.play().catch(() => {
-            // 'pause' event listener will handle setPaused(true) if play fails
-          });
+          v.play();
         }
       };
 
@@ -166,34 +266,10 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     // These are active only when `controls` is true.
     useEffect(() => {
       const v = innerRef.current;
-      if (!v || !controls) {
-        // If no video element or controls are disabled,
-        // ensure no listeners are active (cleanup from previous render will have run).
-        return;
-      }
+      if (!v || !controls) return;
 
       const onLoadedMetadata = () => {
         setDuration(v.duration);
-        // Update progress display once if video is paused.
-        // If playing, the RAF loop (Effect 4) will handle updates.
-        if (v.paused && progressRef.current && timeDisplayRef.current) {
-          const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
-          progressRef.current.style.width = `${pct}%`;
-          timeDisplayRef.current.textContent = formatTime(
-            v.duration - v.currentTime
-          );
-        }
-      };
-
-      // timeupdate is mainly for when paused and currentTime changes (e.g., after seeking)
-      const onTimeUpdate = () => {
-        if (v.paused && progressRef.current && timeDisplayRef.current) {
-          const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
-          progressRef.current.style.width = `${pct}%`;
-          timeDisplayRef.current.textContent = formatTime(
-            v.duration - v.currentTime
-          );
-        }
       };
 
       const onDurationChange = () => setDuration(v.duration);
@@ -207,18 +283,37 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
           setBufferedEnd(bufEnd);
         }
       };
+      const onTimeUpdate = () => {
+        if (v) setDisplayTime(formatTime(v.duration - v.currentTime));
+      };
 
-      const onPlay = () => setPaused(false);
-      const onPause = () => setPaused(true);
+      const onPlay = () => {
+        setPaused(false);
+      };
+      const onPause = () => {
+        const v = innerRef.current; // 获取 video 元素的当前引用
+        if (!v) return;
+        if (v.ended && loop) return;
+
+        setPaused(true);
+      };
       const onVolumeChange = () => setMuted(v.muted);
+      const onEnded = () => {
+        if (loop) {
+          // console.log("Looping: 'ended' event is being ignored.");
+          return;
+        }
+        setPaused(true);
+      };
 
       v.addEventListener("loadedmetadata", onLoadedMetadata);
-      v.addEventListener("timeupdate", onTimeUpdate);
       v.addEventListener("durationchange", onDurationChange);
       v.addEventListener("progress", onProgress);
       v.addEventListener("play", onPlay);
       v.addEventListener("pause", onPause);
       v.addEventListener("volumechange", onVolumeChange);
+      v.addEventListener("timeupdate", onTimeUpdate);
+      v.addEventListener("ended", onEnded);
 
       // Manually trigger handlers if data is already available (e.g. video loaded before effect ran)
       if (v.readyState >= 1) {
@@ -232,14 +327,19 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
 
       return () => {
         v.removeEventListener("loadedmetadata", onLoadedMetadata);
-        v.removeEventListener("timeupdate", onTimeUpdate);
         v.removeEventListener("durationchange", onDurationChange);
         v.removeEventListener("progress", onProgress);
         v.removeEventListener("play", onPlay);
         v.removeEventListener("pause", onPause);
         v.removeEventListener("volumechange", onVolumeChange);
+        v.removeEventListener("timeupdate", onTimeUpdate);
+        v.removeEventListener("ended", onEnded);
       };
     }, [controls]); // This effect now correctly depends on `controls`
+
+    useEffect(() => {
+      console.log("paused", paused);
+    }, [paused]);
 
     // Effect 4: RequestAnimationFrame loop for smooth progress updates when playing
     useEffect(() => {
@@ -252,84 +352,92 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       let animationFrameId: number;
       const animationLoop = () => {
         // Ensure elements are still mounted and video is valid
-        if (v && progressRef.current && timeDisplayRef.current) {
+        if (v && progressRef.current) {
           const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
           progressRef.current.style.width = `${pct}%`;
-          timeDisplayRef.current.textContent = formatTime(
-            v.duration - v.currentTime
-          );
           animationFrameId = requestAnimationFrame(animationLoop);
         }
       };
 
-      animationFrameId = requestAnimationFrame(animationLoop); // Start the loop
-
+      animationFrameId = requestAnimationFrame(animationLoop);
+      console.log("RAF running");
       return () => {
         cancelAnimationFrame(animationFrameId); // Cleanup: cancel the frame
       };
     }, [paused, controls, duration]); // Re-run if paused state, controls, or duration changes.
     // Duration is included because formatTime depends on it for remaining time.
 
-    const onSeek = (e: MouseEvent<HTMLDivElement>) => {
+    const onSeek = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        if (!controls) return;
+        const v = innerRef.current;
+        const target = e.currentTarget;
+        const rect = target.getBoundingClientRect();
+        const pct = Math.min(
+          Math.max((e.clientX - rect.left) / rect.width, 0),
+          1
+        );
+        if (v && duration > 0) {
+          v.currentTime = pct * duration;
+          // `timeupdate` event will fire after seeking, updating `displayTime` state
+        }
+      },
+      [controls, duration]
+    );
+
+    const throttledUpdateTooltip = useRef(
+      throttle(
+        (
+          vCurrent: HTMLVideoElement | null,
+          tipCurrent: HTMLDivElement | null,
+          clientX: number,
+          targetRect: DOMRect,
+          currentDuration: number
+        ) => {
+          if (!vCurrent || !tipCurrent || currentDuration === 0) {
+            if (tipCurrent) tipCurrent.style.display = "none";
+            return;
+          }
+          const pct = Math.min(
+            Math.max((clientX - targetRect.left) / targetRect.width, 0),
+            1
+          );
+          const sec = pct * currentDuration;
+          tipCurrent.style.display = "block";
+          tipCurrent.style.left = `${pct * 100}%`;
+          tipCurrent.textContent = formatTime(sec);
+        },
+        50
+      )
+    ).current;
+
+    const onHover = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        if (!controls) return;
+        throttledUpdateTooltip(
+          innerRef.current,
+          hoverTooltipRef.current,
+          e.clientX,
+          e.currentTarget.getBoundingClientRect(),
+          duration
+        );
+      },
+      [controls, duration, throttledUpdateTooltip]
+    );
+
+    const onHoverLeave = useCallback(() => {
       if (!controls) return;
-      const v = innerRef.current;
-      const target = e.currentTarget;
-      const rect = target.getBoundingClientRect();
-      const pct = Math.min(
-        Math.max((e.clientX - rect.left) / rect.width, 0),
-        1
-      );
-      if (v && duration > 0) {
-        v.currentTime = pct * duration;
-        // If paused, onTimeUpdate will update the display.
-        // If playing, RAF will update.
-      }
-    };
-
-    const onHover = (e: MouseEvent<HTMLDivElement>) => {
-      if (!controls || duration === 0) return;
-      const target = e.currentTarget;
-      const rect = target.getBoundingClientRect();
-      const pct = Math.min(
-        Math.max((e.clientX - rect.left) / rect.width, 0),
-        1
-      );
-      const tip = hoverTooltipRef.current;
-      if (!tip) return;
-      const sec = pct * duration;
-      tip.style.display = "block";
-      tip.style.left = `${pct * 100}%`;
-      tip.textContent = formatTime(sec);
-    };
-
-    const onHoverLeave = () => {
-      if (hoverTooltipRef.current && controls) {
+      throttledUpdateTooltip.cancel();
+      if (hoverTooltipRef.current) {
         hoverTooltipRef.current.style.display = "none";
       }
-    };
+    }, [controls, throttledUpdateTooltip]);
 
-    const onFullScreen = (e: MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      const v = innerRef.current;
-      if (!v) return;
-
-      // Standard fullscreen API
-      if (v.requestFullscreen) {
-        v.requestFullscreen().catch((err) =>
-          console.error("Error attempting to enable full-screen mode:", err)
-        );
-      }
-      // Fallbacks for older browsers (remove if not needed)
-      // else if ((v as any).mozRequestFullScreen) { /* Firefox */
-      //   (v as any).mozRequestFullScreen();
-      // } else if ((v as any).webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-      //   (v as any).webkitRequestFullscreen();
-      // } else if ((v as any).msRequestFullscreen) { /* IE/Edge */
-      //   (v as any).msRequestFullscreen();
-      // }
-      // The os.match for windows specific behavior could be part of a broader fullscreen strategy
-      // For now, using the standard API is generally preferred.
-    };
+    useEffect(() => {
+      return () => {
+        throttledUpdateTooltip.cancel();
+      };
+    }, [throttledUpdateTooltip]);
 
     return (
       <div
@@ -362,12 +470,10 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
             ])}
           >
             <div className={cn(["absolute top-2 right-2"])}>
-              <button
-                className="bg-[rgba(38,38,38,0.3)] p-1 rounded-full cursor-pointer"
-                onClick={onFullScreen}
-              >
-                <icons.arrowExpandDiagonal />
-              </button>
+              <FullScreenButton
+                is_fullscreen={isFullscreen}
+                onClick={toggleFullScreen}
+              />
             </div>
             <div
               className={cn([
@@ -375,80 +481,9 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                 "bg-gradient-to-t from-[rgba(0,0,0,0.6)] to-transparent",
               ])}
             >
-              <button
-                className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
-                onClick={togglePlay}
-                style={{ filter: "contrast(200)" }}
-                aria-label={paused ? "Play" : "Pause"}
-              >
-                <AnimatePresence>
-                  <motion.span
-                    key={paused ? "play" : "pause"}
-                    initial={{ opacity: 0, filter: "blur(10px)" }}
-                    animate={{
-                      opacity: 1,
-                      filter: "blur(0px)",
-                      transition: {
-                        opacity: { duration: 0.15, delay: 0, ease: "linear" },
-                        filter: { duration: 0.4, delay: 0, ease: "linear" },
-                      },
-                    }}
-                    exit={{
-                      opacity: 0,
-                      filter: "blur(10px)",
-                      transition: {
-                        filter: { duration: 0.4, delay: 0, ease: "linear" },
-                        opacity: { duration: 0.15, delay: 0.3, ease: "linear" },
-                      },
-                    }}
-                    className="absolute inset-0 flex items-center justify-center"
-                  >
-                    {paused ? (
-                      <icons.mediaPlay size={12} />
-                    ) : (
-                      <icons.mediaPause size={12} />
-                    )}
-                  </motion.span>
-                </AnimatePresence>
-              </button>
+              <PauseButton paused={paused} onClick={togglePlay} />
 
-              <button
-                className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
-                onClick={toggleMute}
-                style={{ filter: "contrast(200)" }}
-                aria-label={muted ? "Unmute" : "Mute"}
-              >
-                <AnimatePresence>
-                  <motion.span
-                    key={muted ? "muted" : "unmuted"}
-                    initial={{ opacity: 0, filter: "blur(10px)" }}
-                    animate={{
-                      opacity: 1,
-                      filter: "blur(0px)",
-                      transition: {
-                        opacity: { duration: 0.15, delay: 0, ease: "linear" },
-                        filter: { duration: 0.4, delay: 0, ease: "linear" },
-                      },
-                    }}
-                    exit={{
-                      opacity: 0,
-                      filter: "blur(10px)",
-                      transition: {
-                        filter: { duration: 0.4, delay: 0, ease: "linear" },
-                        opacity: { duration: 0.15, delay: 0.3, ease: "linear" },
-                      },
-                    }}
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{ filter: "contrast(200) blur(0.2px)" }} // This style was duplicated, remove transition here if handled by motion
-                  >
-                    {muted ? (
-                      <icons.volumeOff size={12} />
-                    ) : (
-                      <icons.volumeUp size={12} />
-                    )}
-                  </motion.span>
-                </AnimatePresence>
-              </button>
+              <MuteButton muted={muted} onClick={toggleMute} />
 
               <div
                 className={cn([
@@ -483,7 +518,9 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
               <div
                 ref={timeDisplayRef}
                 className="text-xs font-mono text-white ml-2"
-              />
+              >
+                {displayTime}
+              </div>
             </div>
           </div>
         )}
@@ -492,10 +529,6 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
   }
 );
 
-TheVideo.displayName = "TheVideo";
-
-// LazyVideo component remains unchanged as per the request to focus on TheVideo
-// ... (rest of LazyVideo code)
 const LazyVideo: React.FC<LazyVideoProps> = ({
   src,
   poster,
