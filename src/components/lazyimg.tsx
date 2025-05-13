@@ -48,6 +48,8 @@ const LazyImage: React.FC<LazyImageProps> = memo(
     const boxState = lightboxMachine.useModalState();
     const val = assetState.get(asset.name);
     const imgm = imgmRef.current!;
+    const bundimgCurrentState = imgm.useBundimgState(); // This is a valid hook call
+    const isGhostCurrently = bundimgCurrentState.is("ghost");
 
     // [TODO] 更精细的状态控制避免无关image的重绘，和box state有关
 
@@ -83,7 +85,7 @@ const LazyImage: React.FC<LazyImageProps> = memo(
       (e: React.MouseEvent<HTMLImageElement>) => {
         if (allowbox) {
           if (containerRef.current) {
-            setRect(containerRef.current.getBoundingClientRect());
+            updateRect();
           }
           imgm.toGhost();
         } else {
@@ -111,6 +113,43 @@ const LazyImage: React.FC<LazyImageProps> = memo(
         });
       }
     }, []);
+
+    const updateRect = useCallback(() => {
+      if (containerRef.current) {
+        const currentRect = containerRef.current.getBoundingClientRect();
+        setRect((prevRect) => {
+          if (
+            !prevRect ||
+            currentRect.width !== prevRect.width ||
+            currentRect.height !== prevRect.height ||
+            currentRect.top !== prevRect.top ||
+            currentRect.left !== prevRect.left
+          ) {
+            return currentRect;
+          }
+          return prevRect;
+        });
+      }
+    }, []);
+
+    useEffect(() => {
+      if (isGhostCurrently) {
+        const handleUpdate = () => {
+          if (isGhostCurrently) {
+            updateRect();
+          }
+        };
+
+        window.addEventListener("scroll", handleUpdate, true);
+        window.addEventListener("resize", handleUpdate);
+        handleUpdate();
+
+        return () => {
+          window.removeEventListener("scroll", handleUpdate, true);
+          window.removeEventListener("resize", handleUpdate);
+        };
+      }
+    }, [isGhostCurrently, updateRect]);
 
     return (
       <motion.div
