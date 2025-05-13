@@ -207,7 +207,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const togglePlay = useCallback(() => {
       const v = innerRef.current;
       if (!v) return;
-      if (v.paused) v.play().catch((err) => console.error("Play error", err));
+      if (v.paused) v.play().catch(() => {});
       else v.pause();
     }, []);
 
@@ -215,9 +215,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       const v = innerRef.current;
       if (!v) return;
       v.muted = !v.muted;
-      if (!v.muted) {
-        setFirstClick(false);
-      }
+      if (!v.muted) setFirstClick(false);
     }, []);
 
     const toggleFullScreen = useCallback(() => {
@@ -236,7 +234,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       // The 'volumechange' event listener will call setMuted to sync state.
 
       if (autoPlay) {
-        v.play();
+        v.play().catch(() => {});
       }
       // `paused` state is initialized to `!autoPlay`.
       // `play` event will set `paused` to `false`.
@@ -252,7 +250,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         if (loop && v) {
           // `loop` prop from closure
           v.currentTime = 0;
-          v.play();
+          v.play().catch(() => {});
         }
       };
 
@@ -337,10 +335,6 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       };
     }, [controls]); // This effect now correctly depends on `controls`
 
-    useEffect(() => {
-      console.log("paused", paused);
-    }, [paused]);
-
     // Effect 4: RequestAnimationFrame loop for smooth progress updates when playing
     useEffect(() => {
       const v = innerRef.current;
@@ -360,7 +354,6 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       };
 
       animationFrameId = requestAnimationFrame(animationLoop);
-      console.log("RAF running");
       return () => {
         cancelAnimationFrame(animationFrameId); // Cleanup: cancel the frame
       };
@@ -596,14 +589,10 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   return (
     <div
       ref={containerRef}
-      className="transform-gpu" // Added for potential performance hint
       style={{
         width: "100%",
         aspectRatio: `${w} / ${h}`,
-        // Using height like this can cause layout shifts if clientWidth isn't stable initially.
-        // Consider setting height based on aspectRatio and width via CSS if possible,
-        // or ensure storedRatio is only applied after a stable measurement.
-        height: storedRatio ? `${storedRatio[1]}px` : undefined, // Keep original logic
+        height: storedRatio ? `${storedRatio[1]}px` : undefined,
       }}
     >
       {inView && exists ? (

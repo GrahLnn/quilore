@@ -77,7 +77,13 @@ const LazyImage: React.FC<LazyImageProps> = memo(
 
     useEffect(() => {
       const { state, data } = boxState.isExiting;
-      if (state && asset.name === data?.images[data.currentIndex].asset.name)
+      if (
+        state &&
+        data &&
+        asset.name + animationInstanceHash ===
+          data.images[data.currentIndex].asset.name +
+            data.images[data.currentIndex].hash
+      )
         imgm.toGhost();
     }, [boxState.isExiting.state]);
 
@@ -87,6 +93,7 @@ const LazyImage: React.FC<LazyImageProps> = memo(
           if (containerRef.current) {
             updateRect();
           }
+          console.log(animationInstanceHash);
           imgm.toGhost();
         } else {
           onClick?.(e);
