@@ -18,7 +18,7 @@ interface CtrlButtonProps extends PropsWithChildren {
   p?: string;
 }
 
-function CtrlButton({
+const CtrlButton = memo(function CtrlButtonComp({
   icon,
   label,
   onClick = () => {},
@@ -26,7 +26,6 @@ function CtrlButton({
   o,
   p,
 }: CtrlButtonProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const isVisible = useIsBarVisible();
   return (
     <div data-tauri-drag-region={!isVisible}>
@@ -42,8 +41,6 @@ function CtrlButton({
           className,
         ])}
         onClick={onClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <div className={cn(["flex items-center gap-1"])}>
           <span style={{ transform: "translateZ(0)" }}>{icon}</span>
@@ -57,7 +54,7 @@ function CtrlButton({
       </div>
     </div>
   );
-}
+});
 
 export const LeftControls = memo(function LeftControlsComponent() {
   const os = station.os.useSee();
