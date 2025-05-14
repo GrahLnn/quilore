@@ -14,7 +14,13 @@ import type { ContentToCopy } from "@/src/cmd/commands";
 import { useLanguageState } from "@/src/state_machine/language";
 import { DataTag } from "@/src/utils/enums";
 import { AnimatePresence, motion } from "motion/react";
-import { memo, useLayoutEffect, useRef, useState } from "react";
+import {
+  memo,
+  PropsWithChildren,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 import LazyImage from "../lazyimg";
@@ -293,13 +299,20 @@ function Timestamp({ timestamp }: { timestamp: string }): string {
     .replace(/\//g, "-");
 }
 
-const FootTools = ({ tweet }: { tweet: Post }) => {
+const FootTools = ({
+  tweet,
+  className,
+}: {
+  tweet: Post;
+  className?: string;
+}) => {
   return (
     <a
       href={`https://x.com/i/status/${tweet.rest_id}`}
       className={cn(
         "text-[0.85em] text-sky-500 trim-cap",
-        "hover:underline transition-all duration-300 ease-in-out"
+        "hover:underline transition-all duration-300 ease-in-out",
+        className
       )}
       target="_blank"
       rel="noreferrer"
@@ -410,11 +423,11 @@ function buildContent(
   });
 }
 
-interface CardToolsProps {
+interface CardToolsProps extends React.HTMLAttributes<HTMLDivElement> {
   postdata: Post;
 }
 
-const CardTools = ({ postdata }: CardToolsProps) => {
+const CardTools = ({ postdata, className }: CardToolsProps) => {
   const lang = useLanguageState();
   const handleCopy = () => {
     const content = buildContent(postdata, lang);
@@ -429,6 +442,8 @@ const CardTools = ({ postdata }: CardToolsProps) => {
           "data-[state=open]:bg-[#e6e6e7] dark:data-[state=open]:bg-[#212121]",
           "rounded-md cursor-default",
           "transition-all duration-300 ease-in-out",
+          "group-hover:opacity-100 data-[state=open]:opacity-100 opacity-0 transition duration-300",
+          className,
         ])}
       >
         <icons.dots size={14} />
@@ -461,14 +476,8 @@ const TweetCard = memo(function TweetCardComp({ postdata }: TweetCardProps) {
         "flex flex-col p-3 cursor-default bg-white dark:bg-[#0f0f0f]",
         "border border-[#e1e8ed] dark:border-[#212121] rounded-xl",
         "transition-all duration-500",
-        "select-none"
+        "select-none group"
       )}
-      // onClick={handleInteraction}
-      // onContextMenu={handleInteraction}
-      // onMouseEnter={handleInteraction}
-      // onMouseLeave={handleInteraction}
-      // onFocusCapture={handleInteraction}
-      // onBlurCapture={handleInteraction}
     >
       <div className="flex flex-col text-[14px]">
         <div className="mb-2 flex justify-between items-start gap-4">
@@ -481,7 +490,10 @@ const TweetCard = memo(function TweetCardComp({ postdata }: TweetCardProps) {
             <span className="text-[#657786] dark:text-[#6e6e6e] text-[0.8em] text-nowrap text-trim-cap">
               <Timestamp timestamp={postdata.created_at ?? ""} />
             </span>
-            <FootTools tweet={postdata} />
+            <FootTools
+              className="group-hover:opacity-100 opacity-0 transition duration-300"
+              tweet={postdata}
+            />
           </div>
         </div>
       </div>
