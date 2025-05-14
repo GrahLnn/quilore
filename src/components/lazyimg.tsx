@@ -8,9 +8,11 @@ import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { createPortal } from "react-dom";
-import { lightboxMachine, openLightbox } from "./modalbox/lightbox";
+import { LightboxPayload } from "./modalbox/lightbox";
 import { newBundimgMachine } from "../state_machine/bundimg";
 import { station } from "../subpub/buses";
+import { Lightbox } from "./modalbox/lightbox";
+import { newModalMachine } from "../state_machine/modalbox.sm";
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   asset: Asset;
@@ -30,26 +32,33 @@ const LazyImage: React.FC<LazyImageProps> = memo(function LazyImageComp({
   holderCn,
   onClick,
 }: LazyImageProps) {
-  const offset = 1000;
   const [exists, setExists] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [animationInstanceHash] = useState(() =>
     Math.random().toString(36).substring(2, 10)
   );
+  const [stateM] = useState(() => newModalMachine<LightboxPayload>("lightbox"));
   const containerRef = useRef<HTMLImageElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const imgmRef =
     useRef<ReturnType<typeof newBundimgMachine>>(newBundimgMachine());
 
-  const inView = useElementInView(containerRef, offset);
+  const inView = useElementInView(containerRef, 1000);
   const assetState = station.assetState.useSee();
-  const boxState = lightboxMachine.useModalState();
+  const boxState = stateM.useModalState();
   const val = assetState.get(asset.name);
   const imgm = imgmRef.current!;
   const bundimgCurrentState = imgm.useBundimgState(); // This is a valid hook call
   const isGhostCurrently = bundimgCurrentState.is("ghost");
 
-  // [TODO] 更精细的状态控制避免无关image的重绘，和box state有关
+  const isCurImg = () => {
+    return (
+      boxState.payload?.images[boxState.payload?.currentIndex].asset.name ===
+        asset.name &&
+      boxState.payload?.images[boxState.payload?.currentIndex].hash ===
+        animationInstanceHash
+    );
+  };
 
   useEffect(() => {
     if (inView && exists) {
@@ -74,19 +83,12 @@ const LazyImage: React.FC<LazyImageProps> = memo(function LazyImageComp({
   }, []);
 
   useEffect(() => {
-    if (boxState.isClosed) imgm.toNormal();
+    if (boxState.isClosed && isCurImg()) imgm.toNormal();
   }, [boxState.isClosed]);
 
   useEffect(() => {
     const { state, data } = boxState.isExiting;
-    if (
-      state &&
-      data &&
-      asset.name + animationInstanceHash ===
-        data.images[data.currentIndex].asset.name +
-          data.images[data.currentIndex].hash
-    )
-      imgm.toGhost();
+    if (state && data && isCurImg()) imgm.toGhost();
   }, [boxState.isExiting.state]);
 
   const handleMotionImgClick = useCallback(
@@ -158,78 +160,81 @@ const LazyImage: React.FC<LazyImageProps> = memo(function LazyImageComp({
   }, [isGhostCurrently, updateRect]);
 
   return (
-    <motion.div
-      ref={containerRef}
-      style={{
-        width: full ? "100%" : undefined,
-        aspectRatio: `${ratio?.[0] || 1} / ${ratio?.[1] || 1}`,
-        height: rect ? `${rect.height}px` : undefined,
-      }}
-    >
-      {imgm.useBundimgState().match({
-        normal: () => (
-          <motion.img
-            ref={imgRef}
-            src={convertFileSrc(asset.path)}
-            onClick={handleMotionImgClick}
-            className={className}
-            alt={alt}
-            onLoad={handleMotionImgLoad}
-          />
-        ),
-        ghost: () => {
-          return createPortal(
-            rect && (
-              <motion.img
-                id="ghost"
-                src={convertFileSrc(asset.path)}
-                style={{
-                  position: "absolute",
-                  top: rect.top + window.scrollY,
-                  left: rect.left + window.scrollX,
-                  width: rect.width,
-                  height: rect.height,
-                  pointerEvents: "none",
-                  zIndex: 60,
-                }}
-                layoutId={asset.name + animationInstanceHash}
-                className={className}
-                onLoad={() => {
-                  if (boxState.isExiting.state) return;
-                  openLightbox({
-                    images: [
-                      {
-                        asset,
-                        hash: animationInstanceHash,
-                      },
-                    ],
-                    currentIndex: 0,
-                  });
-                  imgm.toNone();
-                }}
-              />
-            ),
-            document.body
-          );
-        },
-        holder: () => (
-          <div
-            className={cn(
-              "relative w-full rounded-md overflow-hidden",
-              "bg-[linear-gradient(120deg,#f5f5f5,#d4d4d4,#ffffff)]",
-              "dark:bg-[linear-gradient(120deg,#000,#1a1a1a,#000)]",
-              "bg-[length:500%_500%]",
-              "animate-[bgmove_6s_ease-in-out_infinite]",
-              holderCn
-            )}
-            style={{
-              height: rect ? `${rect.height}px` : undefined,
-            }}
-          />
-        ),
-        none: () => null,
-      })}
-    </motion.div>
+    <>
+      <motion.div
+        ref={containerRef}
+        style={{
+          width: full ? "100%" : undefined,
+          aspectRatio: `${ratio?.[0] || 1} / ${ratio?.[1] || 1}`,
+          height: rect ? `${rect.height}px` : undefined,
+        }}
+      >
+        {imgm.useBundimgState().match({
+          normal: () => (
+            <motion.img
+              ref={imgRef}
+              src={convertFileSrc(asset.path)}
+              onClick={handleMotionImgClick}
+              className={className}
+              alt={alt}
+              onLoad={handleMotionImgLoad}
+            />
+          ),
+          ghost: () => {
+            return createPortal(
+              rect && (
+                <motion.img
+                  id="ghost"
+                  src={convertFileSrc(asset.path)}
+                  style={{
+                    position: "absolute",
+                    top: rect.top + window.scrollY,
+                    left: rect.left + window.scrollX,
+                    width: rect.width,
+                    height: rect.height,
+                    pointerEvents: "none",
+                    zIndex: 60,
+                  }}
+                  layoutId={asset.name + animationInstanceHash}
+                  className={className}
+                  onLoad={() => {
+                    if (boxState.isExiting.state) return;
+                    stateM.open({
+                      images: [
+                        {
+                          asset,
+                          hash: animationInstanceHash,
+                        },
+                      ],
+                      currentIndex: 0,
+                    });
+                    imgm.toNone();
+                  }}
+                />
+              ),
+              document.body
+            );
+          },
+          holder: () => (
+            <div
+              className={cn(
+                "relative w-full rounded-md overflow-hidden",
+                "bg-[linear-gradient(120deg,#f5f5f5,#d4d4d4,#ffffff)]",
+                "dark:bg-[linear-gradient(120deg,#000,#1a1a1a,#000)]",
+                "bg-[length:500%_500%]",
+                "animate-[bgmove_6s_ease-in-out_infinite]",
+                holderCn
+              )}
+              style={{
+                height: rect ? `${rect.height}px` : undefined,
+              }}
+            />
+          ),
+          none: () => null,
+        })}
+      </motion.div>
+      <Lightbox lightboxMachine={stateM} />
+    </>
   );
 });
 

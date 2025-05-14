@@ -7,7 +7,24 @@ const { State, Signal } = createStateAndSignals({
   signals: ["OPEN", "CLOSE", "EXIT"] as const,
 });
 
-export function newModalMachine<TPayload = unknown>(name: string) {
+export type ModalController<TPayload = unknown> = {
+  open: (payload?: TPayload) => void;
+  close: () => void;
+  exit: () => void;
+  useModalState: () => {
+    isOpen: boolean;
+    isExiting: {
+      state: boolean;
+      data: TPayload | null;
+    };
+    isClosed: boolean;
+    payload: TPayload | null;
+  };
+};
+
+export function newModalMachine<TPayload = unknown>(
+  name: string
+): ModalController<TPayload> {
   const modalMachine = createMachine(
     {
       id: name,

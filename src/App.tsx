@@ -1,6 +1,5 @@
 import "./App.css";
 import { Toaster } from "@/components/ui/sonner";
-import { Lightbox } from "./components/modalbox/lightbox";
 import TopBar from "./topbar";
 import { ContentPage } from "./pages/pages";
 import { useEffect } from "react";
@@ -28,7 +27,6 @@ function App() {
     fetchData();
   }, []);
   return (
-    // <LayoutGroup>
     <div className="min-h-screen flex flex-col overflow-hidden hide-scrollbar">
       <TopBar />
 
@@ -37,14 +35,11 @@ function App() {
           "flex flex-col justify-center items-center flex-1 overflow-hidden mt-8 hide-scrollbar",
         ])}
       >
-        {/* <Posts /> */}
         <ContentPage />
       </main>
       <Toaster />
-      <Lightbox />
       {/* <Scrollbar /> */}
     </div>
-    // </LayoutGroup>
   );
 }
 

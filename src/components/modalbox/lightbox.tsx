@@ -1,4 +1,4 @@
-import { newModalMachine } from "@/src/state_machine/modalbox.sm";
+import { type ModalController } from "@/src/state_machine/modalbox.sm";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -16,11 +16,11 @@ export type LightboxPayload = {
   currentIndex: number;
 };
 
-export const lightboxMachine = newModalMachine<LightboxPayload>("lightbox");
+interface LightboxProp {
+  lightboxMachine: ModalController<LightboxPayload>;
+}
 
-export const { open: openLightbox, close: closeLightbox } = lightboxMachine;
-
-export function Lightbox() {
+export function Lightbox({ lightboxMachine }: LightboxProp) {
   const { isExiting, isOpen, payload } = lightboxMachine.useModalState();
   const [toMax, setToMax] = useState(false);
   const [zoomable, setZoomable] = useState(false);
@@ -114,7 +114,7 @@ export function Lightbox() {
               const img = e.currentTarget;
               setZoomable(
                 img.naturalHeight > img.height &&
-                img.naturalHeight / img.naturalWidth > 0.5
+                  img.naturalHeight / img.naturalWidth > 0.5
               );
             }}
           />
