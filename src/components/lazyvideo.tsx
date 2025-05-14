@@ -476,7 +476,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        layout
+        // layout
       >
         <motion.video
           ref={innerRef}
@@ -485,7 +485,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
           poster={poster ? convertFileSrc(poster) : undefined}
           crossOrigin="anonymous"
           onClick={handleVideoClick}
-          layout
+          // layout
         />
 
         {controls && (
