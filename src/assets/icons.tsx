@@ -5,7 +5,7 @@ interface IconProps {
 }
 
 export const logos = {
-  tauri({ size, color, className }: IconProps) {
+  tauri({ color, className }: IconProps) {
     return (
       // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
       <svg
@@ -1105,17 +1105,17 @@ export const icons = {
             clipRule="evenodd"
             d="M10.0759 1.61119C10.9072 1.07941 12 1.67539 12 2.664V15.337C12 16.3256 10.9072 16.9216 10.0759 16.3898L4.78051 13H2.25C1.00779 13 0 11.9922 0 10.75V7.25C0 6.00778 1.00779 5 2.25 5H4.78056L10.0759 1.61119Z"
             fillOpacity="0.4"
-          ></path>
+          />
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M15.3287 5.11066C15.6216 4.81777 16.0964 4.81777 16.3893 5.11066C18.5372 7.25855 18.5372 10.7414 16.3893 12.8893C16.0964 13.1822 15.6216 13.1822 15.3287 12.8893C15.0358 12.5964 15.0358 12.1215 15.3287 11.8287C16.8908 10.2665 16.8908 7.73343 15.3287 6.17132C15.0358 5.87843 15.0358 5.40355 15.3287 5.11066Z"
-          ></path>
+          />
           <path
             fillRule="evenodd"
             clipRule="evenodd"
             d="M13.9454 7.17258C14.2615 7.07665 14.6031 7.19882 14.7867 7.47344C15.403 8.39538 15.403 9.60456 14.7867 10.5265C14.6031 10.8011 14.2615 10.9233 13.9454 10.8274C13.6293 10.7314 13.4132 10.44 13.4132 10.1097V7.89026C13.4132 7.55993 13.6293 7.2685 13.9454 7.17258Z"
-          ></path>
+          />
         </g>
       </svg>
     );
@@ -1187,6 +1187,46 @@ export const icons = {
           <path d="M15.25 2.75L10.75 7.25" />
           <path d="M2.75 10.75V15.25H7.25" />
           <path d="M2.75 15.25L7.25 10.75" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iIzIxMjEyMSIgZmlsbC1vcGFjaXR5PSIwLjMiIGRhdGEtc3Ryb2tlPSJub25lIiBzdHJva2U9Im5vbmUiPjwvcmVjdD48cGF0aCBkPSJNMTUuMjUgNy4yNUgxMC43NVYyLjc1Ij48L3BhdGg+PHBhdGggZD0iTTEwLjc1IDcuMjVMMTUuMjUgMi43NSI+PC9wYXRoPjxwYXRoIGQ9Ik03LjI1IDE1LjI1VjEwLjc1SDIuNzUiPjwvcGF0aD48cGF0aCBkPSJNNy4yNSAxMC43NUwyLjc1IDE1LjI1Ij48L3BhdGg+PC9nPjwvc3ZnPg==)
+   * @returns
+   */
+  arrowReduceDiagonal({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <rect
+            x="3"
+            y="3"
+            width="12"
+            height="12"
+            rx="2"
+            fill={color || "currentColor"}
+            fillOpacity="0.3"
+            data-stroke="none"
+            stroke="none"
+          />
+          <path d="M15.25 7.25H10.75V2.75" />
+          <path d="M10.75 7.25L15.25 2.75" />
+          <path d="M7.25 15.25V10.75H2.75" />
+          <path d="M7.25 10.75L2.75 15.25" />
         </g>
       </svg>
     );

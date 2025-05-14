@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { icons } from "../assets/icons";
 import { motion, AnimatePresence } from "motion/react";
 import { throttle } from "lodash";
+import { toggleVisibility } from "@/src/state_machine/barVisible";
 
 const formatTime = (t: number): string => {
   const m = Math.floor(t / 60)
@@ -34,6 +35,7 @@ interface MorphButton {
   onClick: () => void;
   icona: React.ReactNode;
   iconb: React.ReactNode;
+  stateName: [string, string];
 }
 
 const MorphButton = memo(function MorphButtonComp({
@@ -41,17 +43,21 @@ const MorphButton = memo(function MorphButtonComp({
   onClick,
   icona,
   iconb,
+  stateName,
 }: MorphButton) {
+  const [isAnimating, setIsAnimating] = useState(false);
   return (
     <button
-      className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
+      className={cn([
+        "bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative",
+      ])}
       onClick={onClick}
-      style={{ filter: "contrast(200)" }}
-      aria-label={state ? "Play" : "Pause"}
+      style={{ filter: isAnimating ? "contrast(200)" : undefined }}
+      aria-label={state ? stateName[0] : stateName[1]}
     >
       <AnimatePresence>
         <motion.span
-          key={state ? "play" : "pause"}
+          key={state ? stateName[0] : stateName[1]}
           initial={{ opacity: 0, filter: "blur(10px)" }}
           animate={{
             opacity: 1,
@@ -70,6 +76,8 @@ const MorphButton = memo(function MorphButtonComp({
             },
           }}
           className="absolute inset-0 flex items-center justify-center"
+          onAnimationStart={() => setIsAnimating(true)}
+          onAnimationComplete={() => setIsAnimating(false)}
         >
           {state ? icona : iconb}
         </motion.span>
@@ -88,12 +96,13 @@ const FullScreenButton = memo(function FullScreenButtonComp({
   onClick,
 }: FullScreenProp) {
   return (
-    <button
-      className="bg-[rgba(38,38,38,0.3)] p-1 rounded-full cursor-pointer"
+    <MorphButton
+      state={!is_fullscreen}
       onClick={onClick}
-    >
-      <icons.arrowExpandDiagonal />
-    </button>
+      stateName={["Fullscreen", "Exit Fullscreen"]}
+      icona={<icons.arrowExpandDiagonal />}
+      iconb={<icons.arrowReduceDiagonal />}
+    />
   );
 });
 
@@ -110,6 +119,7 @@ const PauseButton = memo(function PauseButtonComp({
     <MorphButton
       state={paused}
       onClick={onClick}
+      stateName={["Play", "Pause"]}
       icona={<icons.mediaPlay size={12} />}
       iconb={<icons.mediaPause size={12} />}
     />
@@ -129,6 +139,7 @@ const MuteButton = memo(function MuteButtonComp({
     <MorphButton
       state={muted}
       onClick={onClick}
+      stateName={["Mute", "Unmute"]}
       icona={<icons.volumeOff size={12} />}
       iconb={<icons.volumeUp size={12} />}
     />
@@ -182,15 +193,6 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const [firstClick, setFirstClick] = useState<boolean>(true);
     const [isHovering, setIsHovering] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-    const [displayTime, setDisplayTime] = useState("00:00");
-
-    // console.log("LazyVideo RENDERED. Props:", {
-    //   src,
-    //   autoPlay,
-    //   loop,
-    //   muted,
-    //   controls,
-    // });
 
     const handleMouseEnter = useCallback(() => {
       if (!controls) return;
@@ -233,11 +235,8 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     }, []);
 
     const toggleFullScreen = useCallback(() => {
-      const v = innerRef.current;
-      if (!v) return;
-
-      // [TODO]
-    }, []);
+      setIsFullscreen(!isFullscreen);
+    }, [isFullscreen]);
 
     // Effect 1: Setup video properties like initial muted state and autoplay
     useEffect(() => {
@@ -296,7 +295,11 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         }
       };
       const onTimeUpdate = () => {
-        if (v) setDisplayTime(formatTime(v.duration - v.currentTime));
+        // if (v) setDisplayTime(formatTime(v.duration - v.currentTime));
+        if (v && timeDisplayRef.current)
+          timeDisplayRef.current.textContent = formatTime(
+            v.duration - v.currentTime
+          );
       };
 
       const onPlay = () => {
@@ -446,27 +449,43 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       };
     }, [throttledUpdateTooltip]);
 
+    useEffect(() => {
+      if (isFullscreen) {
+        toggleVisibility(false);
+        document.body.style.overflow = "hidden";
+      } else {
+        toggleVisibility(true);
+        document.body.style.overflow = "";
+      }
+    }, [isFullscreen]);
+
     return (
-      <div
+      <motion.div
         ref={containerRef}
-        className={cn(
-          "relative w-full text-base text-white bg-transparent overflow-hidden",
-          className
-        )}
+        className={cn([
+          !isFullscreen
+            ? [
+                "relative text-base text-white bg-transparent overflow-hidden",
+                className,
+              ] // Ensure w-full h-full, and merge LazyVideo's className
+            : "fixed top-8 left-0 w-screen z-50 flex items-center justify-center",
+        ])}
+        style={{
+          height: isFullscreen ? "calc(100vh - 2rem)" : undefined,
+          backdropFilter: "blur(24px)",
+        }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        layout
       >
-        <video
+        <motion.video
           ref={innerRef}
-          className={cn(["w-full block", className])}
+          className={cn(["mx-auto my-auto"])}
           src={convertFileSrc(src)}
           poster={poster ? convertFileSrc(poster) : undefined}
           crossOrigin="anonymous"
           onClick={handleVideoClick}
-          // autoPlay, loop, muted are controlled via effects and direct DOM manipulation
-          // to align with internal state management.
-          // However, you *could* pass autoPlay and loop directly if preferred,
-          // but initialMuted needs careful handling with the `muted` state.
+          layout
         />
 
         {controls && (
@@ -525,13 +544,11 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
               <div
                 ref={timeDisplayRef}
                 className="text-xs font-mono text-white ml-2"
-              >
-                {displayTime}
-              </div>
+              />
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     );
   }
 );
@@ -615,11 +632,11 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
           src={src}
           poster={poster}
           controls={controls}
-          muted={muted} // Pass initialMuted correctly
+          muted={muted}
           autoPlay={autoPlay}
           loop={loop}
           className={className}
-          aria-label={ariaLabel} // Prop name is aria-label in HTML
+          aria-label={ariaLabel}
         />
       ) : (
         <div

@@ -16,6 +16,7 @@ export const station = {
   assetState: createAtom<Map<string, boolean>>(new Map()),
   guideCookie: createAtom<CookieItem[]>([]),
   scanCheck: createAtom<boolean>(false),
+  // blurPage: createAtom<boolean>(false),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),

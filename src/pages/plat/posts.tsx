@@ -7,12 +7,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { scrollbar } from "../../components/scrollbar";
 import { useScrollYRef } from "../../hooks/scroll";
 import { icons } from "../../assets/icons";
-
-// import { useScanCheck, setScanCheck } from "../../subpub/scanCheck";
 import { station } from "../../subpub/buses";
 import { events } from "@/src/cmd/commands";
 import { buildAssetToSortidxMap } from "@/src/utils/collectAsset";
-// import { setAssetState } from "../../subpub/assetsState";
 import { open } from "@tauri-apps/plugin-dialog";
 
 interface PostsProps {

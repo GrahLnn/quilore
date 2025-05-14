@@ -95,7 +95,6 @@ const LazyImage: React.FC<LazyImageProps> = memo(function LazyImageComp({
         if (containerRef.current) {
           updateRect();
         }
-        console.log(animationInstanceHash);
         imgm.toGhost();
       } else {
         onClick?.(e);
@@ -106,8 +105,6 @@ const LazyImage: React.FC<LazyImageProps> = memo(function LazyImageComp({
   const handleMotionImgLoad = useCallback(() => {
     if (containerRef.current) {
       const currentRect = containerRef.current.getBoundingClientRect();
-      // 优化：只有当 rect 真的改变时才更新，避免不必要的 setRect 调用
-      // (直接比较对象总是 false，需要比较属性)
       setRect((prevRect) => {
         if (
           !prevRect ||
@@ -118,7 +115,7 @@ const LazyImage: React.FC<LazyImageProps> = memo(function LazyImageComp({
         ) {
           return currentRect;
         }
-        return prevRect; // 如果没变，返回旧的 rect，避免不必要的重渲染
+        return prevRect;
       });
     }
   }, []);

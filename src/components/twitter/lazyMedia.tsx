@@ -24,7 +24,6 @@ const MediaElement = ({ media, state }: LazyMediaProps) => {
   }
 
   const baseMediaClass = cn(
-    "w-full",
     state === TweetState.Quote ? "rounded-[2px]" : "rounded-lg"
   );
 
