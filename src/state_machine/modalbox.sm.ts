@@ -1,7 +1,6 @@
 import { useSelector } from "@xstate/react";
 import { assign, createActor, createMachine } from "xstate";
 import { createStateAndSignals } from "./core";
-import { station } from "../subpub/buses";
 
 const { State, Signal } = createStateAndSignals({
   states: ["closed", "opening", "opened", "closing"] as const,
@@ -65,7 +64,6 @@ export function newModalMachine<TPayload = unknown>(name: string) {
 
   function close() {
     modalActor.send(Signal.close);
-    station.curExpandImg.set(null);
   }
 
   function exit() {

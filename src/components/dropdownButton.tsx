@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { PropsWithChildren } from "react";
 import React from "react";
-import { isBarVisible } from "../state_machine/barVisible";
+import { useIsBarVisible } from "../state_machine/barVisible";
 
 interface DropdownMenuItemProps {
   name: string;
@@ -35,7 +35,7 @@ export default function DropdownButton({
   o,
   className,
 }: DropdownButtonProps) {
-  const isVisible = isBarVisible();
+  const isVisible = useIsBarVisible();
   return (
     <div data-tauri-drag-region={!isVisible}>
       <DropdownMenu>

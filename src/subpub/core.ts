@@ -1,58 +1,50 @@
-import { useEffect, useState } from "react";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { matchable, Matchable } from "@/lib/matchable";
 
-type Subscriber<T> = (value: T) => void;
+export function createAtom<T>(initialValue: T) {
+  const atomm = atom<T>(initialValue);
 
-export class Bus<T> {
-  private value: T;
-  private subscribers = new Set<Subscriber<T>>();
-
-  constructor(initialValue: T) {
-    this.value = initialValue;
+  function useSee() {
+    return useAtomValue(atomm);
   }
 
-  subscribe(callback: Subscriber<T>) {
-    this.subscribers.add(callback);
-    callback(this.value); // 初次同步
-    return () => {
-      this.subscribers.delete(callback);
-    };
-  }
-
-  set(value: T) {
-    this.value = value;
-    for (const cb of this.subscribers) {
-      cb(value);
-    }
-  }
-
-  get() {
-    return this.value;
-  }
-}
-
-export function createBus<T>(initialValue: T) {
-  const bus = new Bus<T>(initialValue);
-
-  function watch() {
-    const [value, set] = useState(() => bus.get());
-    useEffect(() => {
-      const unsubscribe = bus.subscribe(set);
-      return unsubscribe;
-    }, []);
-    return value;
-  }
-
-  function set(value: T) {
-    bus.set(value);
+  function useSet() {
+    return useSetAtom(atomm);
   }
 
   function get() {
-    return bus.get();
+    return atomm;
+  }
+
+  function useAll() {
+    return useAtom(atomm);
   }
 
   return {
-    watch,
-    set,
+    atom: atomm,
+    useSee,
+    useSet,
+    useAll,
     get,
+  };
+}
+
+export function createMatchAtom<T extends string | number>(initialValue: T) {
+  const inner = createAtom<Matchable<T>>(
+    matchable(initialValue) as Matchable<T>
+  );
+
+  return {
+    atom: inner.atom,
+    useAll: () => {
+      const [raw, setRaw] = inner.useAll();
+      return [raw, (v: T) => setRaw(matchable(v))];
+    },
+    useSee: () => inner.useSee(),
+    useSet: () => {
+      const set = inner.useSet();
+      return (value: T) => set(matchable(value));
+    },
+    get: inner.get,
   };
 }

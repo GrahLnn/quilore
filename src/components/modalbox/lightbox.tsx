@@ -1,11 +1,10 @@
 import { newModalMachine } from "@/src/state_machine/modalbox.sm";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion, LayoutGroup } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toggleVisibility } from "@/src/state_machine/barVisible";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Asset } from "@/src/cmd/commands";
-import { createPortal } from "react-dom";
 
 export type HashAsset = {
   asset: Asset;
@@ -97,8 +96,8 @@ export function Lightbox() {
               !zoomable
                 ? "cursor-default"
                 : toMax
-                ? "cursor-zoom-out"
-                : "cursor-zoom-in",
+                  ? "cursor-zoom-out"
+                  : "cursor-zoom-in",
             ])}
             layoutId={currentImg.asset.name + currentImg.hash}
             key={currentImg.asset.name}
@@ -113,10 +112,10 @@ export function Lightbox() {
             }}
             onLoad={(e) => {
               const img = e.currentTarget;
-              img.naturalHeight > img.height &&
-              img.naturalHeight / img.naturalWidth > 0.5
-                ? setZoomable(true)
-                : setZoomable(false);
+              setZoomable(
+                img.naturalHeight > img.height &&
+                img.naturalHeight / img.naturalWidth > 0.5
+              );
             }}
           />
         </motion.div>

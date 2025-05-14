@@ -1,18 +1,13 @@
 import { cn } from "@/lib/utils";
-import { icons, logos } from "@/src/assets/icons";
-import { platform } from "@tauri-apps/plugin-os";
+import { icons } from "@/src/assets/icons";
 import { AnimatePresence, motion } from "motion/react";
 import type React from "react";
 import { type PropsWithChildren, memo, useEffect, useState } from "react";
-import { isBarVisible } from "./state_machine/barVisible";
+import { useIsBarVisible } from "./state_machine/barVisible";
 import { toggleLanguageMode } from "./state_machine/language";
-import { isWindowFocus } from "./state_machine/windowFocus";
-import { useCenterTool } from "./subpub/centerTool";
-import { crab } from "./cmd/commandAdapter";
+import { useIsWindowFocus } from "./state_machine/windowFocus";
 import { events } from "./cmd/commands";
 import { station } from "./subpub/buses";
-
-const os = platform();
 
 interface CtrlButtonProps extends PropsWithChildren {
   icon?: React.ReactNode;
@@ -32,7 +27,7 @@ function CtrlButton({
   p,
 }: CtrlButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const isVisible = isBarVisible();
+  const isVisible = useIsBarVisible();
   return (
     <div data-tauri-drag-region={!isVisible}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
@@ -64,18 +59,22 @@ function CtrlButton({
   );
 }
 
-const LeftControls = memo(() => {
+export const LeftControls = memo(function LeftControlsComponent() {
+  const os = station.os.useSee();
   return (
     <div className="flex items-center px-2 text-[var(--content)]">
-      {os === "macos" && <div className="w-[84px]" />}
-      {/* <logos.tauri className="h-4 w-4 opacity-60" /> */}
+      {os.match({
+        macos: () => <div className="w-[84px]" />,
+        _: () => null,
+      })}
     </div>
   );
 });
 
-const RightControls = memo(() => {
+const RightControls = memo(function RightControlsComponent() {
   const [count, setCount] = useState<number>(0);
   const [isRuning, setIsRunning] = useState<boolean>(false);
+  const os = station.os.useSee();
   useEffect(() => {
     // 1. 订阅全局进度事件
     const unlisten = events.scanLikesEvent.listen((event) => {
@@ -89,7 +88,7 @@ const RightControls = memo(() => {
       unlisten.then((f) => f());
     };
   }, []);
-  const isVisible = isBarVisible();
+  const isVisible = useIsBarVisible();
   return (
     <div
       className={cn([
@@ -121,14 +120,17 @@ const RightControls = memo(() => {
 
       <CtrlButton label="Update" icon={<icons.arrowDown size={14} />} />
 
-      {os === "windows" && <div className="w-[138px]" />}
-      {os === "macos" && <div className="w-[8px]" />}
+      {os.match({
+        windows: () => <div className="w-[138px]" />,
+        macos: () => <div className="w-[8px]" />,
+        _: () => null,
+      })}
     </div>
   );
 });
 
-const MiddleControls = memo(() => {
-  const middleTools = useCenterTool();
+const MiddleControls = memo(function MiddleControlsComponent() {
+  const middleTools = station.centerTool.useSee();
   return (
     <AnimatePresence>
       {middleTools && (
@@ -146,10 +148,10 @@ const MiddleControls = memo(() => {
   );
 });
 
-const TopBar = memo(() => {
-  const windowFocused = isWindowFocus();
-  const barVisible = isBarVisible();
-  const allowBarInteraction = station.allowBarInteraction.watch();
+const TopBar = memo(function TopBarComponent() {
+  const windowFocused = useIsWindowFocus();
+  // const barVisible = isBarVisible();
+  const allowBarInteraction = station.allowBarInteraction.useSee();
 
   // useEffect(() => {
   //   if (!windowFocused) {

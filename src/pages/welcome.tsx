@@ -4,16 +4,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { icons } from "../assets/icons";
 import { crab } from "../cmd/commandAdapter";
-import { Page, setPageName } from "../subpub/pageBus";
-import { Guide, setGuide, useGuide } from "../subpub/guideBus";
-import {
-  setGuideC,
-  viewGuideC,
-  getGuideC,
-  type CookieItem,
-} from "../subpub/guideCookie"; // 导入 get 和 CookieItem
+// import { Page, setPageName } from "../subpub/pageBus";
+// import { Guide, setGuide, useGuide } from "../subpub/guideBus";
+// import {
+//   setGuideC,
+//   viewGuideC,
+//   getGuideC,
+//   type CookieItem,
+// } from "../subpub/guideCookie"; // 导入 get 和 CookieItem
 import { station } from "../subpub/buses";
-import { setCenterTool } from "../subpub/centerTool";
+import { CookieItem, Guide, Page } from "../subpub/type";
+import { atom, useAtomValue } from "jotai";
+// import { setCenterTool } from "../subpub/centerTool";
 
 const transitionDebug = {
   type: "easeOut",
@@ -121,6 +123,8 @@ function OperationButton({
 
 function SetSaveDir() {
   const [folderPath, setFolderPath] = useState<string | null>(null);
+  const setSaveDir = station.saveDir.useSet();
+  const setGuide = station.guide.useSet();
   useEffect(() => {
     const getv = async () => {
       const savedir = await crab.getMetaValue("SaveDir");
@@ -164,7 +168,8 @@ function SetSaveDir() {
             icon={<icons.arrowRight />}
             onClick={() => {
               crab.upsertMetakv("SaveDir", folderPath);
-              station.saveDir.set(folderPath);
+              setSaveDir(folderPath);
+              // setGuide(Guide.AddPlatform);
               setGuide(Guide.AddPlatform);
             }}
           />
@@ -176,14 +181,12 @@ function SetSaveDir() {
 
 function CookieEntry() {
   const [newMessage, setNewMessage] = useState<string>("");
-
+  const [currentCookies, setCookies] = station.guideCookie.useAll();
   const handleCookieChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const cookieValue = e.target.value;
     setNewMessage(cookieValue);
 
     if (cookieValue) {
-      const currentCookies = getGuideC();
-
       const twitterIndex = currentCookies.findIndex(
         (item: CookieItem) => item.platform === "Twitter"
       );
@@ -194,16 +197,14 @@ function CookieEntry() {
           platform: "Twitter",
           cookie: cookieValue,
         };
-        setGuideC(updatedCookies);
+        setCookies(updatedCookies);
       } else {
-        setGuideC([
+        setCookies([
           ...currentCookies,
           { platform: "Twitter", cookie: cookieValue },
         ]);
       }
     } else {
-      // 当输入为空时，移除 Twitter 平台的 cookie（如果存在）
-      const currentCookies = getGuideC();
       const twitterIndex = currentCookies.findIndex(
         (item: CookieItem) => item.platform === "Twitter"
       );
@@ -212,7 +213,7 @@ function CookieEntry() {
         // 如果找到了 Twitter cookie，则移除它
         const updatedCookies = [...currentCookies];
         updatedCookies.splice(twitterIndex, 1);
-        setGuideC(updatedCookies);
+        setCookies(updatedCookies);
       }
     }
   };
@@ -235,7 +236,13 @@ function CookieEntry() {
 
 function AddPlatform() {
   const [clicked, setClicked] = useState(false);
-  const hasCookie = viewGuideC();
+  // const hasCookie = viewGuideC();
+  const guideCookies = station.guideCookie.useSee();
+  const setGuide = station.guide.useSet();
+  const setPage = station.page.useSet();
+  const hasCookie = useAtomValue(
+    atom((get) => get(station.guideCookie.atom).length > 0)
+  );
   return (
     <>
       <div className="text-3xl font-bold text-[var(--content)] select-none cursor-default">
@@ -288,10 +295,10 @@ function AddPlatform() {
           ])}
           onClick={() => {
             crab.upsertMetakv("FirstLaunch", "false");
-            for (const cookie of getGuideC()) {
+            for (const cookie of guideCookies) {
               crab.upsertUserkv(cookie.platform, cookie.cookie);
             }
-            setPageName(Page.Main);
+            setPage(Page.Main);
             setClicked(true);
           }}
           onKeyDown={() => {}}
@@ -304,11 +311,14 @@ function AddPlatform() {
 }
 
 export default function Welcome() {
+  const setCenterTool = station.centerTool.useSet();
+  const setBarInteraction = station.allowBarInteraction.useSet();
+  const guide = station.guide.useSee();
   useEffect(() => {
     setCenterTool(null);
-    station.allowBarInteraction.set(false);
+    setBarInteraction(false);
   }, []);
-  const guide = useGuide();
+
   return (
     <div
       className={cn([

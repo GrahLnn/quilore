@@ -1,32 +1,27 @@
 import "./App.css";
 import { Toaster } from "@/components/ui/sonner";
-// import { Lightbox } from "./components/lightbox/lightbox";
 import { Lightbox } from "./components/modalbox/lightbox";
-// import { Scrollbar } from "./components/scrollbar/scrollbar";
-import Posts from "./pages/plat/posts";
 import TopBar from "./topbar";
 import { ContentPage } from "./pages/pages";
 import { useEffect } from "react";
 import { crab } from "./cmd/commandAdapter";
-import { MetaKey } from "./cmd/commands";
-import { setPageName, Page, usePageName } from "./subpub/pageBus";
 import { cn } from "@/lib/utils";
 import { station } from "./subpub/buses";
-import { LayoutGroup } from "motion/react";
+import { Page } from "./subpub/type";
 
 function App() {
-  const page = usePageName();
-  const shouldFlex = station.mainFlex.watch();
+  const setPage = station.page.useSet();
+  const setSaveDir = station.saveDir.useSet();
   useEffect(() => {
     crab.appReady();
     const fetchData = async () => {
       const result = await crab.getMetaValue("FirstLaunch");
       result.tap((v) => {
-        if (!v) setPageName(Page.Welcome);
+        if (!v) setPage(Page.Welcome);
       });
       const savedir = await crab.getSaveDir();
       savedir.tap((v) => {
-        station.saveDir.set(v);
+        setSaveDir(v);
       });
     };
 
@@ -34,21 +29,21 @@ function App() {
   }, []);
   return (
     // <LayoutGroup>
-      <div className="min-h-screen flex flex-col overflow-hidden hide-scrollbar">
-        <TopBar />
+    <div className="min-h-screen flex flex-col overflow-hidden hide-scrollbar">
+      <TopBar />
 
-        <main
-          className={cn([
-            "flex flex-col justify-center items-center flex-1 overflow-hidden mt-8 hide-scrollbar",
-          ])}
-        >
-          {/* <Posts /> */}
-          <ContentPage />
-        </main>
-        <Toaster />
-        <Lightbox />
-        {/* <Scrollbar /> */}
-      </div>
+      <main
+        className={cn([
+          "flex flex-col justify-center items-center flex-1 overflow-hidden mt-8 hide-scrollbar",
+        ])}
+      >
+        {/* <Posts /> */}
+        <ContentPage />
+      </main>
+      <Toaster />
+      <Lightbox />
+      {/* <Scrollbar /> */}
+    </div>
     // </LayoutGroup>
   );
 }

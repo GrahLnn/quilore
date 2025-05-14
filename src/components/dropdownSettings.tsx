@@ -2,15 +2,13 @@ import React, { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { PropsWithChildren } from "react";
-import { isBarVisible } from "../state_machine/barVisible";
+import { useIsBarVisible } from "../state_machine/barVisible";
 
 interface DropdownMenuItemProps {
   name: string;
@@ -36,7 +34,7 @@ export default function DropdownSettings({
   o,
   className,
 }: DropdownSettingProps) {
-  const isVisible = isBarVisible();
+  const isVisible = useIsBarVisible();
   const [activatedItem, setActiveItem] = useState<string | null>(null);
 
   const data = items?.find((item) => item.name === activatedItem)?.data;
@@ -84,7 +82,7 @@ export default function DropdownSettings({
                     ? "text-[#262626] dark:text-[#f5f5f5]"
                     : "text-[#737373] dark:text-[#a3a3a3]",
                   "transition duration-300",
-                  "flex justify-between items-center"
+                  "flex justify-between items-center",
                 ])}
                 onClick={() => setActiveItem(item.name)}
               >

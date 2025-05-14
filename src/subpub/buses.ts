@@ -1,13 +1,26 @@
-import { createBus } from "./core";
-import { type Matchable, matchable } from "@/lib/matchable";
+import { createMatchAtom, createAtom } from "./core";
+import {
+  platform as OSplatform,
+  type Platform as OSPlatform,
+} from "@tauri-apps/plugin-os";
+import { Guide, Page, Platform, CenterToolProp, CookieItem } from "./type";
 
 export const station = {
-  postsTitle: createBus<string>(""),
-  mainFlex: createBus<boolean>(false),
-  saveDir: createBus<string | null>(null),
-  allowBarInteraction: createBus<boolean>(true),
-  curExpandImg: createBus<string | null>(null),
-  intractID: createBus<string | null>(null),
+  postsTitle: createAtom<string>(""),
+  mainFlex: createAtom<boolean>(false),
+  saveDir: createAtom<string | null>(null),
+  allowBarInteraction: createAtom<boolean>(true),
+  curExpandImg: createAtom<string | null>(null),
+  intractID: createAtom<string | null>(null),
+  centerTool: createAtom<CenterToolProp | null>(null),
+  assetState: createAtom<Map<string, boolean>>(new Map()),
+  guideCookie: createAtom<CookieItem[]>([]),
+  scanCheck: createAtom<boolean>(false),
+
+  guide: createMatchAtom<Guide>(Guide.SetSaveDir),
+  page: createMatchAtom<Page>(Page.Main),
+  platform: createMatchAtom<Platform>(Platform.Twitter),
+  os: createMatchAtom<OSPlatform>(OSplatform() as OSPlatform),
 };
 
 export const sizeMap: Map<string, [number, number]> = new Map();

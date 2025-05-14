@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import useElementInView from "../hooks/view";
 import { clearVideo } from "../utils/media";
-import { useAssetState } from "../subpub/assetsState";
+import { station } from "../subpub/buses";
 import { Asset } from "../cmd/commands";
 import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,12 @@ interface MorphButton {
   iconb: React.ReactNode;
 }
 
-const MorphButton = memo(({ state, onClick, icona, iconb }: MorphButton) => {
+const MorphButton = memo(function MorphButtonComp({
+  state,
+  onClick,
+  icona,
+  iconb,
+}: MorphButton) {
   return (
     <button
       className="bg-[rgba(38,38,38,0.3)] border-none rounded-full p-3 text-lg text-white cursor-pointer mr-2 relative"
@@ -78,7 +83,10 @@ interface FullScreenProp {
   onClick: () => void;
 }
 
-const FullScreenButton = memo(({ is_fullscreen, onClick }: FullScreenProp) => {
+const FullScreenButton = memo(function FullScreenButtonComp({
+  is_fullscreen,
+  onClick,
+}: FullScreenProp) {
   return (
     <button
       className="bg-[rgba(38,38,38,0.3)] p-1 rounded-full cursor-pointer"
@@ -94,7 +102,10 @@ interface PauseButtonProp {
   onClick: () => void;
 }
 
-const PauseButton = memo(({ paused, onClick }: PauseButtonProp) => {
+const PauseButton = memo(function PauseButtonComp({
+  paused,
+  onClick,
+}: PauseButtonProp) {
   return (
     <MorphButton
       state={paused}
@@ -110,7 +121,10 @@ interface MuteButtonProp {
   onClick: () => void;
 }
 
-const MuteButton = memo(({ muted, onClick }: MuteButtonProp) => {
+const MuteButton = memo(function MuteButtonComp({
+  muted,
+  onClick,
+}: MuteButtonProp) {
   return (
     <MorphButton
       state={muted}
@@ -140,7 +154,7 @@ interface TheVideoProps {
 }
 
 const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
-  (
+  function TheVideoComp(
     {
       src,
       muted: initialMuted = false,
@@ -151,7 +165,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       poster,
     },
     externalRef
-  ) => {
+  ) {
     const innerRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const progressRef = useRef<HTMLDivElement>(null);
@@ -541,7 +555,7 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const inView = useElementInView(containerRef, offset);
   const [exists, setExists] = useState(false);
-  const assetState = useAssetState();
+  const assetState = station.assetState.useSee();
   const val = assetState.get(asset.name);
   const [storedRatio, setStoredRatio] = useState<[number, number] | undefined>(
     undefined

@@ -1,4 +1,3 @@
-import { usePlatformName, Platform } from "@/src/subpub/platbus";
 import Posts from "./posts";
 import { station } from "@/src/subpub/buses";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -6,20 +5,20 @@ import { crab } from "@/src/cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { isTwitterLoginCookie, isValidCookies } from "@/src/app/checkCookies";
 import { icons } from "@/src/assets/icons";
-import { setScanCheck } from "@/src/subpub/scanCheck";
-import { setCenterTool } from "@/src/subpub/centerTool";
 import DropdownButton from "@/src/components/dropdownButton";
 import DropdownSettings from "@/src/components/dropdownSettings";
 import { open } from "@tauri-apps/plugin-dialog";
+import { Platform } from "@/src/subpub/type";
 
 const Title = () => {
-  const title = station.postsTitle.watch();
+  const title = station.postsTitle.useSee();
   return <div className="text-trim-cap">{title}</div>;
 };
 const EditCookies = () => {
   const [cookie, setCookie] = useState<string>("");
   const [text, setText] = useState<string>("");
   const [loaded, setLoaded] = useState(false);
+  const setScanCheck = station.scanCheck.useSet();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
     const getCookie = async () => {
@@ -160,10 +159,12 @@ const collection = [
   },
 ];
 export function PlatPage() {
-  const page = usePlatformName();
+  const page = station.platform.useSee();
+  const setBarInteraction = station.allowBarInteraction.useSet();
+  const setCenterTool = station.centerTool.useSet();
 
   useEffect(() => {
-    station.allowBarInteraction.set(true);
+    setBarInteraction(true);
     setCenterTool({
       key: "posts",
       node: (
@@ -192,7 +193,7 @@ export function PlatPage() {
         </div>
       ),
     });
-}, []);
+  }, []);
 
   return page.match({
     [Platform.Twitter]: () => <Posts />,

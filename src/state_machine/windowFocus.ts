@@ -66,7 +66,7 @@ windowFocusActor.start();
  * 获取窗口焦点状态
  * @returns 当前窗口是否处于焦点状态
  */
-export function isWindowFocus(): boolean {
+export function useIsWindowFocus(): boolean {
   return useSelector(windowFocusActor, (machineState) =>
     machineState.matches(State.focused)
   );

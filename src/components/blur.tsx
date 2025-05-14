@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 // import { StarFilledIcon } from '@radix-ui/react-icons';
 
 export default function ScrollRevealAnimationCSS() {
@@ -17,7 +17,7 @@ export default function ScrollRevealAnimationCSS() {
     const fetchLast20GithubFollowers = async () => {
       try {
         const response = await fetch(
-          'https://api.github.com/users/ibelick/followers'
+          "https://api.github.com/users/ibelick/followers"
         );
         const data = await response.json();
 
@@ -43,10 +43,7 @@ export default function ScrollRevealAnimationCSS() {
 
   return (
     <>
-      <div
-        className="w-full overflow-y-auto p-4"
-        ref={containerRef}
-      >
+      <div className="w-full overflow-y-auto p-4" ref={containerRef}>
         <ul className="flex w-full flex-col space-y-2">
           {githubFollower?.map((item) => {
             return (
@@ -75,7 +72,7 @@ export default function ScrollRevealAnimationCSS() {
           })}
         </ul>
       </div>
-      <style jsx>{`
+      <style>{`
         @keyframes appear {
           from {
             filter: blur(12px);

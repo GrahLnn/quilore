@@ -43,6 +43,6 @@ export function toggleVisibility(shouldVisible: boolean) {
   }
 }
 
-export function isBarVisible() {
+export function useIsBarVisible() {
   return useSelector(visibilityActor, (state) => state.matches(State.visible));
 }

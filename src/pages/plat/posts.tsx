@@ -2,17 +2,17 @@ import { cn } from "@/lib/utils";
 import { crab } from "@/src/cmd/commandAdapter";
 import type { LikedPost, Post } from "@/src/cmd/commands";
 import TweetCard from "@/src/components/twitter/post";
-import { Masonry, useMasonry } from "masonic";
+import { Masonry } from "masonic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scrollbar } from "../../components/scrollbar";
 import { useScrollYRef } from "../../hooks/scroll";
 import { icons } from "../../assets/icons";
 
-import { useScanCheck, setScanCheck } from "../../subpub/scanCheck";
+// import { useScanCheck, setScanCheck } from "../../subpub/scanCheck";
 import { station } from "../../subpub/buses";
 import { events } from "@/src/cmd/commands";
 import { buildAssetToSortidxMap } from "@/src/utils/collectAsset";
-import { setAssetState } from "../../subpub/assetsState";
+// import { setAssetState } from "../../subpub/assetsState";
 import { open } from "@tauri-apps/plugin-dialog";
 
 interface PostsProps {
@@ -55,10 +55,7 @@ function ActionButton({
   );
 }
 
-export default function Posts({
-  initialPosts = [],
-  initialCursor = null,
-}: PostsProps) {
+export default function Posts({ initialCursor = null }: PostsProps) {
   // const [posts, setPosts] = useState<LikedPost[]>(initialPosts);
   // const [sortedIdxList, setSortedIdxList] = useState<number[]>([]);
   const [sortedIdxList, setSortedIdxList] = useState<Array<{ id: number }>>([]);
@@ -68,7 +65,9 @@ export default function Posts({
   const [isLoading, setIsLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const container = useRef<HTMLDivElement>(null);
-  const canScan = useScanCheck();
+  const [canScan, setCanScan] = station.scanCheck.useAll();
+  const setTitle = station.postsTitle.useSet();
+  const setAssetState = station.assetState.useSet();
 
   // 使用自定义 scrollYRef hook，不会导致组件重绘
   useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
@@ -94,7 +93,7 @@ export default function Posts({
       const result = await crab.getUserkvValue("Twitter");
       result.tap((v) => {
         if (v) {
-          setScanCheck(true);
+          setCanScan(true);
         }
       });
     };
@@ -115,7 +114,7 @@ export default function Posts({
       loadMorePosts();
     });
 
-    const scanEvent = events.scanLikesEvent.listen((event) => {
+    const scanEvent = events.scanLikesEvent.listen(() => {
       // event.payload 就是后端发来的数字
       // setCount(event.payload.count);
       // setIsRunning(event.payload.running);
@@ -129,14 +128,15 @@ export default function Posts({
       resizeObserver.disconnect();
       assetEvent.then((f) => f());
       scanEvent.then((f) => f());
+      importEvent.then((f) => f());
     };
   }, []);
 
   useEffect(() => {
     if (sortedIdxList.length === 0 && !isLoading) {
-      station.postsTitle.set("Welcome");
+      setTitle("Welcome");
     } else {
-      station.postsTitle.set("X.Likes");
+      setTitle("X.Likes");
     }
   }, []);
 
@@ -273,8 +273,8 @@ export default function Posts({
             </div>
           ) : (
             <div className="text-xs text-[#e81123]">
-              Cookie is missing. Please click the "Welcome" button at the top to
-              add it.
+              Cookie is missing. Please click the &quot;Welcome&quot; button at
+              the top to add it.
             </div>
           )}
         </div>

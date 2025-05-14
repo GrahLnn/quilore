@@ -10,16 +10,14 @@ import { cn } from "@/lib/utils";
 import { icons } from "@/src/assets/icons";
 import { crab } from "@/src/cmd/commandAdapter";
 import type { Card, Content, Post, QuotePost, User } from "@/src/cmd/commands";
-import type { ContentToCopy, QuoteContentToCopy } from "@/src/cmd/commands";
+import type { ContentToCopy } from "@/src/cmd/commands";
 import { useLanguageState } from "@/src/state_machine/language";
 import { DataTag } from "@/src/utils/enums";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "motion/react";
-import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 import LazyImage from "../lazyimg";
-import { station } from "@/src/subpub/buses";
 import md5 from "md5";
 
 function processText(text: string, urls: string[] | null) {
@@ -100,8 +98,50 @@ enum LangStateKey {
 }
 
 function ContentEle({ content }: { content: Content }) {
-  if (!content.text) return null;
   const langState = useLanguageState();
+  // 定义两个容器的 ref，分别用于显示内容和隐藏测量
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hideRef = useRef<HTMLDivElement>(null);
+  // 使用 useState 存储两个高度值，初始值均为 "auto"
+  const [heights, setHeights] = useState<{
+    cont: number | "auto";
+    hide: number | "auto";
+  }>({
+    cont: "auto",
+    hide: "auto",
+  });
+  // 组件加载时只测量一次两个容器的高度，并保存下来（固定数据，不再变化）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useLayoutEffect(() => {
+    const containerEl = containerRef.current;
+    const hideEl = hideRef.current;
+    if (containerEl && hideEl) {
+      const { contH, hideH } = langState.match({
+        original: () => ({
+          contH: containerEl.offsetHeight,
+          hideH: hideEl.offsetHeight,
+        }),
+        translated: () => ({
+          contH: hideEl.offsetHeight,
+          hideH: containerEl.offsetHeight,
+        }),
+      });
+      setHeights({
+        cont: contH,
+        hide: hideH,
+      });
+    }
+  }, []);
+  // 在测量完成后移除hideRef元素
+  useLayoutEffect(() => {
+    if (heights.hide !== "auto") {
+      setHideRefMeasured(true);
+    }
+  }, [heights.hide]);
+
+  // 添加一个状态来控制是否显示hideRef元素
+  const [hideRefMeasured, setHideRefMeasured] = useState(false);
+  if (!content.text) return null;
 
   const { displayText, animationKey, symmetryText } = langState.match({
     original: () => ({
@@ -130,52 +170,6 @@ function ContentEle({ content }: { content: Content }) {
 
   const defaultCN =
     "whitespace-pre-wrap break-words w-full text-left text-[var(--content)]";
-
-  // 定义两个容器的 ref，分别用于显示内容和隐藏测量
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hideRef = useRef<HTMLDivElement>(null);
-
-  // 使用 useState 存储两个高度值，初始值均为 "auto"
-  const [heights, setHeights] = useState<{
-    cont: number | "auto";
-    hide: number | "auto";
-  }>({
-    cont: "auto",
-    hide: "auto",
-  });
-
-  // 组件加载时只测量一次两个容器的高度，并保存下来（固定数据，不再变化）
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useLayoutEffect(() => {
-    const containerEl = containerRef.current;
-    const hideEl = hideRef.current;
-    if (containerEl && hideEl) {
-      const { contH, hideH } = langState.match({
-        original: () => ({
-          contH: containerEl.offsetHeight,
-          hideH: hideEl.offsetHeight,
-        }),
-        translated: () => ({
-          contH: hideEl.offsetHeight,
-          hideH: containerEl.offsetHeight,
-        }),
-      });
-      setHeights({
-        cont: contH,
-        hide: hideH,
-      });
-    }
-  }, []);
-
-  // 添加一个状态来控制是否显示hideRef元素
-  const [hideRefMeasured, setHideRefMeasured] = useState(false);
-
-  // 在测量完成后移除hideRef元素
-  useLayoutEffect(() => {
-    if (heights.hide !== "auto") {
-      setHideRefMeasured(true);
-    }
-  }, [heights.hide]);
 
   // 根据当前语言状态选择对应的高度值
   const height = langState.match({
@@ -314,13 +308,13 @@ const FootTools = ({ tweet }: { tweet: Post }) => {
     </a>
   );
 };
-const generateReplyHTML = (_t: Post) => null;
+// const generateReplyHTML = (_t: Post) => null;
 
 interface AuthorProps {
   author: User;
   size?: "small" | "normal";
 }
-function Author({ author, size = "normal" }: AuthorProps) {
+function Author({ author }: AuthorProps) {
   return (
     // <a
     //   href={`https://x.com/${author.screen_name}`}
@@ -457,24 +451,9 @@ interface TweetCardProps {
   postdata: Post;
 }
 
-const TweetCard = memo(({ postdata }: TweetCardProps) => {
-  if (!postdata) return null;
+const TweetCard = memo(function TweetCardComp({ postdata }: TweetCardProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  // const curIntractID = station.intractID.watch();
-  const handleInteraction = () => {
-    station.intractID.set(postdata.rest_id);
-  };
-  // useEffect(() => {
-  //   const wrap = wrapperRef.current;
-  //   if (!wrap) return;
-  //   const cell = wrap.closest<HTMLElement>('[role="gridcell"]');
-  //   if (!cell) return;
-  //   if (curIntractID === postdata.rest_id) {
-  //     cell.style.zIndex = "100"; // 激活时提高层级
-  //   } else {
-  //     cell.style.zIndex = ""; // 恢复默认
-  //   }
-  // }, [curIntractID, postdata.rest_id]);
+  if (!postdata) return null;
   return (
     <div
       ref={wrapperRef}

@@ -1,5 +1,4 @@
 import type {
-  Asset,
   LikedPost,
   Media,
   Post,

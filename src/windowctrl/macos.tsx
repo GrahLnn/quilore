@@ -2,17 +2,9 @@ import { cn } from "@/lib/utils";
 import { icons } from "@/src/assets/icons";
 import { Window } from "@tauri-apps/api/window";
 import type React from "react";
-import {
-  type KeyboardEvent,
-  type PropsWithChildren,
-  useCallback,
-  useEffect,
-  useState,
-  memo,
-} from "react";
+import { type PropsWithChildren, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import { isWindowFocus } from "../state_machine/windowFocus";
-import { crab } from "../cmd/commandAdapter";
+import { useIsWindowFocus } from "../state_machine/windowFocus";
 import { events } from "../cmd/commands";
 
 const appWindow = new Window("main");
@@ -47,7 +39,7 @@ function WindowButton({ className, onClick, icon }: WindowButtonProps) {
 
 function Core() {
   const is_fullscreen = useState<boolean>(false);
-  const windowFocused = isWindowFocus();
+  const windowFocused = useIsWindowFocus();
   useEffect(() => {
     const unlisten = events.fullScreenEvent.listen((event) => {
       is_fullscreen[1](event.payload.is_fullscreen);
