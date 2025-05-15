@@ -1,4 +1,4 @@
-import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { Atom, atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { matchable, Matchable } from "@/lib/matchable";
 
 export function createAtom<T>(initialValue: T) {
@@ -30,21 +30,45 @@ export function createAtom<T>(initialValue: T) {
 }
 
 export function createMatchAtom<T extends string | number>(initialValue: T) {
-  const inner = createAtom<Matchable<T>>(
-    matchable(initialValue) as Matchable<T>
-  );
+  const inner = createAtom<Matchable<T>>(matchable(initialValue));
 
   return {
     atom: inner.atom,
     useAll: () => {
       const [raw, setRaw] = inner.useAll();
-      return [raw, (v: T) => setRaw(matchable(v))];
+      return [
+        raw,
+        (v: T) =>
+          setRaw((prev) => {
+            if (prev.value === v) return prev; // 避免不必要更新
+            return matchable(v);
+          }),
+      ] as const;
     },
     useSee: () => inner.useSee(),
     useSet: () => {
       const set = inner.useSet();
-      return (value: T) => set(matchable(value));
+      return (value: T) =>
+        set((prev) => {
+          if (prev.value === value) return prev;
+          return matchable(value);
+        });
     },
     get: inner.get,
+  };
+}
+
+export function createDerivedAtom<T>(derive: (get: <V>(a: Atom<V>) => V) => T) {
+  const derivedAtom = atom<T>((get) => derive(get));
+  function useSee() {
+    return useAtomValue(derivedAtom);
+  }
+  function get() {
+    return derivedAtom;
+  }
+  return {
+    atom: derivedAtom,
+    useSee,
+    get,
   };
 }

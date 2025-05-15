@@ -5,7 +5,7 @@ import TweetCard from "@/src/components/twitter/post";
 import { Masonry } from "masonic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scrollbar } from "../../components/scrollbar";
-import { useScrollYRef } from "../../hooks/scroll";
+// import { useScrollVelocity, useScrollYRef } from "../../hooks/scroll";
 import { icons } from "../../assets/icons";
 import { station } from "../../subpub/buses";
 import { events } from "@/src/cmd/commands";
@@ -53,8 +53,6 @@ function ActionButton({
 }
 
 export default function Posts({ initialCursor = null }: PostsProps) {
-  // const [posts, setPosts] = useState<LikedPost[]>(initialPosts);
-  // const [sortedIdxList, setSortedIdxList] = useState<number[]>([]);
   const [sortedIdxList, setSortedIdxList] = useState<Array<{ id: number }>>([]);
   const [postsMap, setPostsMap] = useState<Map<number, Post>>(new Map());
   const [asset2sortidx] = useState<Map<string, number>>(new Map());
@@ -65,9 +63,11 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   const [canScan, setCanScan] = station.scanCheck.useAll();
   const setTitle = station.postsTitle.useSet();
   const setAssetState = station.assetState.useSet();
+  // const isScrollFast = driveStation.isTooFast.useSee();
 
   // 使用自定义 scrollYRef hook，不会导致组件重绘
-  useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
+  // useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
+  // useScrollVelocity();
 
   // 首次加载和容器高度更新
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>

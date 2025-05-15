@@ -1,6 +1,7 @@
 import { useSelector } from "@xstate/react";
 import { assign, createActor, createMachine } from "xstate";
 import { createStateAndSignals } from "./core";
+import { useMemo } from "react";
 
 const { State, Signal } = createStateAndSignals({
   states: ["closed", "opening", "opened", "closing"] as const,
@@ -88,15 +89,29 @@ export function newModalMachine<TPayload = unknown>(
   }
 
   function useModalState() {
-    return useSelector(modalActor, (state) => ({
-      isOpen: state.matches(State.opened) || state.matches(State.opening),
-      isExiting: {
-        state: state.matches(State.closing),
-        data: state.context.payload,
-      },
-      isClosed: state.matches(State.closed),
-      payload: state.context.payload,
-    }));
+    const raw = useSelector(modalActor, (state) => {
+      const isOpen =
+        state.matches(State.opened) || state.matches(State.opening);
+      const isClosed = state.matches(State.closed);
+      const isExitingState = state.matches(State.closing);
+      const payload = state.context.payload;
+
+      return { isOpen, isClosed, isExitingState, payload };
+    });
+
+    // 二级结构的引用稳定性也保障
+    return useMemo(
+      () => ({
+        isOpen: raw.isOpen,
+        isClosed: raw.isClosed,
+        payload: raw.payload,
+        isExiting: {
+          state: raw.isExitingState,
+          data: raw.payload,
+        },
+      }),
+      [raw.isOpen, raw.isClosed, raw.isExitingState, raw.payload]
+    );
   }
 
   return { open, close, exit, useModalState };

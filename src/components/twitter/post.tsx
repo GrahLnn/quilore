@@ -14,13 +14,7 @@ import type { ContentToCopy } from "@/src/cmd/commands";
 import { useLanguageState } from "@/src/state_machine/language";
 import { DataTag } from "@/src/utils/enums";
 import { AnimatePresence, motion } from "motion/react";
-import {
-  memo,
-  PropsWithChildren,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import MediaGrid from "./lazyMedia";
 import { TweetState } from "./utils";
 import LazyImage from "../lazyimg";
@@ -103,7 +97,11 @@ enum LangStateKey {
   translated = "translated",
 }
 
-function ContentEle({ content }: { content: Content }) {
+const ContentEle = memo(function ContentEleComp({
+  content,
+}: {
+  content: Content;
+}) {
   const langState = useLanguageState();
   // 定义两个容器的 ref，分别用于显示内容和隐藏测量
   const containerRef = useRef<HTMLDivElement>(null);
@@ -116,6 +114,35 @@ function ContentEle({ content }: { content: Content }) {
     cont: "auto",
     hide: "auto",
   });
+  const { displayText, animationKey, symmetryText } = langState.match({
+    original: () => ({
+      displayText: content.text,
+      animationKey: LangStateKey.original + md5(content.text),
+      symmetryText:
+        content.translation && content.translation !== DataTag.NO_TRANSLATION
+          ? content.translation
+          : content.text,
+    }),
+    translated: () => ({
+      displayText:
+        content.translation && content.translation !== DataTag.NO_TRANSLATION
+          ? content.translation
+          : content.text,
+      animationKey:
+        content.translation && content.translation !== DataTag.NO_TRANSLATION
+          ? LangStateKey.translated + md5(content.translation)
+          : LangStateKey.original + md5(content.text),
+      symmetryText: content.text,
+    }),
+  });
+  const parts = useMemo(
+    () => processText(displayText, content.expanded_urls),
+    [displayText, content.expanded_urls]
+  );
+  const symmetryParts = useMemo(
+    () => processText(symmetryText, content.expanded_urls),
+    [symmetryText, content.expanded_urls]
+  );
   // 组件加载时只测量一次两个容器的高度，并保存下来（固定数据，不再变化）
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useLayoutEffect(() => {
@@ -149,31 +176,6 @@ function ContentEle({ content }: { content: Content }) {
   const [hideRefMeasured, setHideRefMeasured] = useState(false);
   if (!content.text) return null;
 
-  const { displayText, animationKey, symmetryText } = langState.match({
-    original: () => ({
-      displayText: content.text,
-      animationKey: LangStateKey.original + md5(content.text),
-      symmetryText:
-        content.translation && content.translation !== DataTag.NO_TRANSLATION
-          ? content.translation
-          : content.text,
-    }),
-    translated: () => ({
-      displayText:
-        content.translation && content.translation !== DataTag.NO_TRANSLATION
-          ? content.translation
-          : content.text,
-      animationKey:
-        content.translation && content.translation !== DataTag.NO_TRANSLATION
-          ? LangStateKey.translated + md5(content.translation)
-          : LangStateKey.original + md5(content.text),
-      symmetryText: content.text,
-    }),
-  });
-
-  const parts = processText(displayText, content.expanded_urls);
-  const symmetryParts = processText(symmetryText, content.expanded_urls);
-
   const defaultCN =
     "whitespace-pre-wrap break-words w-full text-left text-[var(--content)]";
 
@@ -195,9 +197,9 @@ function ContentEle({ content }: { content: Content }) {
           ref={containerRef}
           key={animationKey}
           className={cn([defaultCN])}
-          initial={{ filter: "blur(6px)", opacity: 0 }}
-          animate={{ filter: "blur(0px)", opacity: 1 }}
-          exit={{ filter: "blur(6px)", opacity: 0 }}
+          // initial={{ filter: "blur(6px)", opacity: 0 }}
+          // animate={{ filter: "blur(0px)", opacity: 1 }}
+          // exit={{ filter: "blur(6px)", opacity: 0 }}
           transition={{
             duration: 0.3,
             ease: "linear",
@@ -217,9 +219,9 @@ function ContentEle({ content }: { content: Content }) {
       )}
     </motion.div>
   );
-}
+});
 
-function CardEle({ card }: { card?: Card | null }) {
+const CardEle = memo(function CardEleComp({ card }: { card?: Card | null }) {
   if (!card) return null;
   return (
     <a
@@ -247,9 +249,13 @@ function CardEle({ card }: { card?: Card | null }) {
       </div>
     </a>
   );
-}
+});
 
-function QuoteEle({ quote }: { quote?: QuotePost | null }) {
+const QuoteEle = memo(function QuoteEleComp({
+  quote,
+}: {
+  quote?: QuotePost | null;
+}) {
   if (!quote) return null;
   return (
     <div
@@ -265,9 +271,9 @@ function QuoteEle({ quote }: { quote?: QuotePost | null }) {
       <Detail tweet={quote} state={TweetState.Quote} />
     </div>
   );
-}
+});
 
-function Detail({
+const Detail = memo(function DetailComp({
   tweet,
   state = TweetState.Post,
 }: {
@@ -282,9 +288,13 @@ function Detail({
       {"quote" in tweet && <QuoteEle quote={tweet.quote} />}
     </div>
   );
-}
+});
 
-function Timestamp({ timestamp }: { timestamp: string }): string {
+const TimestampEle = memo(function TimestampComp({
+  timestamp,
+}: {
+  timestamp: string;
+}): string {
   if (!timestamp) return "";
   const date = new Date(timestamp);
   return date
@@ -297,15 +307,15 @@ function Timestamp({ timestamp }: { timestamp: string }): string {
       hour12: false,
     })
     .replace(/\//g, "-");
-}
+});
 
-const FootTools = ({
+const FootTools = memo(function FootToolsComp({
   tweet,
   className,
 }: {
   tweet: Post;
   className?: string;
-}) => {
+}) {
   return (
     <a
       href={`https://x.com/i/status/${tweet.rest_id}`}
@@ -320,14 +330,13 @@ const FootTools = ({
       View on 𝕏
     </a>
   );
-};
-// const generateReplyHTML = (_t: Post) => null;
+});
 
 interface AuthorProps {
   author: User;
   size?: "small" | "normal";
 }
-function Author({ author }: AuthorProps) {
+const Author = memo(function AuthorComp({ author }: AuthorProps) {
   return (
     // <a
     //   href={`https://x.com/${author.screen_name}`}
@@ -368,7 +377,7 @@ function Author({ author }: AuthorProps) {
     </div>
     // </a>
   );
-}
+});
 
 interface CardToolItemProps {
   icon: React.ReactNode;
@@ -376,7 +385,11 @@ interface CardToolItemProps {
   onClick?: () => void;
 }
 
-const CardToolItem = ({ icon, label, onClick }: CardToolItemProps) => {
+const CardToolItem = memo(function CardToolItemComp({
+  icon,
+  label,
+  onClick,
+}: CardToolItemProps) {
   return (
     <DropdownMenuItem onClick={onClick}>
       <div className="flex items-center gap-2">
@@ -385,7 +398,7 @@ const CardToolItem = ({ icon, label, onClick }: CardToolItemProps) => {
       </div>
     </DropdownMenuItem>
   );
-};
+});
 
 function buildContent(
   post: Post,
@@ -427,7 +440,10 @@ interface CardToolsProps extends React.HTMLAttributes<HTMLDivElement> {
   postdata: Post;
 }
 
-const CardTools = ({ postdata, className }: CardToolsProps) => {
+const CardTools = memo(function CardToolsComp({
+  postdata,
+  className,
+}: CardToolsProps) {
   const lang = useLanguageState();
   const handleCopy = () => {
     const content = buildContent(postdata, lang);
@@ -460,7 +476,7 @@ const CardTools = ({ postdata, className }: CardToolsProps) => {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
 
 interface TweetCardProps {
   postdata: Post;
@@ -488,7 +504,7 @@ const TweetCard = memo(function TweetCardComp({ postdata }: TweetCardProps) {
         <div style={{ marginTop: "8px" }}>
           <div className="mt-0.5 flex justify-between items-center">
             <span className="text-[#657786] dark:text-[#6e6e6e] text-[0.8em] text-nowrap text-trim-cap">
-              <Timestamp timestamp={postdata.created_at ?? ""} />
+              <TimestampEle timestamp={postdata.created_at ?? ""} />
             </span>
             <FootTools
               className="group-hover:opacity-100 opacity-0 transition duration-300"

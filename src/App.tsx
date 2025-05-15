@@ -7,6 +7,7 @@ import { crab } from "./cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { station } from "./subpub/buses";
 import { Page } from "./subpub/type";
+import { Scrollbar } from "./components/scrollbar/scrollbar";
 
 function App() {
   const setPage = station.page.useSet();

@@ -8,6 +8,7 @@ import React, {
   MouseEvent,
   useCallback,
   memo,
+  useMemo,
 } from "react";
 import useElementInView from "../hooks/view";
 import { clearVideo } from "../utils/media";
@@ -193,6 +194,12 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const [firstClick, setFirstClick] = useState<boolean>(true);
     const [isHovering, setIsHovering] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+    const videoSrc = useMemo(() => convertFileSrc(src), [src]);
+    const posterSrc = useMemo(
+      () => (poster ? convertFileSrc(poster) : undefined),
+      [poster]
+    );
 
     const handleMouseEnter = useCallback(() => {
       if (!controls) return;
@@ -481,8 +488,8 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         <motion.video
           ref={innerRef}
           className={cn(["mx-auto my-auto"])}
-          src={convertFileSrc(src)}
-          poster={poster ? convertFileSrc(poster) : undefined}
+          src={videoSrc}
+          poster={posterSrc}
           crossOrigin="anonymous"
           onClick={handleVideoClick}
           // layout
@@ -595,13 +602,18 @@ const LazyVideo: React.FC<LazyVideoProps> = ({
   useEffect(() => {
     if (inView && videoRef.current) {
       setVideoEl(videoRef.current);
-      if (containerRef.current) {
-        // Check added previously, good.
-        setStoredRatio([
-          containerRef.current.clientWidth,
-          containerRef.current.clientHeight,
-        ]);
-      }
+      setStoredRatio((prev) => {
+        if (containerRef.current) {
+          const newRatio: [number, number] = [
+            containerRef.current.clientWidth,
+            containerRef.current.clientHeight,
+          ];
+          if (!prev || newRatio[0] !== prev[0] || newRatio[1] !== prev[1]) {
+            return newRatio;
+          }
+        }
+        return prev;
+      });
     }
   }, [inView]); // videoRef.current is not a typical dependency, but effect re-runs if inView changes.
 

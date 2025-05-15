@@ -1,4 +1,4 @@
-import { createMatchAtom, createAtom } from "./core";
+import { createMatchAtom, createAtom, createDerivedAtom } from "./core";
 import {
   platform as OSplatform,
   type Platform as OSPlatform,
@@ -17,11 +17,19 @@ export const station = {
   guideCookie: createAtom<CookieItem[]>([]),
   scanCheck: createAtom<boolean>(false),
   // blurPage: createAtom<boolean>(false),
+  isScrollingFast: createAtom<boolean>(false),
+  scrollVelocity: createAtom<number>(0),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),
   platform: createMatchAtom<Platform>(Platform.Twitter),
   os: createMatchAtom<OSPlatform>(OSplatform() as OSPlatform),
+};
+
+export const driveStation = {
+  isTooFast: createDerivedAtom(
+    (get) => Math.abs(get(station.scrollVelocity.atom)) > 8000
+  ),
 };
 
 export const sizeMap: Map<string, [number, number]> = new Map();

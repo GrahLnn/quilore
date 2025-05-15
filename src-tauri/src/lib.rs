@@ -73,9 +73,6 @@ pub fn run() {
         app_ready,
     ];
 
-    // #[cfg(target_os = "macos")]
-    // events.extend(collect_events![macos_titlebar::FullScreenEvent]);
-
     let builder: Builder = Builder::new().commands(commands).events(events);
 
     #[cfg(debug_assertions)]
@@ -94,7 +91,6 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
-        // .plugin(tauri_plugin_decorum::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             let handle = app.handle().clone();
