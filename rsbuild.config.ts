@@ -2,6 +2,8 @@ import { defineConfig } from "@rsbuild/core";
 import { pluginBabel } from "@rsbuild/plugin-babel";
 import { pluginReact } from "@rsbuild/plugin-react";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 export default defineConfig({
   plugins: [
     pluginReact(),
@@ -21,20 +23,38 @@ export default defineConfig({
   },
   html: {
     tags: [
-      {
-        tag: "script",
-        attrs: {
-          src: "https://unpkg.com/react-scan/dist/auto.global.js",
-        },
-        head: true,
-      },
-      {
-        tag: "script",
-        attrs: {
-          src: "http://localhost:8097",
-        },
-        head: true,
-      },
+      // {
+      //   tag: "script",
+      //   attrs: {
+      //     src: "https://unpkg.com/react-scan/dist/auto.global.js",
+      //   },
+      //   head: true,
+      // },
+      // {
+      //   tag: "script",
+      //   attrs: {
+      //     src: "http://localhost:8097",
+      //   },
+      //   head: true,
+      // },
+      ...(isDev
+        ? [
+            {
+              tag: "script",
+              attrs: {
+                src: "https://unpkg.com/react-scan/dist/auto.global.js",
+              },
+              head: true,
+            },
+            {
+              tag: "script",
+              attrs: {
+                src: "http://localhost:8097",
+              },
+              head: true,
+            },
+          ]
+        : []),
     ],
   },
 });
