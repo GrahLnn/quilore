@@ -116,9 +116,9 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
             "last_sortidx": result.list.last().map(|p| p.sortidx)
         }))
         .await?;
-    // if !result.is_end {
-    //     Scheduler::<Job>::get()?.enqueue(job);
-    // }
+    if !result.is_end {
+        Scheduler::<Job>::get()?.enqueue(job);
+    }
 
     let app = Scheduler::<Job>::get()?.app.clone();
     ScanLikesEvent {

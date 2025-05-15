@@ -1,4 +1,4 @@
-import punycode from "punycode";
+import * as punycode from "punycode";
 import {
   DropdownMenu,
   DropdownMenuContent,
