@@ -6,6 +6,9 @@ import prettier from "eslint-config-prettier";
 
 export default [
   {
+    ignores: ["**/*.config.ts", "**/*.config.js", "config/**"],
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser,
@@ -34,5 +37,5 @@ export default [
       "react/react-in-jsx-scope": "off",
     },
   },
-  prettier
+  prettier,
 ];

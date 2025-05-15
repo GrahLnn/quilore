@@ -23,20 +23,6 @@ export default defineConfig({
   },
   html: {
     tags: [
-      // {
-      //   tag: "script",
-      //   attrs: {
-      //     src: "https://unpkg.com/react-scan/dist/auto.global.js",
-      //   },
-      //   head: true,
-      // },
-      // {
-      //   tag: "script",
-      //   attrs: {
-      //     src: "http://localhost:8097",
-      //   },
-      //   head: true,
-      // },
       ...(isDev
         ? [
             {
