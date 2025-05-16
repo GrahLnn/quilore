@@ -47,9 +47,7 @@ pub async fn download_asset(task: Task) -> Result<()> {
     if save_path.exists() {
         asset.downloaded = true;
         asset.available = true;
-        return finish_asset_download(&asset)
-            .await
-            .context("finish_asset_download 失败");
+        return finish_asset_download(&asset).await.map_err(|e| e.into());
     }
 
     // tmp 文件做原子替换
@@ -65,12 +63,13 @@ pub async fn download_asset(task: Task) -> Result<()> {
         .context("HTTP 请求 send() 失败")?;
 
     let status = resp.status().as_u16();
-    if matches!(status, 404 | 403 | 307) {
+    if matches!(status, 404 | 403 | 307 | 401) {
         asset.downloaded = true;
         asset.available = false;
-        return finish_asset_download(&asset)
-            .await
-            .context("finish_asset_download 失败");
+        return finish_asset_download(&asset).await.context(format!(
+            "download failed, resource unavailable, code {}",
+            status
+        ));
     }
     if !resp.status().is_success() {
         return Err(anyhow!("下载失败，状态码: {}", status));
@@ -110,9 +109,7 @@ pub async fn download_asset(task: Task) -> Result<()> {
         }
     }
 
-    finish_asset_download(&asset)
-        .await
-        .context("finish_asset_download 失败")?;
+    finish_asset_download(&asset).await?;
     println!(
         "下载完成: {:?}, chunk_count: {}",
         asset.id.key().to_owned(),
@@ -137,27 +134,47 @@ pub async fn transport_asset(task: Task) -> Result<()> {
     let mut asset = DbAsset::select_record(task.tar.clone())
         .await
         .context("查询 DbAsset 失败")?;
+
     let file_path = PathBuf::from(&asset.path);
     let base_path =
         GlobalVal::get_save_dir().ok_or_else(|| anyhow!("Failed to get save directory"))?;
     let target_path = base_path.join(&asset.ty.as_str()).join(&asset.name);
+
     if let Some(parent) = target_path.parent() {
-        fs::create_dir_all(parent)
-            .await
-            .context("创建目标目录失败")?;
+        // 目标目录不存在才创建
+        if !tokio::fs::try_exists(parent).await.unwrap_or(false) {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .context("创建目标目录失败")?;
+        }
     }
 
-    match &asset.path {
-        val if val == "media unavailable" => {
+    // 若目标已经存在则跳过，直接更新 asset.path 字段
+    let need_copy = match &asset.path[..] {
+        "media unavailable" => {
             asset.path = target_path.to_string_lossy().to_string();
+            false
         }
         _ => {
-            fs::copy(&file_path, &target_path)
-                .await
-                .with_context(|| format!("复制文件失败: {:?} -> {:?}", file_path, target_path))?;
-
-            asset.path = target_path.to_string_lossy().to_string();
+            // 如果目标已存在则跳过
+            if tokio::fs::try_exists(&target_path).await.unwrap_or(false) {
+                asset.path = target_path.to_string_lossy().to_string();
+                false
+            } else if file_path == target_path {
+                // 源目标一致
+                false
+            } else {
+                true
+            }
         }
+    };
+
+    if need_copy {
+        tokio::fs::copy(&file_path, &target_path)
+            .await
+            .with_context(|| format!("复制文件失败: {:?} -> {:?}", file_path, target_path))?;
+
+        asset.path = target_path.to_string_lossy().to_string();
     }
 
     DbAsset::update(asset.id.clone(), asset.clone()).await?;

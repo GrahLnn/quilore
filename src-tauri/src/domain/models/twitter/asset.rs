@@ -73,7 +73,7 @@ impl DbAsset {
     }
     pub fn from_domain(asset: Asset) -> Self {
         Self {
-            id: DbAsset::record_id(asset.url.as_str()),
+            id: DbAsset::record_id(format!("{}-{}", asset.ty.as_str(), asset.name).as_str()),
             ty: asset.ty,
             url: asset.url,
             name: asset.name,

@@ -1,4 +1,3 @@
-import Posts from "./posts";
 import { station } from "@/src/subpub/buses";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { crab } from "@/src/cmd/commandAdapter";
@@ -9,6 +8,18 @@ import DropdownButton from "@/src/components/dropdownButton";
 import DropdownSettings from "@/src/components/dropdownSettings";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Platform } from "@/src/subpub/type";
+import {
+  BottomZone,
+  EditArea,
+  EditButton,
+  EditButtons,
+  EditMainZone,
+  EditWarning,
+  EditZone,
+  EditZoneDesc,
+  ValueArea,
+} from "@/src/components/editzone";
+import { MatchPages } from "./twitter/pages";
 
 const Title = () => {
   const title = station.postsTitle.useSee();
@@ -32,125 +43,142 @@ const EditCookies = () => {
     };
     getCookie();
   }, []);
-  // useEffect(() => {
-  //   console.log(isValidCookies(text), detectCookieFormat(text));
-  // });
-  const buttonCSS = cn([
-    "text-sm cursor-pointer select-none py-1 px-2 rounded-md",
-    "dark:bg-[#171717] hover:dark:bg-[#262626] bg-[#e5e5e5] hover:bg-[#d4d4d4]",
-    "dark:text-[#8a8a8a] hover:dark:text-[#d4d4d4] text-[#404040] hover:text-[#0a0a0a]",
-    "transition duration-300",
-  ]);
   const check4ui = () => text === cookie || !isTwitterLoginCookie(text);
   return (
-    <div className="flex flex-col gap-2 h-full">
-      <div className="text-xs text-[#525252] dark:text-[#a3a3a3] select-none cursor-default">
-        A cookie is a piece of authentication information generated in your
-        browser after you log in. You can use browser extensions such as `Get
-        cookies.txt LOCALLY` to get it.
-      </div>
-      <div className="flex flex-col h-full gap-1">
-        <textarea
+    <EditZone>
+      <EditZoneDesc
+        text="A cookie is a piece of authentication information generated in your browser after you log in. You can use browser extensions such as `Get cookies.txt LOCALLY` to get it."
+        append={
+          <span className="text-[#df2837]">
+            {" "}
+            Be sure not to let anyone else see it.
+          </span>
+        }
+      />
+      <EditMainZone>
+        <EditArea
           value={text}
-          placeholder="Paste your cookies"
           onChange={(e) => setText(e.target.value)}
-          className="w-full h-full text-xs text-[#404040] dark:text-[#e5e5e5] resize-none outline-none border rounded-md p-1 dark:bg-[#171717] bg-[#fafafa] hide-scrollbar"
+          placeholder="Paste your cookies"
           rows={1}
           ref={textareaRef}
         />
-        <div className="flex select-none cursor-default justify-between min-h-[28px]">
-          <div
-            className={cn([
-              "flex gap-1 items-center transition duration-200 text-[#df2837]",
-              (!loaded || isTwitterLoginCookie(text)) && "opacity-0",
-            ])}
-          >
-            <icons.circleInfo size={12} />
-            <div className="text-xs">
-              {isValidCookies(text) && !isTwitterLoginCookie(text)
+        <BottomZone>
+          <EditWarning
+            text={
+              isValidCookies(text) && !isTwitterLoginCookie(text)
                 ? "missing fields"
                 : text
-                ? "invalid cookies"
-                : "should not be empty"}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <div
+                  ? "invalid cookies"
+                  : "should not be empty"
+            }
+            className={cn([
+              (!loaded || isTwitterLoginCookie(text)) && "opacity-0",
+            ])}
+          />
+          <EditButtons>
+            <EditButton
+              text="Cancle"
+              onClick={() => {
+                setText(cookie);
+              }}
               className={cn([
-                buttonCSS,
                 (text !== cookie || !isTwitterLoginCookie(text)) && cookie
                   ? "opacity-100"
                   : "opacity-0 hidden",
               ])}
-              onClick={() => {
-                setText(cookie);
-              }}
-            >
-              Cancle
-            </div>
-            <div
-              className={cn([
-                buttonCSS,
-                check4ui() ? "opacity-0 hidden" : "opacity-100",
-              ])}
+            />
+            <EditButton
+              text="Save"
               onClick={() => {
                 crab.upsertUserkv("Twitter", text);
                 setCookie(text);
                 setScanCheck(true);
               }}
-            >
-              Save
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+              className={cn([check4ui() ? "opacity-0 hidden" : "opacity-100"])}
+            />
+          </EditButtons>
+        </BottomZone>
+      </EditMainZone>
+    </EditZone>
   );
 };
+function EditAssetFolder() {
+  const [folderPath, setFolderPath] = useState<string | null>(null);
+  const [newPath, setNewPath] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    const getv = async () => {
+      const savedir = await crab.getMetaValue("SaveDir");
+      savedir.tap((v) => {
+        if (v && typeof v === "object" && "String" in v) {
+          setFolderPath(v.String);
+        }
+      });
+    };
+    getv();
+  }, []);
+  return (
+    <EditZone>
+      <EditZoneDesc text="The folder where the assets are stored." />
+      <EditMainZone>
+        <ValueArea
+          text={newPath || folderPath || ""}
+          explain="This folder will store images, videos, and user profile pictures obtained from tweets. Please ensure you have enough space to store high-quality data. Storing data for 20,000 entries is estimated to require around 60GB of storage."
+        />
+        <BottomZone>
+          <EditWarning
+            text="The folder path is not valid."
+            className={cn(["opacity-0"])}
+          />
+          <EditButtons>
+            <EditButton
+              className={cn([newPath && "opacity-0 hidden"])}
+              text="Change"
+              onClick={() => {
+                open({ directory: true }).then((path) => {
+                  setNewPath(path);
+                });
+              }}
+            />
+            <EditButton
+              className={cn([!newPath && "opacity-0 hidden"])}
+              text="Cancle"
+              onClick={() => {
+                setNewPath(null);
+              }}
+            />
+            <EditButton
+              className={cn([!newPath && "opacity-0 hidden"])}
+              text="Save"
+              onClick={() => {
+                if (!newPath) return;
+                crab.upsertMetakv("SaveDir", newPath);
+                setFolderPath(newPath);
+                setNewPath(null);
+              }}
+            />
+          </EditButtons>
+        </BottomZone>
+      </EditMainZone>
+    </EditZone>
+  );
+}
+
 const preference = [
   {
     name: "Cookies",
     // shortcut: "⌘E",
     fn: () => {},
     data: <EditCookies />,
-    // icon: <icons.cookie />,
   },
-  //   {
-  //     name: "Share",
-  //     // shortcut: "⌘S",
-  //     fn: () => {},
-  //     data: <div>分享内容预览或说明文字</div>,
-  //   },
-];
-const actions = [
   {
-    name: "Scan",
+    name: "Asset folder",
+    // shortcut: "⌘S",
     fn: () => {},
-    icon: <icons.scan />,
-  },
-  {
-    name: "Import",
-    fn: () => {
-      open({
-        directory: false,
-        filters: [
-          {
-            name: "JSON",
-            extensions: ["json"],
-          },
-        ],
-      }).then((path) => {
-        console.log(path);
-      });
-    },
-    icon: <icons.squareDashedDownload />,
-  },
-  {
-    name: "Export",
-    fn: () => {},
-    icon: <icons.squareDashedUpload />,
+    data: <EditAssetFolder />,
   },
 ];
+
 const collection = [
   {
     name: "Twitter",
@@ -162,6 +190,39 @@ export function PlatPage() {
   const page = station.platform.useSee();
   const setBarInteraction = station.allowBarInteraction.useSet();
   const setCenterTool = station.centerTool.useSet();
+  const setImportState = station.startImport.useSet();
+
+  const actions = [
+    {
+      name: "Scan",
+      fn: () => {},
+      icon: <icons.scan />,
+    },
+    {
+      name: "Import",
+      fn: () => {
+        open({
+          directory: false,
+          filters: [
+            {
+              name: "JSON",
+              extensions: ["json"],
+            },
+          ],
+        }).then((path) => {
+          if (!path) return;
+          crab.importData(path);
+          setImportState(true);
+        });
+      },
+      icon: <icons.squareDashedDownload />,
+    },
+    {
+      name: "Export",
+      fn: () => {},
+      icon: <icons.squareDashedUpload />,
+    },
+  ];
 
   useEffect(() => {
     setBarInteraction(true);
@@ -196,6 +257,6 @@ export function PlatPage() {
   }, []);
 
   return page.match({
-    [Platform.Twitter]: () => <Posts />,
+    [Platform.Twitter]: () => <MatchPages />,
   });
 }

@@ -4,6 +4,7 @@ mod enums;
 mod utils;
 
 use anyhow::Result;
+use domain::models::twitter::utils::clean_database;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -25,7 +26,7 @@ use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::Job;
 use domain::platform::scheduler::{self, Scheduler};
 use domain::platform::twitter::api::user;
-use domain::platform::{handle_entities, Task, TaskKind};
+use domain::platform::{handle_entities, Task, TaskKind, SCHEDULER_PAUSED};
 
 use tokio::time::sleep;
 use utils::event::{self, WINDOW_READY};
@@ -61,6 +62,7 @@ pub fn run() {
 
     let commands = collect_commands![
         interface::take_post_chunk,
+        interface::check_has_data,
         copy_to_clipboard,
         meta::upsert_metakv,
         meta::get_meta_value,
@@ -240,6 +242,8 @@ async fn copy_to_clipboard(
 #[tauri::command]
 #[specta::specta]
 async fn import_data(path: &str) -> Result<(), String> {
+    scheduler::clean_all().await.map_err(|e| e.to_string())?;
+    clean_database().await.map_err(|e| e.to_string())?;
     let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
     let data = read_tweets_from_json(path_buf).map_err(|e| e.to_string())?;
     dbg!("read");

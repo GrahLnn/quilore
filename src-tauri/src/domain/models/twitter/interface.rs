@@ -2,7 +2,7 @@ use crate::utils::serialize::into_u32_from_string_or_number;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use super::like::LikedPost;
+use super::like::{DbLikedPost, LikedPost};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct LikedChunk {
@@ -22,4 +22,13 @@ pub async fn take_post_chunk(cursor: Option<u32>) -> Result<LikedChunk, String> 
         .map(|p| p.sortidx)
         .ok_or_else(|| "No data found".to_string())?;
     Ok(LikedChunk { cursor, data })
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn check_has_data() -> Result<bool, String> {
+    let data = LikedPost::select_pagin(1, None)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(!data.is_empty())
 }

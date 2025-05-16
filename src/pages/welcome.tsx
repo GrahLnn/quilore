@@ -4,18 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { icons } from "../assets/icons";
 import { crab } from "../cmd/commandAdapter";
-// import { Page, setPageName } from "../subpub/pageBus";
-// import { Guide, setGuide, useGuide } from "../subpub/guideBus";
-// import {
-//   setGuideC,
-//   viewGuideC,
-//   getGuideC,
-//   type CookieItem,
-// } from "../subpub/guideCookie"; // 导入 get 和 CookieItem
 import { station } from "../subpub/buses";
 import { CookieItem, Guide, Page } from "../subpub/type";
 import { atom, useAtomValue } from "jotai";
-// import { setCenterTool } from "../subpub/centerTool";
 
 const transitionDebug = {
   type: "easeOut",
@@ -240,6 +231,7 @@ function AddPlatform() {
   const guideCookies = station.guideCookie.useSee();
   const setGuide = station.guide.useSet();
   const setPage = station.page.useSet();
+  const setIsCookieSet = station.isCookieSet.useSet();
   const hasCookie = useAtomValue(
     atom((get) => get(station.guideCookie.atom).length > 0)
   );
@@ -295,8 +287,13 @@ function AddPlatform() {
           ])}
           onClick={() => {
             crab.upsertMetakv("FirstLaunch", "false");
-            for (const cookie of guideCookies) {
-              crab.upsertUserkv(cookie.platform, cookie.cookie);
+            if (hasCookie) {
+              for (const cookie of guideCookies) {
+                crab.upsertUserkv(cookie.platform, cookie.cookie);
+                setIsCookieSet(true);
+              }
+            } else {
+              setIsCookieSet(false);
             }
             setPage(Page.Main);
             setClicked(true);

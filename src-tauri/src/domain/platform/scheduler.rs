@@ -47,12 +47,18 @@ pub trait Schedulable: Send + Sync + Clone + 'static {
 pub struct Scheduler<T: Schedulable> {
     tx: UnboundedSender<T>,
     pub app: AppHandle,
+    clear_flag: Arc<AtomicBool>,
 }
 
 impl<T: Schedulable> Scheduler<T> {
     pub fn new(app: AppHandle) -> (Arc<Self>, UnboundedReceiver<T>) {
         let (tx, rx) = unbounded_channel::<T>();
-        let sched = Arc::new(Self { tx, app });
+        let clear_flag = Arc::new(AtomicBool::new(false));
+        let sched = Arc::new(Self {
+            tx,
+            app,
+            clear_flag,
+        });
         (sched, rx)
     }
 
@@ -64,10 +70,17 @@ impl<T: Schedulable> Scheduler<T> {
                 tracing::error!("无法发送初始化任务: {}", e);
             }
         }
+        let clear_flag = self.clear_flag.clone();
 
         // Worker loop
         tokio::spawn(async move {
             while let Some(item) = rx.recv().await {
+                if clear_flag.load(Ordering::SeqCst) {
+                    // 快速drain掉当前所有剩余任务
+                    while rx.try_recv().is_ok() {} // try_recv直到队空
+                    clear_flag.store(false, Ordering::SeqCst);
+                    continue;
+                }
                 while SCHEDULER_PAUSED.load(Ordering::SeqCst) {
                     tokio::time::sleep(Duration::from_millis(200)).await;
                 }
@@ -90,7 +103,12 @@ impl<T: Schedulable> Scheduler<T> {
                             )
                             .await
                             .ok();
-                            println!("任务失败: {:?}, 重试次数: {}", item.id(), rc);
+                            println!(
+                                "任务失败: {:?}, 重试次数: {}, err: {}",
+                                item.id().key(),
+                                rc,
+                                err
+                            );
                             if rc < 5 {
                                 tokio::time::sleep(Duration::from_secs(5)).await;
                                 let _ = tx_inner.send(item);
@@ -104,6 +122,10 @@ impl<T: Schedulable> Scheduler<T> {
 
     pub fn enqueue(&self, item: T) {
         let _ = self.tx.send(item);
+    }
+
+    pub fn clear_pending(&self) {
+        self.clear_flag.store(true, Ordering::SeqCst);
     }
 }
 
@@ -247,5 +269,11 @@ pub async fn resume_scheduler(app: tauri::AppHandle) -> Result<(), String> {
     SchedulerPauseEvent { paused: false }
         .emit(&app)
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub async fn clean_all() -> Result<()> {
+    Scheduler::<Task>::get()?.clear_pending();
+    Scheduler::<Job>::get()?.clear_pending();
     Ok(())
 }

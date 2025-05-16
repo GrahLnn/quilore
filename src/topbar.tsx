@@ -120,6 +120,7 @@ const RightControls = memo(function RightControlsComponent() {
   const [count, setCount] = useState<number>(0);
   const [isRuning, setIsRunning] = useState<boolean>(false);
   const [jobData, setJobData] = useState<JobCheckEvent[]>([]);
+  const startImport = station.startImport.useSee();
 
   const os = station.os.useSee();
   useEffect(() => {
@@ -151,8 +152,10 @@ const RightControls = memo(function RightControlsComponent() {
         // "transition duration-300 ease-in-out",
       ])}
     >
-      {isVisible && isRuning && <SchedulerBadge count={count} />}
-      {isVisible && jobData.length > 0 && (
+      {isVisible && isRuning && !startImport && (
+        <SchedulerBadge count={count} />
+      )}
+      {isVisible && jobData.length > 0 && !startImport && (
         <div
           className={cn([
             "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",

@@ -6,3 +6,4 @@ pub mod like;
 pub mod media;
 pub mod post;
 pub mod users;
+pub mod utils;

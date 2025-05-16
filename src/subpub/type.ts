@@ -22,3 +22,8 @@ export interface CookieItem {
   platform: "Twitter";
   cookie: string;
 }
+
+export enum TwitterPage {
+  Pre = "Pre",
+  Posts = "Posts",
+}

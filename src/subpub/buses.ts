@@ -3,7 +3,7 @@ import {
   platform as OSplatform,
   type Platform as OSPlatform,
 } from "@tauri-apps/plugin-os";
-import { Guide, Page, Platform, CenterToolProp, CookieItem } from "./type";
+import { Guide, Page, Platform, CenterToolProp, CookieItem, TwitterPage } from "./type";
 
 export const station = {
   postsTitle: createAtom<string>(""),
@@ -20,10 +20,13 @@ export const station = {
   isScrollingFast: createAtom<boolean>(false),
   scrollVelocity: createAtom<number>(0),
   schedulerPause: createAtom<boolean>(false),
+  startImport: createAtom<boolean>(false),
+  isCookieSet: createAtom<boolean>(true),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),
   platform: createMatchAtom<Platform>(Platform.Twitter),
+  twitter: createMatchAtom<TwitterPage>(TwitterPage.Pre),
   os: createMatchAtom<OSPlatform>(OSplatform() as OSPlatform),
 };
 
