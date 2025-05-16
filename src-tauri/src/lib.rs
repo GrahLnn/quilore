@@ -3,12 +3,11 @@ mod domain;
 mod enums;
 mod utils;
 
-use std::cell::RefCell;
+use anyhow::Result;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
-
-use anyhow::Result;
 
 use database::init_db;
 use domain::models::meta;
@@ -23,12 +22,12 @@ use domain::models::userkv::{get_userkv_value, upsert_userkv};
 use domain::platform::api::user::ScanLikesEvent;
 use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::Job;
-use domain::platform::scheduler::Scheduler;
+use domain::platform::scheduler::{self, Scheduler};
 use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind};
 
 use tokio::time::sleep;
-use utils::event;
+use utils::event::{self, WINDOW_READY};
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 
@@ -55,6 +54,8 @@ pub fn run() {
         AssetDownloadBatchEvent,
         event::ImportEvent,
         event::FullScreenEvent,
+        scheduler::JobChecksEvent,
+        scheduler::SchedulerPauseEvent,
     ];
 
     let commands = collect_commands![
@@ -71,6 +72,9 @@ pub fn run() {
         meta::get_save_dir,
         file::exists,
         app_ready,
+        scheduler::reply_pending_jobs,
+        scheduler::pause_scheduler,
+        scheduler::resume_scheduler,
     ];
 
     let builder: Builder = Builder::new().commands(commands).events(events);
@@ -114,6 +118,7 @@ pub fn run() {
 										"Window did not emit `app_ready` event fast enough. Showing window..."
 									);
                                     window.show().expect("Main window should show");
+                                    WINDOW_READY.store(true, Ordering::SeqCst);
                                 }
                             }
                         });
@@ -268,4 +273,5 @@ async fn import_data(path: &str) -> Result<(), String> {
 async fn app_ready(app_handle: AppHandle) {
     let window = app_handle.get_webview_window("main").unwrap();
     window.show().unwrap();
+    WINDOW_READY.store(true, Ordering::SeqCst);
 }

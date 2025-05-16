@@ -290,11 +290,13 @@ const Detail = memo(function DetailComp({
   );
 });
 
+interface TimestampCompProps {
+  timestamp: string;
+}
+
 const TimestampEle = memo(function TimestampComp({
   timestamp,
-}: {
-  timestamp: string;
-}): string {
+}: TimestampCompProps) {
   if (!timestamp) return "";
   const date = new Date(timestamp);
   return date

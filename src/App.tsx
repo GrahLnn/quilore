@@ -39,7 +39,7 @@ function App() {
         <ContentPage />
       </main>
       <Toaster />
-      {/* <Scrollbar /> */}
+      <Scrollbar />
     </div>
   );
 }

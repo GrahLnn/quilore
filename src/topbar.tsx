@@ -6,8 +6,9 @@ import { type PropsWithChildren, memo, useEffect, useState } from "react";
 import { useIsBarVisible } from "./state_machine/barVisible";
 import { toggleLanguageMode } from "./state_machine/language";
 import { useIsWindowFocus } from "./state_machine/windowFocus";
-import { events } from "./cmd/commands";
+import { events, JobCheckEvent } from "./cmd/commands";
 import { station } from "./subpub/buses";
+import { crab } from "./cmd/commandAdapter";
 
 interface CtrlButtonProps extends PropsWithChildren {
   icon?: React.ReactNode;
@@ -68,24 +69,81 @@ export const LeftControls = memo(function LeftControlsComponent() {
   );
 });
 
+const SchedulerBadge = ({ count }: { count: number }) => {
+  const [schedulerPause, setSchedulerPause] = station.schedulerPause.useAll();
+  const [isHovered, setIsHovered] = useState(false);
+  useEffect(() => {
+    const pause = events.schedulerPauseEvent.listen((event) => {
+      setSchedulerPause(event.payload.paused);
+    });
+    return () => {
+      pause.then((f) => f());
+    };
+  });
+  return (
+    <div
+      className={cn([
+        "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
+        "text-xs trim-cap dark:text-[#d4d4d4] text-[#404040]",
+        "rounded-md border dark:border-[#262626] border-[#eaeaea]",
+        "dark:bg-[#171717]/40 bg-[#f5f5f5]/40",
+        "transition duration-300",
+        "hover:cursor-pointer",
+      ])}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => {
+        if (schedulerPause) {
+          crab.resumeScheduler();
+        } else {
+          crab.pauseScheduler();
+        }
+      }}
+    >
+      {!isHovered ? (
+        <div>{count}</div>
+      ) : schedulerPause ? (
+        <div>Resume?</div>
+      ) : (
+        <div>Pause?</div>
+      )}
+      {!isHovered && schedulerPause ? (
+        <icons.mediaPause size={13} />
+      ) : (
+        <icons.scan size={13} />
+      )}
+    </div>
+  );
+};
+
 const RightControls = memo(function RightControlsComponent() {
   const [count, setCount] = useState<number>(0);
   const [isRuning, setIsRunning] = useState<boolean>(false);
+  const [jobData, setJobData] = useState<JobCheckEvent[]>([]);
+
   const os = station.os.useSee();
   useEffect(() => {
     // 1. 订阅全局进度事件
-    const unlisten = events.scanLikesEvent.listen((event) => {
-      // event.payload 就是后端发来的数字
+    const likes = events.scanLikesEvent.listen((event) => {
       setCount(event.payload.count);
       setIsRunning(event.payload.running);
     });
 
+    const jobs = events.jobChecksEvent.listen((event) => {
+      const data = event.payload.jobs;
+      setJobData(data);
+    });
+
     // 2. cleanup：组件卸载时取消监听
     return () => {
-      unlisten.then((f) => f());
+      likes.then((f) => f());
+      jobs.then((f) => f());
     };
   }, []);
   const isVisible = useIsBarVisible();
+
+  const checkcn =
+    "dark:hover:bg-[#373737] hover:bg-[#d4d4d4] opacity-70 hover:opacity-100 rounded-full transition cursor-pointer";
   return (
     <div
       className={cn([
@@ -93,7 +151,8 @@ const RightControls = memo(function RightControlsComponent() {
         // "transition duration-300 ease-in-out",
       ])}
     >
-      {isVisible && isRuning && (
+      {isVisible && isRuning && <SchedulerBadge count={count} />}
+      {isVisible && jobData.length > 0 && (
         <div
           className={cn([
             "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
@@ -103,8 +162,31 @@ const RightControls = memo(function RightControlsComponent() {
             "transition duration-300",
           ])}
         >
-          <div>{count}</div>
-          <icons.scan size={13} />
+          <div>Continue scan?</div>
+          <div className="flex gap-1">
+            <div
+              className={checkcn}
+              onClick={() => {
+                crab.replyPendingJobs(
+                  jobData.map((j) => ({ ...j, user_say: false }))
+                );
+                setJobData([]);
+              }}
+            >
+              <icons.xmark size={13} />
+            </div>
+            <div
+              className={checkcn}
+              onClick={() => {
+                crab.replyPendingJobs(
+                  jobData.map((j) => ({ ...j, user_say: true }))
+                );
+                setJobData([]);
+              }}
+            >
+              <icons.check3 size={13} />
+            </div>
+          </div>
         </div>
       )}
       <CtrlButton label="Search" icon={<icons.magnifler3 size={14} />} />

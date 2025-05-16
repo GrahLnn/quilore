@@ -1,15 +1,14 @@
 import { cn } from "@/lib/utils";
 import { crab } from "@/src/cmd/commandAdapter";
-import type { LikedPost, Post } from "@/src/cmd/commands";
+import type { LikedPost } from "@/src/cmd/commands";
 import TweetCard from "@/src/components/twitter/post";
-import { Masonry } from "masonic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Masonry, useInfiniteLoader } from "masonic";
+import { useEffect, useRef, useState } from "react";
 import { scrollbar } from "../../components/scrollbar";
-// import { useScrollVelocity, useScrollYRef } from "../../hooks/scroll";
+import { useScrollYRef } from "../../hooks/scroll";
 import { icons } from "../../assets/icons";
 import { station } from "../../subpub/buses";
 import { events } from "@/src/cmd/commands";
-import { buildAssetToSortidxMap } from "@/src/utils/collectAsset";
 import { open } from "@tauri-apps/plugin-dialog";
 
 interface PostsProps {
@@ -54,8 +53,7 @@ function ActionButton({
 
 export default function Posts({ initialCursor = null }: PostsProps) {
   const [sortedIdxList, setSortedIdxList] = useState<Array<{ id: number }>>([]);
-  const [postsMap, setPostsMap] = useState<Map<number, Post>>(new Map());
-  const [asset2sortidx] = useState<Map<string, number>>(new Map());
+  const postsMapRef = useRef(new Map());
   const [cursor, setCursor] = useState<number | null>(initialCursor);
   const [isLoading, setIsLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -66,7 +64,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   // const isScrollFast = driveStation.isTooFast.useSee();
 
   // 使用自定义 scrollYRef hook，不会导致组件重绘
-  // useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
+  useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
   // useScrollVelocity();
 
   // 首次加载和容器高度更新
@@ -83,8 +81,10 @@ export default function Posts({ initialCursor = null }: PostsProps) {
       scrollbar.updateContainerHeight(container.current?.clientHeight || 0);
     });
 
+    let observedNode: HTMLDivElement | null = null;
     if (container.current) {
       resizeObserver.observe(container.current);
+      observedNode = container.current;
     }
     const getCookie = async () => {
       const result = await crab.getUserkvValue("Twitter");
@@ -111,16 +111,14 @@ export default function Posts({ initialCursor = null }: PostsProps) {
       loadMorePosts();
     });
 
-    const scanEvent = events.scanLikesEvent.listen(() => {
-      // event.payload 就是后端发来的数字
-      // setCount(event.payload.count);
-      // setIsRunning(event.payload.running);
-      loadMorePosts();
+    const scanEvent = events.scanLikesEvent.listen((e) => {
+      // [TODO] 当已经有列表的时候需要更新？
+      if (e.payload.count <= 100) loadMorePosts();
     });
 
     return () => {
-      if (container.current) {
-        resizeObserver.unobserve(container.current);
+      if (observedNode) {
+        resizeObserver.unobserve(observedNode);
       }
       resizeObserver.disconnect();
       assetEvent.then((f) => f());
@@ -135,28 +133,19 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     } else {
       setTitle("X.Likes");
     }
-  }, []);
+  }, [isLoading, sortedIdxList.length]);
 
   // 加载更多
-  const loadMorePosts = useCallback(async () => {
+  const loadMorePosts = async () => {
     // if (isLoading || cursor == null || cursor === 0) return;
     setIsLoading(true);
 
     const result = await crab.takePostChunk(cursor);
     result.match({
       Ok: ({ data, cursor: newCursor }) => {
-        // 按 sortidx 降序
         const sortedData = data.sort((a, b) => b.sortidx - a.sortidx);
-
-        setPostsMap((prev) => {
-          const next = new Map(prev);
-          sortedData.forEach(({ sortidx, post }) => {
-            next.set(sortidx, post);
-          });
-          buildAssetToSortidxMap(sortedData).forEach((sortidx, aid) => {
-            asset2sortidx.set(aid, sortidx);
-          });
-          return next;
+        sortedData.forEach(({ sortidx, post }) => {
+          postsMapRef.current.set(sortidx, post);
         });
 
         setSortedIdxList((prev) => {
@@ -164,21 +153,29 @@ export default function Posts({ initialCursor = null }: PostsProps) {
           const newIdxs = sortedData
             .map(({ sortidx }) => ({ id: sortidx }))
             .filter((idx) => !existing.has(idx.id));
+
           return [...prev, ...newIdxs];
         });
-
         if (sortedData.length) {
           setCursor(newCursor);
         }
       },
       Err: (error) => {
-        console.error("获取帖子失败:", error);
-        setSortedIdxList([]);
+        console.log("获取帖子失败:", error);
       },
     });
-
     setIsLoading(false);
-  }, [isLoading, cursor]);
+  };
+
+  const maybeLoadMore = useInfiniteLoader(
+    async () => {
+      await loadMorePosts(); // 你可以在这里做你的请求
+    },
+    {
+      isItemLoaded: (index, items) => !!items[index],
+      threshold: 30,
+    }
+  );
 
   return (
     <div
@@ -188,30 +185,25 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         "w-[1186px] mx-auto h-full",
       ])}
     >
-      {sortedIdxList.length > 0 ? (
-        <Masonry
-          items={sortedIdxList}
-          itemKey={({ id }) => id}
-          overscanBy={6}
-          columnGutter={16}
-          columnWidth={340}
-          maxColumnCount={3}
-          render={({ data }) => {
-            const post = postsMap.get(data.id);
-            return post ? <TweetCard postdata={post} /> : null;
-          }}
-          onRender={(_startIndex, stopIndex, items) => {
-            // 当渲染接近末尾时，加载更多数据
-            if (!isLoading && stopIndex >= items.length - 30) {
-              // loadMorePosts();
-            }
-          }}
-        />
-      ) : isLoading ? (
+      <Masonry
+        items={sortedIdxList}
+        itemKey={({ id }) => id}
+        overscanBy={6}
+        columnGutter={16}
+        columnWidth={340}
+        maxColumnCount={3}
+        render={({ data }) => {
+          const post = postsMapRef.current.get(data.id);
+          return post ? <TweetCard postdata={post} /> : null;
+        }}
+        onRender={maybeLoadMore}
+      />
+      {sortedIdxList.length === 0 && isLoading && (
         <div className="flex justify-center items-center flex-col text-center gap-8 overflow-hidden flex-1 text-gray-500">
           Loading...
         </div>
-      ) : (
+      )}
+      {sortedIdxList.length === 0 && !isLoading && (
         <div
           className={cn([
             "flex justify-center items-center flex-col text-center gap-4 flex-1",
@@ -276,6 +268,19 @@ export default function Posts({ initialCursor = null }: PostsProps) {
           )}
         </div>
       )}
+      {/* <Masonry
+        items={sortedIdxList}
+        itemKey={({ id }) => id}
+        overscanBy={6}
+        columnGutter={16}
+        columnWidth={340}
+        maxColumnCount={3}
+        render={({ data }) => {
+          const post = postsMapRef.current.get(data.id);
+          return post ? <TweetCard postdata={post} /> : null;
+        }}
+        onRender={maybeLoadMore}
+      /> */}
     </div>
   );
 }

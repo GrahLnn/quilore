@@ -19,6 +19,7 @@ export const station = {
   // blurPage: createAtom<boolean>(false),
   isScrollingFast: createAtom<boolean>(false),
   scrollVelocity: createAtom<number>(0),
+  schedulerPause: createAtom<boolean>(false),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),

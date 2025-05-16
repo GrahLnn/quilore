@@ -12,7 +12,7 @@ use super::api::user::process_likes_chunk;
 use super::Schedulable;
 use super::Status;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, specta::Type)]
 pub enum Mission {
     ScanLikes,
 }

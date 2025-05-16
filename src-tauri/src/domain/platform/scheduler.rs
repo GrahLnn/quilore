@@ -1,20 +1,29 @@
+use crate::utils::event::WINDOW_READY;
 use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
-    sync::{Arc, LazyLock},
+    sync::{Arc, LazyLock, Mutex},
     time::Duration,
 };
 
+use super::{
+    job::{Job, Mission},
+    Task,
+};
+use specta::Type;
 use surrealdb::RecordId;
 use tauri::AppHandle;
+use tauri_specta::Event;
+use tokio::sync::oneshot;
 use tokio::sync::{
     mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     Semaphore,
 };
 
-use super::{job::Job, Task};
+pub static SCHEDULER_PAUSED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Status {
@@ -48,20 +57,21 @@ impl<T: Schedulable> Scheduler<T> {
         (sched, rx)
     }
 
-    pub async fn start(self: Arc<Self>, mut rx: UnboundedReceiver<T>) {
+    pub async fn start(self: Arc<Self>, mut rx: UnboundedReceiver<T>, pending: Option<Vec<T>>) {
         let tx = self.tx.clone();
-
-        // 初始化：从数据库加载 Pending 任务
-        // let pending = T::load_pending().await.expect("加载 Pending 失败");
-        // for item in pending {
-        //     if let Err(e) = tx.send(item) {
-        //         tracing::error!("无法发送初始化任务: {}", e);
-        //     }
-        // }
+        let pending = pending.unwrap_or(T::load_pending().await.expect("加载 Pending 失败"));
+        for item in pending {
+            if let Err(e) = tx.send(item) {
+                tracing::error!("无法发送初始化任务: {}", e);
+            }
+        }
 
         // Worker loop
         tokio::spawn(async move {
             while let Some(item) = rx.recv().await {
+                while SCHEDULER_PAUSED.load(Ordering::SeqCst) {
+                    tokio::time::sleep(Duration::from_millis(200)).await;
+                }
                 let tx_inner = tx.clone();
                 tokio::spawn(async move {
                     static WORK_SEMA: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(10));
@@ -108,7 +118,7 @@ impl Scheduler<Task> {
         // ③ 异步启动加载和 worker loop
         let sched_clone = sched.clone();
         tokio::spawn(async move {
-            sched_clone.start(rx).await;
+            sched_clone.start(rx, None).await;
         });
         Ok(sched)
     }
@@ -122,6 +132,18 @@ impl Scheduler<Task> {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Type)]
+pub struct JobCheckEvent {
+    pub mission: Mission,
+    pub user_say: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+pub struct JobChecksEvent {
+    pub jobs: Vec<JobCheckEvent>,
+}
+static JOB_CHECK_REPLY: LazyLock<Mutex<Option<tokio::sync::oneshot::Sender<Vec<JobCheckEvent>>>>> =
+    LazyLock::new(|| Mutex::new(None));
 static JOB_SCHED: LazyLock<OnceCell<Arc<Scheduler<Job>>>> = LazyLock::new(|| OnceCell::new());
 impl Scheduler<Job> {
     pub async fn init(app: AppHandle) -> anyhow::Result<Arc<Self>> {
@@ -131,8 +153,54 @@ impl Scheduler<Job> {
         JOB_SCHED.set(sched.clone()).ok();
         // ③ 异步启动加载和 worker loop
         let sched_clone = sched.clone();
+
         tokio::spawn(async move {
-            sched_clone.start(rx).await;
+            let pending_jobs = Job::load_pending().await.expect("加载 Pending 失败");
+            if !pending_jobs.is_empty() {
+                // 1. emit 事件，告知前端有待确认的 pending
+                let jobs_for_event: Vec<JobCheckEvent> = pending_jobs
+                    .iter()
+                    .map(|j| JobCheckEvent {
+                        mission: j.mission.clone(),
+                        user_say: None,
+                    })
+                    .collect();
+
+                while !WINDOW_READY.load(Ordering::SeqCst) {
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+
+                JobChecksEvent {
+                    jobs: jobs_for_event,
+                }
+                .emit(&app)
+                .map_err(|e| anyhow!("emit JobChecksEvent 失败: {}", e))
+                .ok();
+
+                // 2. 创建 oneshot channel
+                let (sender, receiver) = tokio::sync::oneshot::channel();
+                // 3. 存到全局静态变量，供 command 用
+                *JOB_CHECK_REPLY.lock().unwrap() = Some(sender);
+
+                // 4. 等待前端 command 调用
+                let user_reply = receiver.await.expect("等待前端选择失败");
+                *JOB_CHECK_REPLY.lock().unwrap() = None;
+
+                let jobs_to_resume: Vec<_> = pending_jobs
+                    .into_iter()
+                    .filter(|job| {
+                        user_reply
+                            .iter()
+                            .find(|r| r.mission == job.mission)
+                            .and_then(|r| r.user_say)
+                            .unwrap_or(false)
+                    })
+                    .collect();
+
+                sched_clone.start(rx, Some(jobs_to_resume)).await;
+            } else {
+                sched_clone.start(rx, None).await;
+            }
         });
         Ok(sched.clone())
     }
@@ -143,4 +211,42 @@ impl Scheduler<Job> {
             .map(|c| c.clone())
             .ok_or_else(|| anyhow!("Job scheduler has not been init"))
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn reply_pending_jobs(jobs: Vec<JobCheckEvent>) -> Result<(), String> {
+    let mut guard = JOB_CHECK_REPLY.lock().unwrap();
+    if let Some(sender) = guard.take() {
+        sender
+            .send(jobs)
+            .map_err(|_| "Rust端等待已结束或已消费".to_string())
+    } else {
+        Err("oneshot sender 已被消费或未初始化".to_string())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Type, Event)]
+pub struct SchedulerPauseEvent {
+    pub paused: bool,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn pause_scheduler(app: tauri::AppHandle) -> Result<(), String> {
+    SCHEDULER_PAUSED.store(true, Ordering::SeqCst);
+    SchedulerPauseEvent { paused: true }
+        .emit(&app)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn resume_scheduler(app: tauri::AppHandle) -> Result<(), String> {
+    SCHEDULER_PAUSED.store(false, Ordering::SeqCst);
+    SchedulerPauseEvent { paused: false }
+        .emit(&app)
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
