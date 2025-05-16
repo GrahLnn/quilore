@@ -58,7 +58,7 @@ function processText(text: string, urls: string[] | null) {
                 .filter((part) => part.length > 0);
 
               const lastSegment = pathnameParts.length
-                ? `[${pathnameParts[pathnameParts.length - 1]}]`
+                ? `[${decodeURIComponent(pathnameParts[pathnameParts.length - 1])}]`
                 : "";
 
               const linkText = `${parsedUrl.hostname}${lastSegment}`;
