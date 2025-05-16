@@ -1,9 +1,7 @@
-use crate::domain::models::userkv::{get_userkv_value, UserKey};
 use crate::domain::platform::twitter::auth::auth::{
     auth_generator_for, AuthGenerator, GuestAuth, UserAuth,
 };
 use crate::domain::platform::twitter::auth::enums::authentication::EAuthentication;
-use crate::domain::platform::twitter::auth::models::credentials::AuthCredential;
 use anyhow::Result;
 use std::sync::Once;
 

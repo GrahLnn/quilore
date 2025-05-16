@@ -4,6 +4,7 @@ mod enums;
 mod utils;
 
 use anyhow::Result;
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;

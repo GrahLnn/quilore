@@ -1,7 +1,7 @@
 use super::super::enums::authentication::EAuthentication;
 use super::super::enums::login::Tokens;
 use super::authcookie::AuthCookie;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use reqwest::header::{HeaderMap, HeaderValue};
 
 /// 认证凭证

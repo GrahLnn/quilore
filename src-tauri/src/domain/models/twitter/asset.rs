@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -6,7 +5,6 @@ use surrealdb::RecordId;
 
 use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
-use crate::domain::models::meta::GlobalVal;
 use crate::domain::platform::{scheduler, Task, TaskKind};
 use crate::enums::platform::Platform;
 use crate::{impl_crud, impl_id};

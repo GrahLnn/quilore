@@ -1,5 +1,3 @@
-use anyhow::Result;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EAuthentication {
     Guest,

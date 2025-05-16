@@ -17,7 +17,6 @@ use specta::Type;
 use surrealdb::RecordId;
 use tauri::AppHandle;
 use tauri_specta::Event;
-use tokio::sync::oneshot;
 use tokio::sync::{
     mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     Semaphore,
