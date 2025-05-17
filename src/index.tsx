@@ -4,16 +4,20 @@ import App from "./App";
 import WindowsControlsPortal from "./windowctrl/windows";
 import MacOSControlsPortal from "./windowctrl/macos";
 import { platform } from "@tauri-apps/plugin-os";
+import { matchable } from "@/lib/matchable";
 
-const os = platform();
+const os = matchable(platform());
 
 const rootEl = document.getElementById("root");
 if (rootEl) {
   const root = ReactDOM.createRoot(rootEl);
   root.render(
     <React.StrictMode>
-      {os === "windows" && <WindowsControlsPortal />}
-      {os === "macos" && <MacOSControlsPortal />}
+      {os.match({
+        windows: () => <WindowsControlsPortal />,
+        macos: () => <MacOSControlsPortal />,
+        _: () => null,
+      })}
       <App />
     </React.StrictMode>
   );
