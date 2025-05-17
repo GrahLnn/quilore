@@ -487,7 +487,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       >
         <motion.video
           ref={innerRef}
-          className={cn(["mx-auto my-auto"])}
+          className={cn(["mx-auto my-auto max-h-full max-w-full object-contain"])}
           src={videoSrc}
           poster={posterSrc}
           crossOrigin="anonymous"
