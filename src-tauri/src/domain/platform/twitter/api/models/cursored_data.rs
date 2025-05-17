@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
 use surrealdb::RecordId;
 
 use crate::database::Crud;
-use crate::domain::models::twitter::like::{DbLikedPost, LikedPost};
+use crate::domain::models::twitter::like::LikedPost;
 use crate::domain::models::twitter::post::DbPost;
 use crate::domain::platform::twitter::api::models::enums::EntriesType;
 
@@ -20,24 +20,29 @@ pub struct CursoredData<T> {
 }
 
 impl CursoredData<LikedPost> {
-    pub async fn from_response(response: &Value, sort_ref: Option<u32>) -> Result<Self> {
-        let exist = DbLikedPost::select_pagin(3, None).await?;
-        let seen: HashSet<RecordId> = exist.into_iter().map(|p| p.post).collect();
+    pub async fn from_response(
+        response: &Value,
+        sort_ref: Option<u32>,
+        exist: Vec<RecordId>,
+    ) -> Result<Self> {
+        let seen: HashSet<RecordId> = exist.into_iter().collect();
+        let mut seen_streak = 0; // 连续 seen 的个数
+        let streak_threshold = 5;
 
         let instruction = response
             .pointer("/data/user/result/timeline/timeline/instructions/0")
             .or_else(|| response.pointer("/data/user/result/timeline/instructions/0"))
-            .ok_or_else(|| anyhow!("can not find timeline.instructions[0]"))?;
+            .context("can not find timeline.instructions[0]")?;
         instruction
             .get("type")
             .and_then(|v| v.as_str())
             .and_then(|type_str| serde_json::from_value(Value::String(type_str.to_string())).ok())
             .map(|e: EntriesType| e == EntriesType::TimelineAddEntries)
-            .ok_or_else(|| anyhow!("cannot find timeline.instructions[0].type"))?;
+            .context("timeline.instructions[0].type is not TimelineAddEntries")?;
         let entries = instruction
             .get("entries")
             .and_then(Value::as_array)
-            .ok_or_else(|| anyhow!("cannot find timeline.instructions[0].entries"))?;
+            .context("cannot find timeline.instructions[0].entries")?;
         let mut list = Vec::with_capacity(entries.len());
         let mut next = String::new();
         let mut is_end = false;
@@ -59,12 +64,16 @@ impl CursoredData<LikedPost> {
             // 解析出一个 LikedPost
             if let Some(liked) = LikedPost::from_api(&entry) {
                 let key = DbPost::record_id(liked.post.rest_id);
-                // 如果已经存在，就直接结束整个循环
                 if seen.contains(&key) {
-                    dbg!("seen");
-                    is_end = true;
-                    break;
+                    seen_streak += 1;
+                    if seen_streak >= streak_threshold {
+                        is_end = true;
+                        println!("seen streak reached threshold, break");
+                        break; // 连续n条已存在，终止
+                    }
+                    continue; // 跳过本条
                 }
+                seen_streak = 0;
                 list.push(liked);
             }
         }

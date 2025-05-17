@@ -116,10 +116,47 @@ const SchedulerBadge = ({ count }: { count: number }) => {
   );
 };
 
+interface ReqCompProps {
+  text: string;
+  markcn?: string;
+  xfn?: () => void;
+  checkfn?: () => void;
+}
+
+function ReqComp({ text, xfn, checkfn, markcn }: ReqCompProps) {
+  return (
+    <div
+      className={cn([
+        "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
+        "text-xs trim-cap dark:text-[#d4d4d4] text-[#404040]",
+        "rounded-md border dark:border-[#262626] border-[#eaeaea]",
+        "dark:bg-[#171717]/40 bg-[#f5f5f5]/40",
+        "transition duration-300",
+      ])}
+    >
+      <div>{text}</div>
+      <div className="flex gap-1">
+        {xfn && (
+          <div className={markcn} onClick={xfn}>
+            <icons.xmark size={13} />
+          </div>
+        )}
+        {checkfn && (
+          <div className={markcn} onClick={checkfn}>
+            <icons.check3 size={13} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const RightControls = memo(function RightControlsComponent() {
   const [count, setCount] = useState<number>(0);
   const [isRuning, setIsRunning] = useState<boolean>(false);
   const [jobData, setJobData] = useState<JobCheckEvent[]>([]);
+  const [need_refresh, setNeedRefresh] = station.needRefresh.useAll();
+  const [recived_refresh, setRecivedRefresh] = useState(false);
   const startImport = station.startImport.useSee();
 
   const os = station.os.useSee();
@@ -135,63 +172,56 @@ const RightControls = memo(function RightControlsComponent() {
       setJobData(data);
     });
 
+    const inc = events.scanLikesIncEvent.listen((event) => {
+      if (event.payload.need_refresh) {
+        setRecivedRefresh(true);
+      }
+    });
+
     // 2. cleanup：组件卸载时取消监听
     return () => {
       likes.then((f) => f());
       jobs.then((f) => f());
+      inc.then((f) => f());
     };
   }, []);
   const isVisible = useIsBarVisible();
 
-  const checkcn =
-    "dark:hover:bg-[#373737] hover:bg-[#d4d4d4] opacity-70 hover:opacity-100 rounded-full transition cursor-pointer";
   return (
-    <div
-      className={cn([
-        "flex items-center",
-        // "transition duration-300 ease-in-out",
-      ])}
-    >
+    <div className={cn(["flex items-center"])}>
       {isVisible && isRuning && !startImport && (
         <SchedulerBadge count={count} />
       )}
       {isVisible && jobData.length > 0 && !startImport && (
-        <div
-          className={cn([
-            "px-2 py-1 flex items-center gap-2 mt-[1px] mx-1",
-            "text-xs trim-cap dark:text-[#d4d4d4] text-[#404040]",
-            "rounded-md border dark:border-[#262626] border-[#eaeaea]",
-            "dark:bg-[#171717]/40 bg-[#f5f5f5]/40",
-            "transition duration-300",
-          ])}
-        >
-          <div>Continue scan?</div>
-          <div className="flex gap-1">
-            <div
-              className={checkcn}
-              onClick={() => {
-                crab.replyPendingJobs(
-                  jobData.map((j) => ({ ...j, user_say: false }))
-                );
-                setJobData([]);
-              }}
-            >
-              <icons.xmark size={13} />
-            </div>
-            <div
-              className={checkcn}
-              onClick={() => {
-                crab.replyPendingJobs(
-                  jobData.map((j) => ({ ...j, user_say: true }))
-                );
-                setJobData([]);
-              }}
-            >
-              <icons.check3 size={13} />
-            </div>
-          </div>
-        </div>
+        <ReqComp
+          text="Continue scan?"
+          markcn="dark:hover:bg-[#373737] hover:bg-[#d4d4d4] opacity-70 hover:opacity-100 rounded-full transition cursor-pointer"
+          xfn={() => {
+            crab.replyPendingJobs(
+              jobData.map((j) => ({ ...j, user_say: false }))
+            );
+            setJobData([]);
+          }}
+          checkfn={() => {
+            crab.replyPendingJobs(
+              jobData.map((j) => ({ ...j, user_say: true }))
+            );
+            setJobData([]);
+          }}
+        />
       )}
+
+      {isVisible && recived_refresh && !startImport && (
+        <ReqComp
+          text="Refresh data?"
+          markcn="dark:hover:bg-[#373737] hover:bg-[#d4d4d4] opacity-70 hover:opacity-100 rounded-full transition cursor-pointer"
+          checkfn={() => {
+            setNeedRefresh(true);
+            setRecivedRefresh(false);
+          }}
+        />
+      )}
+
       <CtrlButton label="Search" icon={<icons.magnifler3 size={14} />} />
 
       <CtrlButton

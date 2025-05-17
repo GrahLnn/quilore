@@ -52,10 +52,17 @@ impl Schedulable for Task {
         self.retry_count
     }
     async fn delete(self) -> Result<()> {
-        Task::delete_record(self.id).await?;
-        Ok(())
+        let mut last_err = None;
+        for _ in 0..5 {
+            match Task::delete_record(self.id.clone()).await {
+                Ok(_) => return Ok(()),
+                Err(e) => last_err = Some(e),
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        }
+        Err(last_err.unwrap_or_else(|| anyhow::anyhow!("未知错误")))
     }
-    async fn on_success(self) -> Result<()> {
+    async fn on_success(self, _signal: Option<super::HandleSignal>) -> Result<()> {
         self.delete().await
     }
 
@@ -74,7 +81,7 @@ impl Schedulable for Task {
         Task::get_tasks().await
     }
 
-    async fn handle(self) -> Result<()> {
+    async fn handle(self) -> Result<Option<super::HandleSignal>> {
         match self.kind {
             TaskKind::AssetDownload => handler::download_asset(self).await.map_err(|e| e.into()),
             TaskKind::AssetTransport => handler::transport_asset(self).await.map_err(|e| e.into()),

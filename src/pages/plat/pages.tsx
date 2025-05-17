@@ -123,7 +123,7 @@ function EditAssetFolder() {
       <EditMainZone>
         <ValueArea
           text={newPath || folderPath || ""}
-          explain="This folder will store images, videos, and user profile pictures obtained from tweets. Please ensure you have enough space to store high-quality data. Storing data for 20,000 entries is estimated to require around 60GB of storage."
+          explain="This folder will store images, videos, and user profile pictures obtained from tweets. Please ensure you have enough space to store high-quality data." // Storing data for 20,000 entries is estimated to require around 60GB of storage.
         />
         <BottomZone>
           <EditWarning
@@ -195,7 +195,9 @@ export function PlatPage() {
   const actions = [
     {
       name: "Scan",
-      fn: () => {},
+      fn: () => {
+        crab.scanLikesTimeline();
+      },
       icon: <icons.scan />,
     },
     {

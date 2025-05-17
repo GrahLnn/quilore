@@ -22,6 +22,7 @@ export const station = {
   schedulerPause: createAtom<boolean>(false),
   startImport: createAtom<boolean>(false),
   isCookieSet: createAtom<boolean>(true),
+  needRefresh: createAtom<boolean>(false),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),

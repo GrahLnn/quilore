@@ -23,14 +23,10 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   const container = useRef<HTMLDivElement>(null);
   const setTitle = station.postsTitle.useSet();
   const setAssetState = station.assetState.useSet();
-  // const isScrollFast = driveStation.isTooFast.useSee();
 
-  // 使用自定义 scrollYRef hook，不会导致组件重绘
   useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
-  // useScrollVelocity();
 
   // 首次加载和容器高度更新
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setTitle("X.Likes");
     if (sortedIdxList.length === 0) {
@@ -51,7 +47,6 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     }
 
     const assetEvent = events.assetDownloadBatchEvent.listen((event) => {
-      // const prev = getAssetState();
       const newMap = new Map();
 
       for (const item of event.payload.items) {
@@ -70,11 +65,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     };
   }, []);
 
-  // 加载更多
   const loadMorePosts = async () => {
-    // if (isLoading || cursor == null || cursor === 0) return;
-    // setIsLoading(true);
-
     const result = await crab.takePostChunk(cursor);
     result.match({
       Ok: ({ data, cursor: newCursor }) => {
@@ -103,7 +94,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
 
   const maybeLoadMore = useInfiniteLoader(
     async () => {
-      await loadMorePosts(); // 你可以在这里做你的请求
+      await loadMorePosts();
     },
     {
       isItemLoaded: (index, items) => !!items[index],

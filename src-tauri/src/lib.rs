@@ -23,7 +23,7 @@ use domain::models::twitter::{
 use domain::models::userkv::{get_userkv_value, upsert_userkv};
 use domain::platform::api::user::ScanLikesEvent;
 use domain::platform::emitter::AssetDownloadBatchEvent;
-use domain::platform::job::Job;
+use domain::platform::job::{self, Job};
 use domain::platform::scheduler::{self, Scheduler};
 use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind, SCHEDULER_PAUSED};
@@ -58,6 +58,7 @@ pub fn run() {
         event::FullScreenEvent,
         scheduler::JobChecksEvent,
         scheduler::SchedulerPauseEvent,
+        job::ScanLikesIncEvent,
     ];
 
     let commands = collect_commands![

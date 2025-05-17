@@ -2,29 +2,34 @@ use super::models::CursoredData;
 use super::requests::user;
 use crate::database::Crud;
 use crate::domain::models::twitter::entities::DbEntitie;
-use crate::domain::models::twitter::like::LikedPost;
+use crate::domain::models::twitter::like::{DbLikedPost, LikedPost};
 use crate::domain::platform::job::{Job, Mission};
 use crate::domain::platform::scheduler::Scheduler;
 use crate::domain::platform::twitter::auth::auth::{self, AuthGenerator};
 use crate::domain::platform::{handle_entities, scheduler, Schedulable, Task};
-use crate::domain::platform::TaskKind;
+use crate::domain::platform::{HandleSignal, TaskKind};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use specta::Type;
 use tauri_specta::Event;
 
 #[tauri::command]
 #[specta::specta]
 pub async fn scan_likes_timeline() -> Result<(), String> {
+    println!("scan_likes_timeline");
     let id = Job::record_id(Mission::ScanLikes.as_str());
-
+    let intersection = DbLikedPost::select_pagin(200, None)
+        .await
+        .map_err(|e| e.to_string())?;
+    let ids = intersection.into_iter().map(|p| p.post).collect::<Vec<_>>();
     let job = Job {
         id,
         mission: Mission::ScanLikes,
         status: scheduler::Status::Pending,
         params: serde_json::json!({ "cursor": null }),
+        end_band: ids,
         error: None,
         retry_count: 0,
         max_retry_count: 3,
@@ -32,7 +37,10 @@ pub async fn scan_likes_timeline() -> Result<(), String> {
         finished_at: None,
     };
 
-    job.upsert().await.map_err(|e| e.to_string())?;
+    job.create()
+        .await
+        .context("Cannot create duplicate tasks.")
+        .map_err(|e| e.to_string())?;
     Scheduler::<Job>::get()
         .map_err(|e| e.to_string())?
         .enqueue(job);
@@ -46,7 +54,7 @@ pub struct ScanLikesEvent {
     pub running: bool,
 }
 
-pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
+pub async fn process_likes_chunk(job: Job) -> Result<Option<HandleSignal>> {
     let job_record = Job::select_record(Job::record_id(Mission::ScanLikes.as_str())).await?;
     job.update_status(scheduler::Status::Running, None).await?;
     let cursor = job_record
@@ -89,7 +97,12 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
 
     let json_data = resp.json::<Value>().await?;
 
-    let result = CursoredData::<LikedPost>::from_response(&json_data, last_sortidx).await?;
+    let result = CursoredData::<LikedPost>::from_response(
+        &json_data,
+        last_sortidx,
+        job_record.end_band.clone(),
+    )
+    .await?;
     let next = result.clone().next;
     let list = result.clone().list;
     let entities = list
@@ -103,7 +116,6 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
         .filter(|t| !matches!(t.status, scheduler::Status::Succeeded))
         .cloned()
         .collect::<Vec<_>>();
-    dbg!(excu_tasks.len());
     for task in excu_tasks {
         let _ = Scheduler::<Task>::get()?.enqueue(task);
     }
@@ -127,5 +139,7 @@ pub async fn process_likes_chunk(job: Job) -> anyhow::Result<()> {
     }
     .emit(&app)
     .map_err(|e| anyhow!("emit ScanLikesProgressEvent 失败: {}", e))?;
-    Ok(())
+    Ok(Some(HandleSignal {
+        value: json!({ "is_end": result.is_end }),
+    }))
 }

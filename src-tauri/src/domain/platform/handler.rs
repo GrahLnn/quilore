@@ -36,7 +36,7 @@ static HTTP_CLIENT: LazyLock<Client> = LazyLock::new(|| {
         .build()
         .expect("构造 HTTP Client 失败")
 });
-pub async fn download_asset(task: Task) -> Result<()> {
+pub async fn download_asset(task: Task) -> Result<Option<super::HandleSignal>> {
     task.update_status(Status::Running, None).await.ok();
 
     let mut asset = DbAsset::select_record(task.tar.clone())
@@ -45,9 +45,13 @@ pub async fn download_asset(task: Task) -> Result<()> {
 
     let save_path = PathBuf::from(&asset.path);
     if save_path.exists() {
-        asset.downloaded = true;
-        asset.available = true;
-        return finish_asset_download(&asset).await.map_err(|e| e.into());
+        if !asset.downloaded || !asset.available {
+            asset.downloaded = true;
+            asset.available = true;
+            finish_asset_download(&asset).await?;
+        }
+        // 否则什么都不做
+        return Ok(None);
     }
 
     // tmp 文件做原子替换
@@ -66,10 +70,11 @@ pub async fn download_asset(task: Task) -> Result<()> {
     if matches!(status, 404 | 403 | 307 | 401) {
         asset.downloaded = true;
         asset.available = false;
-        return finish_asset_download(&asset).await.context(format!(
+        finish_asset_download(&asset).await.context(format!(
             "download failed, resource unavailable, code {}",
             status
-        ));
+        ))?;
+        return Ok(None);
     }
     if !resp.status().is_success() {
         return Err(anyhow!("下载失败，状态码: {}", status));
@@ -115,7 +120,7 @@ pub async fn download_asset(task: Task) -> Result<()> {
         asset.id.key().to_owned(),
         chunk_count
     );
-    Ok(())
+    Ok(None)
 }
 
 async fn finish_asset_download(asset: &DbAsset) -> Result<()> {
@@ -129,7 +134,7 @@ async fn finish_asset_download(asset: &DbAsset) -> Result<()> {
     Ok(())
 }
 
-pub async fn transport_asset(task: Task) -> Result<()> {
+pub async fn transport_asset(task: Task) -> Result<Option<super::HandleSignal>> {
     task.update_status(Status::Running, None).await.ok();
     let mut asset = DbAsset::select_record(task.tar.clone())
         .await
@@ -150,23 +155,16 @@ pub async fn transport_asset(task: Task) -> Result<()> {
     }
 
     // 若目标已经存在则跳过，直接更新 asset.path 字段
-    let need_copy = match &asset.path[..] {
-        "media unavailable" => {
-            asset.path = target_path.to_string_lossy().to_string();
-            false
-        }
-        _ => {
-            // 如果目标已存在则跳过
-            if tokio::fs::try_exists(&target_path).await.unwrap_or(false) {
-                asset.path = target_path.to_string_lossy().to_string();
-                false
-            } else if file_path == target_path {
-                // 源目标一致
-                false
-            } else {
-                true
-            }
-        }
+    let need_copy = if asset.path.contains("media unavailable") {
+        // 只要 asset.path 包含 "media unavailable"，直接不复制
+        false
+    } else if tokio::fs::try_exists(&target_path).await.unwrap_or(false) {
+        asset.path = target_path.to_string_lossy().to_string();
+        false
+    } else if file_path == target_path {
+        false
+    } else {
+        true
     };
 
     if need_copy {
@@ -178,7 +176,7 @@ pub async fn transport_asset(task: Task) -> Result<()> {
     }
 
     DbAsset::update(asset.id.clone(), asset.clone()).await?;
-    Ok(())
+    Ok(None)
 }
 
 // pub async fn handle_translate(task: &mut Task) -> anyhow::Result<Value> {

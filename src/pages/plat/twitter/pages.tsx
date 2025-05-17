@@ -16,9 +16,11 @@ export function MatchPages() {
   const [page, setPage] = station.twitter.useAll();
   const [checkdone, setCheckDone] = useState(false);
   const isStartImport = station.startImport.useSee();
+  const [need_refresh, setNeedRefresh] = station.needRefresh.useAll();
   const setIsLoading = postsStation.isLoading.useSet();
   const setScanning = postsStation.scanning.useSet();
   const setSortedIdxList = postsStation.sortedIdxList.useSet();
+  const [key, setKey] = useState(0);
 
   useEffect(() => {
     if (isStartImport) {
@@ -32,18 +34,27 @@ export function MatchPages() {
   useEffect(() => {
     crab.checkHasData().then((r) => {
       r.tap((v) => {
+        setCheckDone(true);
         if (v) {
-          setCheckDone(true);
           setPage(TwitterPage.Posts);
         }
       });
     });
   }, []);
+
+  useEffect(() => {
+    if (need_refresh) {
+      setSortedIdxList([]);
+      setKey((k) => k + 1);
+      setNeedRefresh(false);
+    }
+  }, [need_refresh]);
+
   return (
     checkdone &&
     page.match({
       [TwitterPage.Pre]: () => <PrePosts />,
-      [TwitterPage.Posts]: () => <Posts />,
+      [TwitterPage.Posts]: () => <Posts key={key} />,
     })
   );
 }

@@ -32,16 +32,20 @@ pub enum Status {
     Failed,
 }
 
+pub struct HandleSignal {
+    pub value: Value,
+}
+
 #[async_trait::async_trait]
 pub trait Schedulable: Send + Sync + Clone + 'static {
     fn id(&self) -> RecordId;
     fn status(&self) -> Status;
     fn retry_count(&self) -> u32;
     async fn update_status(&self, status: Status, extra: Option<Value>) -> Result<()>;
-    async fn handle(self) -> Result<()>;
+    async fn handle(self) -> Result<Option<HandleSignal>>;
     async fn load_pending() -> Result<Vec<Self>>;
     async fn delete(self) -> Result<()>;
-    async fn on_success(self) -> Result<()>;
+    async fn on_success(self, signal: Option<HandleSignal>) -> Result<()>;
 }
 
 pub struct Scheduler<T: Schedulable> {
@@ -92,8 +96,8 @@ impl<T: Schedulable> Scheduler<T> {
                     item.update_status(Status::Running, None).await.ok();
 
                     match item.clone().handle().await {
-                        Ok(()) => {
-                            item.on_success().await.ok();
+                        Ok(sig) => {
+                            item.on_success(sig).await.ok();
                         }
                         Err(err) => {
                             let rc = item.retry_count() + 1;
