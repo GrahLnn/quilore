@@ -1251,4 +1251,92 @@ export const icons = {
       </svg>
     );
   },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHBhdGggZD0iTTUuODUyLDljLjMzOS0yLjEzNCwxLjItMy43MTcsMi4xNDgtNC4zOTEiPjwvcGF0aD48cGF0aCBkPSJNMy4yLDEwLjk3N0MzLjIsNS43MDUsNS43NzgsMS43NSw5LDEuNzVjMy4xOTUsMCw1LjgsMy45NTUsNS44LDkuMjI3LDAsMy4yOTUtMi45NTMsNS4yNzMtNS44LDUuMjczcy01LjgtMS45NzctNS44LTUuMjczWiI+PC9wYXRoPjwvZz48L3N2Zz4=)
+   */
+  egg({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <path d="M5.852,9c.339-2.134,1.2-3.717,2.148-4.391" />
+          <path d="M3.2,10.977C3.2,5.705,5.778,1.75,9,1.75c3.195,0,5.8,3.955,5.8,9.227,0,3.295-2.953,5.273-5.8,5.273s-5.8-1.977-5.8-5.273Z" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PHJlY3QgeD0iMS43NSIgeT0iMi43NSIgd2lkdGg9IjE0LjUiIGhlaWdodD0iMTIuNSIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGxpbmUgeDE9IjQuNzUiIHkxPSI1Ljc1IiB4Mj0iNC43NSIgeTI9IjEyLjI1Ij48L2xpbmU+PC9nPjwvc3ZnPg==)
+   * @returns
+   */
+  layoutLeft({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <rect x="1.75" y="2.75" width="14.5" height="12.5" rx="2" ry="2" />
+          <line x1="4.75" y1="5.75" x2="4.75" y2="12.25" />
+        </g>
+      </svg>
+    );
+  },
+  /**
+   *
+   * @preview ![](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDE4IDE4Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iIzIxMjEyMSI+PGxpbmUgeDE9IjYuMjUiIHkxPSIyLjc1IiB4Mj0iNi4yNSIgeTI9IjE1LjI1Ij48L2xpbmU+PHJlY3QgeD0iMS43NSIgeT0iMi43NSIgd2lkdGg9IjE0LjUiIGhlaWdodD0iMTIuNSIgcng9IjIiIHJ5PSIyIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxOCAxOCkgcm90YXRlKDE4MCkiPjwvcmVjdD48L2c+PC9zdmc+)
+   * @returns
+   */
+  sidebarLeft({ size, color, className }: IconProps) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size || 18}
+        height={size || 18}
+        viewBox="0 0 18 18"
+        className={className}
+      >
+        <g
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.5"
+          stroke={color || "currentColor"}
+        >
+          <line x1="6.25" y1="2.75" x2="6.25" y2="15.25" />
+          <rect
+            x="1.75"
+            y="2.75"
+            width="14.5"
+            height="12.5"
+            rx="2"
+            ry="2"
+            transform="translate(18 18) rotate(180)"
+          />
+        </g>
+      </svg>
+    );
+  },
 };

@@ -21,7 +21,6 @@ interface CtrlButtonProps extends PropsWithChildren {
 
 const CtrlButton = memo(function CtrlButtonComp({
   icon,
-  label,
   onClick = () => {},
   className,
   o,
@@ -60,11 +59,23 @@ const CtrlButton = memo(function CtrlButtonComp({
 export const LeftControls = memo(function LeftControlsComponent() {
   const os = station.os.useSee();
   return (
-    <div className="flex items-center px-2 text-[var(--content)]">
+    <div className="flex items-center px-2 text-[var(--content)] gap-1">
       {os.match({
         macos: () => <div className="w-[84px]" />,
         _: () => null,
       })}
+      {os.match({
+        windows: () => (
+          <div className="opacity-70">
+            <icons.egg size={16} />
+          </div>
+        ),
+        _: () => null,
+      })}
+      {/* <div className="opacity-70">
+        <icons.layoutLeft size={14} />
+      </div> */}
+      <CtrlButton icon={<icons.layoutLeft size={16} />} />
     </div>
   );
 });
@@ -155,11 +166,13 @@ const RightControls = memo(function RightControlsComponent() {
   const [count, setCount] = useState<number>(0);
   const [isRuning, setIsRunning] = useState<boolean>(false);
   const [jobData, setJobData] = useState<JobCheckEvent[]>([]);
-  const [need_refresh, setNeedRefresh] = station.needRefresh.useAll();
   const [recived_refresh, setRecivedRefresh] = useState(false);
-  const startImport = station.startImport.useSee();
 
+  const startImport = station.startImport.useSee();
   const os = station.os.useSee();
+
+  const setNeedRefresh = station.needRefresh.useSet();
+
   useEffect(() => {
     // 1. 订阅全局进度事件
     const likes = events.scanLikesEvent.listen((event) => {
