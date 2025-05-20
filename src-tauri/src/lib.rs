@@ -5,14 +5,14 @@ mod utils;
 
 use anyhow::Result;
 use domain::models::twitter::utils::clean_database;
-use std::cell::RefCell;
+use serde::Serialize;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use database::init_db;
-use domain::models::meta;
+use domain::models::{collect, meta};
 use domain::models::meta::GlobalVal;
 use domain::models::twitter::entities::DbEntitie;
 use domain::models::twitter::{
@@ -33,20 +33,20 @@ use utils::event::{self, WINDOW_READY};
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 
+use device_query::{DeviceQuery, DeviceState, MouseState};
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};
 use tokio::task::block_in_place;
 
 #[cfg(target_os = "macos")]
-use utils::macos_titlebar;
-
+use std::cell::RefCell;
 #[cfg(target_os = "macos")]
 thread_local! {
-    static MAIN_WINDOW_OBSERVER: RefCell<Option<macos_titlebar::FullscreenStateManager>> = RefCell::new(None);
+    static MAIN_WINDOW_OBSERVER: RefCell<Option<utils::macos_titlebar::FullscreenStateManager>> = RefCell::new(None);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -79,6 +79,13 @@ pub fn run() {
         scheduler::reply_pending_jobs,
         scheduler::pause_scheduler,
         scheduler::resume_scheduler,
+        get_mouse_and_window_position,
+        collect::create_collection,
+        collect::collect_post,
+        collect::uncollect_post,
+        collect::all_collection,
+        collect::delete_collection,
+        collect::select_collection,
     ];
 
     let builder: Builder = Builder::new().commands(commands).events(events);
@@ -133,9 +140,9 @@ pub fn run() {
                         }
                         #[cfg(target_os = "macos")]
                         {
-                            // Call the setup function from your new module
-                            macos_titlebar::setup_custom_macos_titlebar(&window);
                             use objc2::MainThreadMarker;
+                            use utils::macos_titlebar;
+                            macos_titlebar::setup_custom_macos_titlebar(&window);
 
                             // Manage the FullscreenObserver's lifetime.
                             // This is a bit tricky because you need to store it somewhere
@@ -280,4 +287,34 @@ async fn app_ready(app_handle: AppHandle) {
     let window = app_handle.get_webview_window("main").unwrap();
     window.show().unwrap();
     WINDOW_READY.store(true, Ordering::SeqCst);
+}
+
+#[derive(Serialize, specta::Type)]
+struct MouseWindowInfo {
+    mouse_x: i32,
+    mouse_y: i32,
+    window_x: i32,
+    window_y: i32,
+    window_width: u32,
+    window_height: u32,
+}
+
+#[tauri::command]
+#[specta::specta]
+fn get_mouse_and_window_position(app: AppHandle) -> MouseWindowInfo {
+    let device_state = DeviceState::new();
+    let mouse: MouseState = device_state.get_mouse();
+
+    let window = app.get_webview_window("main").unwrap();
+    let position: PhysicalPosition<i32> = window.outer_position().unwrap();
+    let size: PhysicalSize<u32> = window.outer_size().unwrap();
+
+    MouseWindowInfo {
+        mouse_x: mouse.coords.0,
+        mouse_y: mouse.coords.1,
+        window_x: position.x,
+        window_y: position.y,
+        window_width: size.width,
+        window_height: size.height,
+    }
 }

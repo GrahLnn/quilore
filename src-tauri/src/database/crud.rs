@@ -1,6 +1,5 @@
 use super::enums::table::Table;
 use super::error::DBError;
-
 use super::{get_db, HasId, QueryKind};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -165,6 +164,13 @@ pub trait Crud:
         Ok(())
     }
 
+    async fn query_response(sql: &str) -> Result<Response> {
+        let db = get_db()?;
+        db.query(sql)
+            .await
+            .map_err(|e| anyhow::anyhow!("query error: {}", e))
+    }
+
     async fn query_take(sql: &str, idx: Option<usize>) -> Result<Vec<Self>> {
         let db = get_db()?;
         let mut result = db.query(sql).await?;
@@ -177,6 +183,43 @@ pub trait Crud:
         let mut result = db.query(QueryKind::range(Self::TABLE, start, end)).await?;
         let records: Vec<Self> = result.take(0)?;
         Ok(records)
+    }
+
+    async fn relate_by_id(self_id: RecordId, target_id: RecordId, rel: &str) -> Result<()> {
+        let db = get_db()?;
+        let sql = format!("RELATE {self_id}->{rel}->{target_id};");
+        db.query(&sql).await?;
+        Ok(())
+    }
+
+    async fn unrelate_by_id(self_id: RecordId, target_id: RecordId, rel: &str) -> Result<()> {
+        let db = get_db()?;
+        let sql = format!("DELETE {self_id}->{rel} WHERE out={target_id} RETURN NONE;");
+        db.query(&sql).await?;
+        Ok(())
+    }
+
+    async fn relate<T>(&self, target: T, rel: &str) -> Result<()>
+    where
+        Self: HasId + Send + Sync,
+        T: HasId + Send + Sync,
+    {
+        Self::relate_by_id(self.id(), target.id(), rel).await
+    }
+
+    async fn unrelate<T>(&self, target: T, rel: &str) -> Result<()>
+    where
+        Self: HasId + Send + Sync,
+        T: HasId + Send + Sync,
+    {
+        Self::unrelate_by_id(self.id(), target.id(), rel).await
+    }
+
+    async fn select_record_id(k: &str, v: &str) -> Result<RecordId> {
+        let sql = QueryKind::select_id_single(Self::TABLE, k, v);
+        let ids: Vec<RecordId> = query_take(sql.as_str(), None).await?;
+        let id = ids.into_iter().next();
+        id.ok_or(DBError::NotFound.into())
     }
 }
 

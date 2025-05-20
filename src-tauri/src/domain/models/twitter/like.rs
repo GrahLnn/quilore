@@ -6,7 +6,7 @@ use crate::utils::serialize::into_u32_from_string_or_number;
 use super::entities::DbEntitie;
 use super::post::{DbPost, Post};
 
-use crate::impl_crud;
+use crate::{impl_crud, impl_id};
 use anyhow::Result;
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -27,11 +27,7 @@ pub struct DbLikedPost {
     pub post: RecordId,
 }
 
-impl HasId for DbLikedPost {
-    fn id(&self) -> RecordId {
-        self.id.clone()
-    }
-}
+impl_id!(DbLikedPost, id);
 
 impl LikedPost {
     pub async fn take(num: i64, end: i64) -> Result<Vec<Self>> {
@@ -192,7 +188,11 @@ impl LikedPost {
 
         let mut tasks = Vec::new();
 
-        tasks.extend(assets.iter().map(|a| a.clone().into_task(task_kind.clone())));
+        tasks.extend(
+            assets
+                .iter()
+                .map(|a| a.clone().into_task(task_kind.clone())),
+        );
 
         DbEntitie {
             like: vec![like],

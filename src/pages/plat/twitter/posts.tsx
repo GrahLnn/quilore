@@ -23,6 +23,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   const container = useRef<HTMLDivElement>(null);
   const setTitle = station.postsTitle.useSet();
   const setAssetState = station.assetState.useSet();
+  const catPage = station.catPage.useSee();
 
   useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
 
@@ -66,9 +67,9 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   }, []);
 
   const loadMorePosts = async () => {
-    const result = await crab.takePostChunk(cursor);
-    result.match({
-      Ok: ({ data, cursor: newCursor }) => {
+    if (!catPage) {
+      const result = await crab.takePostChunk(cursor);
+      result.tap(({ data, cursor: newCursor }) => {
         const sortedData = data.sort((a, b) => b.sortidx - a.sortidx);
         sortedData.forEach(({ sortidx, post }) => {
           postsMapRef.current.set(sortidx, post);
@@ -85,15 +86,21 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         if (sortedData.length) {
           setCursor(newCursor);
         }
-      },
-      Err: (error) => {
-        console.log("获取帖子失败:", error);
-      },
-    });
+      });
+    } else {
+      const result = await crab.selectCollection(catPage);
+      result.tap((c) => {
+        c.items.forEach((post) => {
+          postsMapRef.current.set(post.rest_id, post);
+        });
+        setSortedIdxList(c.items.map((post) => ({ id: post.rest_id })));
+      });
+    }
   };
 
   const maybeLoadMore = useInfiniteLoader(
     async () => {
+      if (catPage) return;
       await loadMorePosts();
     },
     {
@@ -112,6 +119,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     >
       <Masonry
         items={sortedIdxList}
+        className="focus:outline-none"
         itemKey={({ id }) => id}
         overscanBy={6}
         columnGutter={16}
@@ -123,6 +131,11 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         }}
         onRender={maybeLoadMore}
       />
+      {sortedIdxList.length === 0 && catPage && (
+        <div className="flex justify-center items-center flex-col text-center gap-8 overflow-hidden flex-1 text-gray-500">
+          No posts in this collection
+        </div>
+      )}
     </div>
   );
 }

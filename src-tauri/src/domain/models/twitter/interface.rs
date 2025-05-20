@@ -2,7 +2,7 @@ use crate::utils::serialize::into_u32_from_string_or_number;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use super::like::{DbLikedPost, LikedPost};
+use super::like::LikedPost;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct LikedChunk {

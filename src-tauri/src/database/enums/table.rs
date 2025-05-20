@@ -10,6 +10,7 @@ pub enum Table {
     Asset,
     Task,
     Status,
+    Collection,
 }
 
 impl Table {
@@ -25,6 +26,7 @@ impl Table {
             Table::Asset => "asset",
             Table::Task => "task",
             Table::Status => "status",
+            Table::Collection => "collection",
         }
     }
 }

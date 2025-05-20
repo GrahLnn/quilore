@@ -179,18 +179,24 @@ const preference = [
   },
 ];
 
-const collection = [
-  {
-    name: "Twitter",
-    fn: () => {},
-    // data: <div></div>,
-  },
-];
 export function PlatPage() {
   const page = station.platform.useSee();
   const setBarInteraction = station.allowBarInteraction.useSet();
   const setCenterTool = station.centerTool.useSet();
   const setImportState = station.startImport.useSet();
+  const setCatPage = station.catPage.useSet();
+  const setNeedRefresh = station.needRefresh.useSet();
+
+  const collection = [
+    {
+      name: "Twitter",
+      fn: () => {
+        setCatPage(null);
+        setNeedRefresh(true);
+      },
+      // data: <div></div>,
+    },
+  ];
 
   const actions = [
     {

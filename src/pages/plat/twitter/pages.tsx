@@ -8,25 +8,29 @@ import { createAtom } from "@/src/subpub/core";
 
 export const postsStation = {
   isLoading: createAtom(false),
-  sortedIdxList: createAtom<Array<{ id: number }>>([]),
+  sortedIdxList: createAtom<Array<{ id: number } | { id: string }>>([]),
   scanning: createAtom(false),
 };
 
 export function MatchPages() {
-  const [page, setPage] = station.twitter.useAll();
   const [checkdone, setCheckDone] = useState(false);
-  const isStartImport = station.startImport.useSee();
+  const [key, setKey] = useState(0);
   const [need_refresh, setNeedRefresh] = station.needRefresh.useAll();
+  const [page, setPage] = station.twitter.useAll();
+  const [catPage, setCatPage] = station.catPage.useAll();
+
+  const isStartImport = station.startImport.useSee();
+
   const setIsLoading = postsStation.isLoading.useSet();
   const setScanning = postsStation.scanning.useSet();
   const setSortedIdxList = postsStation.sortedIdxList.useSet();
-  const [key, setKey] = useState(0);
 
   useEffect(() => {
     if (isStartImport) {
       setScanning(true);
       setIsLoading(true);
       setSortedIdxList([]);
+      setCatPage(null);
       setPage(TwitterPage.Pre);
     }
   }, [isStartImport]);

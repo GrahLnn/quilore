@@ -1,4 +1,6 @@
-import type { Media } from "@/src/cmd/commands";
+import { Matchable } from "@/lib/matchable";
+import type { Content, ContentToCopy, Media, Post } from "@/src/cmd/commands";
+import { DataTag } from "@/src/utils/enums";
 
 // 定义带有缩放属性的Media类型
 export type ScaledMedia = Media & {
@@ -66,12 +68,48 @@ export function calcLayout(mediaList: Media[]): Array<Array<number>> {
     0
     ? [[maxIdx], others.map((o) => o.idx)]
     : maxIdx === minIdx
-    ? [maxIdx, ...others.map((o) => o.idx)].reduce<[number[], number[]]>(
-        ([a, b], v, i) => (i % 2 ? [a, [...b, v]] : [[...a, v], b]),
-        [[], []]
-      )
-    : [
-        [maxIdx, minIdx],
-        others.filter((o) => o.idx !== minIdx).map((o) => o.idx),
-      ];
+      ? [maxIdx, ...others.map((o) => o.idx)].reduce<[number[], number[]]>(
+          ([a, b], v, i) => (i % 2 ? [a, [...b, v]] : [[...a, v], b]),
+          [[], []]
+        )
+      : [
+          [maxIdx, minIdx],
+          others.filter((o) => o.idx !== minIdx).map((o) => o.idx),
+        ];
+}
+
+export function buildContent(
+  post: Post,
+  lang: Matchable<"original" | "translated">
+): ContentToCopy {
+  const getText = (text: Content) =>
+    text.translation && text.translation !== DataTag.NO_TRANSLATION
+      ? text.translation
+      : text.text;
+
+  const getQuote = (translated: boolean) => {
+    if (!post.quote) return null;
+    return {
+      author: post.quote.author.name,
+      content: translated
+        ? getText(post.quote.content)
+        : post.quote.content.text,
+      media: post.quote.media?.map((m) => m.description || "") || null,
+    };
+  };
+
+  return lang.match({
+    original: () => ({
+      author: post.author.name,
+      content: post.content.text,
+      media: post.media?.map((m) => m.description || "") || null,
+      quote: getQuote(false),
+    }),
+    translated: () => ({
+      author: post.author.name,
+      content: getText(post.content),
+      media: post.media?.map((m) => m.description || "") || null,
+      quote: getQuote(true),
+    }),
+  });
 }

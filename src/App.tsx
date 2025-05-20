@@ -8,10 +8,13 @@ import { cn } from "@/lib/utils";
 import { station } from "./subpub/buses";
 import { Page } from "./subpub/type";
 import { Scrollbar } from "./components/scrollbar/scrollbar";
+import Sidebar from "./components/sidebar";
 
 function App() {
   const setPage = station.page.useSet();
   const setSaveDir = station.saveDir.useSet();
+  const setCollection = station.categorys.useSet();
+
   useEffect(() => {
     crab.appReady();
     const fetchData = async () => {
@@ -22,6 +25,10 @@ function App() {
       const savedir = await crab.getSaveDir();
       savedir.tap((v) => {
         setSaveDir(v);
+      });
+      const collections = await crab.allCollection();
+      collections.tap((v) => {
+        setCollection(v);
       });
     };
 
@@ -40,6 +47,7 @@ function App() {
       </main>
       <Toaster />
       <Scrollbar />
+      <Sidebar />
     </div>
   );
 }

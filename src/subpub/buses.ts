@@ -3,7 +3,14 @@ import {
   platform as OSplatform,
   type Platform as OSPlatform,
 } from "@tauri-apps/plugin-os";
-import { Guide, Page, Platform, CenterToolProp, CookieItem, TwitterPage } from "./type";
+import {
+  Guide,
+  Page,
+  Platform,
+  CenterToolProp,
+  CookieItem,
+  TwitterPage,
+} from "./type";
 
 export const station = {
   postsTitle: createAtom<string>(""),
@@ -17,12 +24,16 @@ export const station = {
   guideCookie: createAtom<CookieItem[]>([]),
   scanCheck: createAtom<boolean>(false),
   // blurPage: createAtom<boolean>(false),
-  isScrollingFast: createAtom<boolean>(false),
-  scrollVelocity: createAtom<number>(0),
+  // isScrollingFast: createAtom<boolean>(false),
+  // scrollVelocity: createAtom<number>(0),
   schedulerPause: createAtom<boolean>(false),
   startImport: createAtom<boolean>(false),
   isCookieSet: createAtom<boolean>(true),
   needRefresh: createAtom<boolean>(false),
+  currentChooseCat: createAtom<string | null>(null),
+  canOpenSidebar: createAtom<boolean>(true),
+  categorys: createAtom<string[]>([]),
+  catPage: createAtom<string | null>(null),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),
@@ -32,9 +43,9 @@ export const station = {
 };
 
 export const driveStation = {
-  isTooFast: createDerivedAtom(
-    (get) => Math.abs(get(station.scrollVelocity.atom)) > 8000
-  ),
+  // isTooFast: createDerivedAtom(
+  //   (get) => Math.abs(get(station.scrollVelocity.atom)) > 8000
+  // ),
 };
 
 export const sizeMap: Map<string, [number, number]> = new Map();

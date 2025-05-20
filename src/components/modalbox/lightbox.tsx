@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toggleVisibility } from "@/src/state_machine/barVisible";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Asset } from "@/src/cmd/commands";
+import { station } from "@/src/subpub/buses";
 
 export type HashAsset = {
   asset: Asset;
