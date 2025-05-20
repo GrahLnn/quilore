@@ -63,18 +63,20 @@ function SidebarItem({ text }: SidebarItemProps) {
   const [cat, setCat] = station.categorys.useAll();
   const [curChoose, setCurChoose] = station.currentChooseCat.useAll();
   const setNeedRefresh = station.needRefresh.useSet();
-  const setCatPage = station.catPage.useSet();
+  const [catPage, setCatPage] = station.catPage.useAll();
 
   return (
     <div
       key={text}
       className={cn([
-        "p-2 rounded-md cursor-pointer hover:bg-accent/60",
+        "p-2 rounded-md cursor-pointer hover:bg-accent/60 select-none",
         "text-sm font-semibold flex items-center justify-between",
+        catPage === text && "bg-accent/60",
       ])}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={()=>{
+      onClick={() => {
+        if (catPage === text) return;
         setNeedRefresh(true);
         setCatPage(text);
       }}
@@ -87,7 +89,8 @@ function SidebarItem({ text }: SidebarItemProps) {
             "dark:bg-[#262626] hover:dark:bg-[#373737] bg-[#e5e5e5] hover:bg-[#d4d4d4]",
             "transition",
           ])}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             crab.deleteCollection(text).then(() => {
               if (curChoose === text) {
                 setCurChoose(null);
@@ -97,6 +100,8 @@ function SidebarItem({ text }: SidebarItemProps) {
                   setCat(v);
                 });
               });
+              setCatPage(null);
+              setNeedRefresh(true);
             });
           }}
         >

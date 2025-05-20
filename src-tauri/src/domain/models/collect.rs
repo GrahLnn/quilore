@@ -63,14 +63,14 @@ impl DbCollection {
     }
 
     pub async fn delete_collection(name: String) -> Result<()> {
-        Self::delete(&name).await
+        let id = Self::select_record_id("name", &name).await?;
+        Self::delete_record(id).await
     }
 
     pub async fn collect<T>(name: String, target: T) -> Result<()>
     where
         T: HasId + Send + Sync,
     {
-        // self.relate(target, "collect").await
         let self_id: RecordId = Self::select_record_id("name", &name).await?;
         Self::relate_by_id(self_id, target.id(), "collect").await
     }
@@ -79,7 +79,6 @@ impl DbCollection {
     where
         T: HasId + Send + Sync,
     {
-        // self.unrelate(target, "collect").await
         let self_id: RecordId = Self::select_record_id("name", &name).await?;
         Self::unrelate_by_id(self_id, target.id(), "collect").await
     }
