@@ -12,7 +12,6 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use database::init_db;
-use domain::models::{collect, meta};
 use domain::models::meta::GlobalVal;
 use domain::models::twitter::entities::DbEntitie;
 use domain::models::twitter::{
@@ -21,6 +20,7 @@ use domain::models::twitter::{
     like::{take_single_like, LikedPost},
 };
 use domain::models::userkv::{get_userkv_value, upsert_userkv};
+use domain::models::{collect, meta};
 use domain::platform::api::user::ScanLikesEvent;
 use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::{self, Job};
@@ -36,7 +36,9 @@ use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 use device_query::{DeviceQuery, DeviceState, MouseState};
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize};
+use tauri::{
+    AppHandle, LogicalPosition, Manager, PhysicalPosition, PhysicalSize, Runtime, WindowEvent,
+};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};
@@ -303,59 +305,30 @@ struct MouseWindowInfo {
 
 #[tauri::command]
 #[specta::specta]
-fn get_mouse_and_window_position(app: AppHandle) -> MouseWindowInfo {
-    let device_state = DeviceState::new();
-    let mouse = device_state.get_mouse();
-
+fn get_mouse_and_window_position(app: AppHandle) -> Result<MouseWindowInfo, String> {
     let window = app.get_webview_window("main").unwrap();
-    let scale = window.scale_factor();
 
-    #[cfg(target_os = "macos")]
-    {
-        let monitor = window.current_monitor().unwrap();
-        let monitor_size = monitor.size();
-        let monitor_origin = monitor.position();
-        // 物理像素下的翻转
-        let mouse_x_phys = mouse.coords.0;
-        let mouse_y_phys = monitor_size.height as i32
-            - (mouse.coords.1 - monitor_origin.y);
-        let win_pos_log = window.outer_position().unwrap();
-        let win_pos_phys = (
-            (win_pos_log.x as f64 * scale) as i32,
-            (win_pos_log.y as f64 * scale) as i32,
-        );
-        let rel_x = mouse_x_phys - win_pos_phys.0;
-        let rel_y = mouse_y_phys - win_pos_phys.1;
+    // ① 鼠标位置（物理像素，桌面左上角原点）
+    let cursor = window.cursor_position().unwrap(); // PhysicalPosition<f64>
 
-        MouseWindowInfo {
-            mouse_x: mouse_x_phys,
-            mouse_y: mouse_y_phys,
-            window_x: win_pos_phys.0,
-            window_y: win_pos_phys.1,
-            window_width: (window.outer_size().unwrap().width as f64 * scale) as u32,
-            window_height: (window.outer_size().unwrap().height as f64 * scale) as u32,
-            rel_x,
-            rel_y,
-        }
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        // Windows/Linux 基本不用变，直接减即可
-        let mouse_x = mouse.coords.0;
-        let mouse_y = mouse.coords.1;
-        let win_pos = window.outer_position().unwrap();
-        let rel_x = mouse_x - win_pos.x;
-        let rel_y = mouse_y - win_pos.y;
+    // ② 窗口外框左上角（物理像素，桌面左上角原点）
+    let win_pos = window.outer_position().unwrap(); // PhysicalPosition<i32>
 
-        MouseWindowInfo {
-            mouse_x,
-            mouse_y,
-            window_x: win_pos.x,
-            window_y: win_pos.y,
-            window_width: window.outer_size().unwrap().width,
-            window_height: window.outer_size().unwrap().height,
-            rel_x,
-            rel_y,
-        }
-    }
+    // ③ 窗口尺寸（物理像素）
+    let win_size = window.outer_size().unwrap(); // PhysicalSize<u32>
+
+    // ④ 计算鼠标在窗口坐标系里的相对位置
+    let rel_x = cursor.x as i32 - win_pos.x;
+    let rel_y = cursor.y as i32 - win_pos.y;
+
+    Ok(MouseWindowInfo {
+        mouse_x: cursor.x as i32,
+        mouse_y: cursor.y as i32,
+        window_x: win_pos.x,
+        window_y: win_pos.y,
+        window_width: win_size.width,
+        window_height: win_size.height,
+        rel_x,
+        rel_y,
+    })
 }

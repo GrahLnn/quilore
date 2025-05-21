@@ -21,7 +21,8 @@ export function useSidebarAutoClose(
     function poll() {
       timerRef.current = setInterval(async () => {
         try {
-          const info = await crab.getMouseAndWindowPosition();
+          const r = await crab.getMouseAndWindowPosition();
+          const info = r.unwrap();
           const relativeX = info.rel_x;
           const relativeY = info.rel_y;
           if (
