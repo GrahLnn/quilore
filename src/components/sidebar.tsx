@@ -22,8 +22,8 @@ export function useSidebarAutoClose(
       timerRef.current = setInterval(async () => {
         try {
           const info = await crab.getMouseAndWindowPosition();
-          const relativeX = info.mouse_x - info.window_x;
-          const relativeY = info.mouse_y - info.window_y;
+          const relativeX = info.rel_x;
+          const relativeY = info.rel_y;
           if (
             relativeX < -300 ||
             relativeY < 40 ||

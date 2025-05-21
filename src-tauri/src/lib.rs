@@ -297,24 +297,65 @@ struct MouseWindowInfo {
     window_y: i32,
     window_width: u32,
     window_height: u32,
+    rel_x: i32,
+    rel_y: i32,
 }
 
 #[tauri::command]
 #[specta::specta]
 fn get_mouse_and_window_position(app: AppHandle) -> MouseWindowInfo {
     let device_state = DeviceState::new();
-    let mouse: MouseState = device_state.get_mouse();
+    let mouse = device_state.get_mouse();
 
     let window = app.get_webview_window("main").unwrap();
-    let position: PhysicalPosition<i32> = window.outer_position().unwrap();
-    let size: PhysicalSize<u32> = window.outer_size().unwrap();
+    let scale = window.scale_factor();
 
-    MouseWindowInfo {
-        mouse_x: mouse.coords.0,
-        mouse_y: mouse.coords.1,
-        window_x: position.x,
-        window_y: position.y,
-        window_width: size.width,
-        window_height: size.height,
+    #[cfg(target_os = "macos")]
+    {
+        let monitor = window.current_monitor().unwrap();
+        let monitor_size = monitor.size();
+        let monitor_origin = monitor.position();
+        // 物理像素下的翻转
+        let mouse_x_phys = mouse.coords.0;
+        let mouse_y_phys = monitor_size.height as i32
+            - (mouse.coords.1 - monitor_origin.y);
+        let win_pos_log = window.outer_position().unwrap();
+        let win_pos_phys = (
+            (win_pos_log.x as f64 * scale) as i32,
+            (win_pos_log.y as f64 * scale) as i32,
+        );
+        let rel_x = mouse_x_phys - win_pos_phys.0;
+        let rel_y = mouse_y_phys - win_pos_phys.1;
+
+        MouseWindowInfo {
+            mouse_x: mouse_x_phys,
+            mouse_y: mouse_y_phys,
+            window_x: win_pos_phys.0,
+            window_y: win_pos_phys.1,
+            window_width: (window.outer_size().unwrap().width as f64 * scale) as u32,
+            window_height: (window.outer_size().unwrap().height as f64 * scale) as u32,
+            rel_x,
+            rel_y,
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        // Windows/Linux 基本不用变，直接减即可
+        let mouse_x = mouse.coords.0;
+        let mouse_y = mouse.coords.1;
+        let win_pos = window.outer_position().unwrap();
+        let rel_x = mouse_x - win_pos.x;
+        let rel_y = mouse_y - win_pos.y;
+
+        MouseWindowInfo {
+            mouse_x,
+            mouse_y,
+            window_x: win_pos.x,
+            window_y: win_pos.y,
+            window_width: window.outer_size().unwrap().width,
+            window_height: window.outer_size().unwrap().height,
+            rel_x,
+            rel_y,
+        }
     }
 }
