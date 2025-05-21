@@ -104,7 +104,7 @@ function EditItem({ label, className, onClose }: EditItemProps) {
                 className="rounded bg-neutral-300 p-[3px] text-neutral-700 hover:bg-neutral-400/50 dark:bg-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-500 cursor-pointer"
                 onClick={() => {
                   setEditing(false);
-                  onClose?.(text);
+                  onClose?.(text.trim());
                 }}
               >
                 <icons.check3 size={12} />
