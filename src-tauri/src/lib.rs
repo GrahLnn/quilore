@@ -301,6 +301,7 @@ struct MouseWindowInfo {
     window_height: u32,
     rel_x: i32,
     rel_y: i32,
+    pixel_ratio: f64,
 }
 
 #[tauri::command]
@@ -330,5 +331,6 @@ fn get_mouse_and_window_position(app: AppHandle) -> Result<MouseWindowInfo, Stri
         window_height: win_size.height,
         rel_x,
         rel_y,
+        pixel_ratio: window.scale_factor().unwrap(),
     })
 }

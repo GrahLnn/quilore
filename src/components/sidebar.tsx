@@ -16,34 +16,30 @@ export function useSidebarAutoClose(
 ) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const canOpenSidebar = station.canOpenSidebar.useSee();
+  const os = station.os.useSee();
 
   useEffect(() => {
     function poll() {
       timerRef.current = setInterval(async () => {
-        try {
-          const r = await crab.getMouseAndWindowPosition();
-          const info = r.unwrap();
-          const relativeX = info.rel_x;
-          const relativeY = info.rel_y;
-          if (
-            relativeX < -300 ||
-            relativeY < 40 ||
-            relativeY > info.window_height - 15 ||
-            relativeX > 400 ||
-            !canOpenSidebar
-          ) {
-            setSidebarOpen(false);
-          }
-          if (
-            relativeX > 0 &&
-            relativeX < 40 &&
-            relativeY > 40 &&
-            relativeY < info.window_height &&
-            canOpenSidebar
-          ) {
-            setSidebarOpen(true);
-          }
-        } catch (e) {}
+        const r = await crab.getMouseAndWindowPosition();
+        const info = r.unwrap();
+        const {
+          rel_x: x,
+          rel_y: y,
+          window_height: height,
+          pixel_ratio: ratio,
+        } = info;
+
+        const maxX = (240 + 16) * ratio;
+
+        const shouldClose =
+          x < -300 || y < 40 || y > height - 15 || x > maxX || !canOpenSidebar;
+
+        const shouldOpen =
+          x > 0 && x < 40 && y > 40 && y < height && canOpenSidebar;
+
+        if (shouldClose) setSidebarOpen(false);
+        else if (shouldOpen) setSidebarOpen(true);
       }, 30);
     }
 
