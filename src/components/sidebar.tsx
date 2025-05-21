@@ -16,7 +16,6 @@ export function useSidebarAutoClose(
 ) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const canOpenSidebar = station.canOpenSidebar.useSee();
-  const os = station.os.useSee();
 
   useEffect(() => {
     function poll() {
@@ -57,7 +56,7 @@ interface SidebarItemProps {
 
 function SidebarItem({ text }: SidebarItemProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [cat, setCat] = station.categorys.useAll();
+  const setCat = station.categorys.useSet();
   const [curChoose, setCurChoose] = station.currentChooseCat.useAll();
   const setNeedRefresh = station.needRefresh.useSet();
   const [catPage, setCatPage] = station.catPage.useAll();
