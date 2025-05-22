@@ -123,9 +123,11 @@ pub async fn all_collection() -> Result<Vec<String>, String> {
 #[tauri::command]
 #[specta::specta]
 pub async fn collect_post(collection: String, post: Post) -> Result<(), String> {
-    DbCollection::collect(collection, post.into_db())
+    let _ = DbCollection::collect(collection.clone(), post.clone().into_db())
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string());
+    println!("collect post {} to {collection} ", post.rest_id);
+    Ok(())
 }
 
 #[tauri::command]
