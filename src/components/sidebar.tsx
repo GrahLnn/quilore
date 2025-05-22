@@ -21,24 +21,29 @@ export function useSidebarAutoClose(
     function poll() {
       timerRef.current = setInterval(async () => {
         const r = await crab.getMouseAndWindowPosition();
-        const info = r.unwrap();
-        const {
-          rel_x: x,
-          rel_y: y,
-          window_height: height,
-          pixel_ratio: ratio,
-        } = info;
+        r.tap((info) => {
+          const {
+            rel_x: x,
+            rel_y: y,
+            window_height: height,
+            pixel_ratio: ratio,
+          } = info;
 
-        const maxX = (240 + 16) * ratio;
+          const maxX = (240 + 16) * ratio;
 
-        const shouldClose =
-          x < -300 || y < 40 || y > height - 15 || x > maxX || !canOpenSidebar;
+          const shouldClose =
+            x < -300 ||
+            y < 40 ||
+            y > height - 15 ||
+            x > maxX ||
+            !canOpenSidebar;
 
-        const shouldOpen =
-          x > 0 && x < 40 && y > 40 && y < height && canOpenSidebar;
+          const shouldOpen =
+            x > 0 && x < 40 && y > 40 && y < height && canOpenSidebar;
 
-        if (shouldClose) setSidebarOpen(false);
-        else if (shouldOpen) setSidebarOpen(true);
+          if (shouldClose) setSidebarOpen(false);
+          else if (shouldOpen) setSidebarOpen(true);
+        });
       }, 30);
     }
 

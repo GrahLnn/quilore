@@ -19,7 +19,9 @@ const Author = memo(function AuthorComp({ author }: AuthorProps) {
       <LazyImage
         src={author.avatar.path}
         asset={author.avatar}
-        className={cn(["rounded-full object-cover w-8 h-8"])}
+        className={cn([
+          "rounded-full object-cover w-8 h-8 border border-[#f7fafc] dark:border-[#202020]",
+        ])}
         holderCn="w-8 h-8"
       />
 
