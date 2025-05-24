@@ -5,6 +5,7 @@ import { crab } from "../cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { createAtom } from "../subpub/core";
 import { icons } from "../assets/icons";
+import { useIsWindowFocus } from "../state_machine/windowFocus";
 
 const sidebar_station = {
   open: createAtom<boolean>(false),
@@ -16,6 +17,7 @@ export function useSidebarAutoClose(
 ) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const canOpenSidebar = station.canOpenSidebar.useSee();
+  const isWindowFocused = useIsWindowFocus();
 
   useEffect(() => {
     function poll() {
@@ -39,7 +41,12 @@ export function useSidebarAutoClose(
             !canOpenSidebar;
 
           const shouldOpen =
-            x > 0 && x < 40 && y > 40 && y < height && canOpenSidebar;
+            x > 0 &&
+            x < 40 &&
+            y > 40 &&
+            y < height &&
+            canOpenSidebar &&
+            isWindowFocused;
 
           if (shouldClose) setSidebarOpen(false);
           else if (shouldOpen) setSidebarOpen(true);
@@ -52,7 +59,7 @@ export function useSidebarAutoClose(
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [open, setSidebarOpen]);
+  }, [open, setSidebarOpen, canOpenSidebar, isWindowFocused]);
 }
 
 interface SidebarItemProps {

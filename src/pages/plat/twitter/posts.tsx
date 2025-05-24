@@ -29,7 +29,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
 
   // 首次加载和容器高度更新
   useEffect(() => {
-    setTitle("X.Likes");
+    setTitle(catPage || "X.Likes");
     if (sortedIdxList.length === 0) {
       loadMorePosts();
     }

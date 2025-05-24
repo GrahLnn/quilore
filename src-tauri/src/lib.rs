@@ -26,19 +26,16 @@ use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::{self, Job};
 use domain::platform::scheduler::{self, Scheduler};
 use domain::platform::twitter::api::user;
-use domain::platform::{handle_entities, Task, TaskKind, SCHEDULER_PAUSED};
+use domain::platform::{handle_entities, Task, TaskKind};
 
 use tokio::time::sleep;
 use utils::event::{self, WINDOW_READY};
 use utils::file;
 use utils::load::{read_tweets_from_json, TweetData, TweetMetaData};
 
-use device_query::{DeviceQuery, DeviceState, MouseState};
 use specta_typescript::{formatter::prettier, Typescript};
 use tauri::async_runtime::{self, block_on};
-use tauri::{
-    AppHandle, LogicalPosition, Manager, PhysicalPosition, PhysicalSize, Runtime, WindowEvent,
-};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_specta::Event;
 use tauri_specta::{collect_commands, collect_events, Builder};

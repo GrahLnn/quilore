@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { icons } from "../assets/icons";
 import { crab } from "../cmd/commandAdapter";
 import { station } from "../subpub/buses";
-import { CookieItem, Guide, Page } from "../subpub/type";
+import { type CookieItem, Guide, Page } from "../subpub/type";
 import { atom, useAtomValue } from "jotai";
 
 const transitionDebug = {
