@@ -4,16 +4,11 @@ mod enums;
 mod utils;
 
 use anyhow::Result;
-use domain::models::twitter::utils::clean_database;
-use serde::Serialize;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::atomic::Ordering;
-use std::time::Duration;
-
 use database::init_db;
+use domain::models::collect::{all_collection, collect_post, Collection, DbCollection};
 use domain::models::meta::GlobalVal;
 use domain::models::twitter::entities::DbEntitie;
+use domain::models::twitter::utils::clean_database;
 use domain::models::twitter::{
     content_to_copy::ContentToCopy,
     interface,
@@ -27,6 +22,13 @@ use domain::platform::job::{self, Job};
 use domain::platform::scheduler::{self, Scheduler};
 use domain::platform::twitter::api::user;
 use domain::platform::{handle_entities, Task, TaskKind};
+use serde::Serialize;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
+use surrealdb::RecordId;
 
 use tokio::time::sleep;
 use utils::event::{self, WINDOW_READY};
@@ -249,6 +251,16 @@ async fn copy_to_clipboard(
 #[tauri::command]
 #[specta::specta]
 async fn import_data(path: &str) -> Result<(), String> {
+    let mut saved_collections: HashMap<RecordId, Vec<RecordId>> = HashMap::new();
+
+    let collections = DbCollection::records().await.map_err(|e| e.to_string())?;
+    for collection in collections {
+        let posts = DbCollection::outs_records(collection.clone())
+            .await
+            .map_err(|e| e.to_string())?;
+        saved_collections.insert(collection, posts);
+    }
+
     scheduler::clean_all().await.map_err(|e| e.to_string())?;
     clean_database().await.map_err(|e| e.to_string())?;
     let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
@@ -269,6 +281,15 @@ async fn import_data(path: &str) -> Result<(), String> {
             .map_err(|e| e.to_string())?
             .enqueue(task);
     }
+    dbg!("handle collections");
+    for (collection_name, rest_ids) in saved_collections {
+        for id in rest_ids {
+            let _ = DbCollection::relate(collection_name.clone(), id)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
     let app = Scheduler::<Task>::get()
         .map_err(|e| e.to_string())?
         .app

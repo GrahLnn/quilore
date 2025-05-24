@@ -215,11 +215,21 @@ pub trait Crud:
         Self::unrelate_by_id(self.id(), target.id(), rel).await
     }
 
+    async fn outs(in_id: RecordId, rel: &str, out_table: Table) -> Result<Vec<RecordId>> {
+        let sql = format!("RETURN {in_id}->{rel}->{out_table};");
+        query_take(sql.as_str(), None).await
+    }
+
     async fn select_record_id(k: &str, v: &str) -> Result<RecordId> {
         let sql = QueryKind::select_id_single(Self::TABLE, k, v);
         let ids: Vec<RecordId> = query_take(sql.as_str(), None).await?;
         let id = ids.into_iter().next();
         id.ok_or(DBError::NotFound.into())
+    }
+
+    async fn all_record() -> Result<Vec<RecordId>> {
+        let sql = QueryKind::all_id(Self::TABLE);
+        query_take(sql.as_str(), None).await
     }
 }
 

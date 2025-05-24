@@ -32,7 +32,7 @@ impl DbEntitie {
     /// 将多个 DbEntitie 合并成一个
     pub fn merge_all(list: Vec<DbEntitie>) -> DbEntitie {
         let mut new = DbEntitie::default();
-        list.iter().map(|e| e.clone()).for_each(|e| {
+        for e in list {
             new.like.extend(e.like);
             new.posts.extend(e.posts);
             new.medias.extend(e.medias);
@@ -40,7 +40,7 @@ impl DbEntitie {
             new.assets.extend(e.assets);
             new.replies.extend(e.replies);
             new.tasks.extend(e.tasks);
-        });
+        }
         new
     }
 }

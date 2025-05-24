@@ -67,12 +67,16 @@ impl DbCollection {
         Self::delete_record(id).await
     }
 
+    pub async fn relate(a: RecordId, b: RecordId) -> Result<()> {
+        Self::relate_by_id(a, b, "collect").await
+    }
+
     pub async fn collect<T>(name: String, target: T) -> Result<()>
     where
         T: HasId + Send + Sync,
     {
         let self_id: RecordId = Self::select_record_id("name", &name).await?;
-        Self::relate_by_id(self_id, target.id(), "collect").await
+        Self::relate(self_id, target.id()).await
     }
 
     pub async fn uncollect<T>(name: String, target: T) -> Result<()>
@@ -83,11 +87,17 @@ impl DbCollection {
         Self::unrelate_by_id(self_id, target.id(), "collect").await
     }
 
+    pub async fn outs_records(id: RecordId) -> Result<Vec<RecordId>> {
+        Self::outs(id, "collect", Table::Post).await
+    }
+
     pub async fn all_related(name: &str) -> Result<Vec<RecordId>> {
         let self_id: RecordId = Self::select_record_id("name", name).await?;
-        let sql = format!("RETURN {self_id}->collect->post;");
-        let records: Vec<RecordId> = query_take(sql.as_str(), None).await?;
-        Ok(records)
+        Self::outs_records(self_id).await
+    }
+
+    pub async fn records() -> Result<Vec<RecordId>> {
+        Self::all_record().await
     }
 }
 
