@@ -5,13 +5,13 @@ mod utils;
 
 use anyhow::Result;
 use database::init_db;
-use domain::models::collect::{all_collection, collect_post, Collection, DbCollection};
+use domain::models::collect::DbCollection;
+use domain::models::interface;
 use domain::models::meta::GlobalVal;
 use domain::models::twitter::entities::DbEntitie;
 use domain::models::twitter::utils::clean_database;
 use domain::models::twitter::{
     content_to_copy::ContentToCopy,
-    interface,
     like::{take_single_like, LikedPost},
 };
 use domain::models::userkv::{get_userkv_value, upsert_userkv};
@@ -87,6 +87,7 @@ pub fn run() {
         collect::all_collection,
         collect::delete_collection,
         collect::select_collection,
+        collect::select_collection_pagin,
     ];
 
     let builder: Builder = Builder::new().commands(commands).events(events);

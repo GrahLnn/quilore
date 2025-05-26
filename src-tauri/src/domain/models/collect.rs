@@ -1,5 +1,9 @@
+use std::str::FromStr;
+
+use super::interface::Chunk;
 use super::twitter::post::{DbPost, Post};
-use crate::database::{query_take, Crud, HasId, Order, QueryKind};
+use crate::database::enums::table::Rel;
+use crate::database::{query_raw, query_take, Crud, HasId, Order, QueryKind};
 use crate::impl_schema;
 use crate::{database::enums::table::Table, impl_crud};
 
@@ -15,8 +19,18 @@ pub struct Collection {
     pub items: Vec<Post>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RelEdge {
+    id: RecordId,
+    #[serde(rename = "in")]
+    in_id: RecordId,
+    #[serde(rename = "out")]
+    out_id: RecordId,
+    created_at: Datetime,
+}
+
 impl Collection {
-    pub async fn select(name: String) -> Result<Self> {
+    pub async fn select_all(name: String) -> Result<Self> {
         let ids: Vec<String> = DbCollection::all_related(&name)
             .await?
             .iter()
@@ -29,6 +43,35 @@ impl Collection {
             items.push(p.into_domain().await.unwrap());
         }
         Ok(Self { name, items })
+    }
+
+    pub async fn select_pagin(
+        name: String,
+        count: i64,
+        cursor: Option<String>,
+    ) -> Result<Chunk<Post>> {
+        // let cursor = cursor.map(|c| RecordId::from_str(&c).unwrap());
+        let posts_ids = DbCollection::select_pagin(name, count, cursor).await?;
+        let sql = format!(
+            "SELECT * FROM [{}];",
+            posts_ids
+                .data
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+                .join(",")
+        );
+        let db_posts = DbPost::query_take(sql.as_str(), None).await?;
+        let mut items = Vec::with_capacity(db_posts.len());
+        for p in db_posts {
+            items.push(p.into_domain().await.unwrap());
+        }
+        let cursor = posts_ids.cursor;
+
+        Ok(Chunk {
+            cursor,
+            data: items,
+        })
     }
 }
 
@@ -68,7 +111,7 @@ impl DbCollection {
     }
 
     pub async fn relate(a: RecordId, b: RecordId) -> Result<()> {
-        Self::relate_by_id(a, b, "collect").await
+        Self::relate_by_id(a, b, Rel::Collect).await
     }
 
     pub async fn collect<T>(name: String, target: T) -> Result<()>
@@ -84,11 +127,11 @@ impl DbCollection {
         T: HasId + Send + Sync,
     {
         let self_id: RecordId = Self::select_record_id("name", &name).await?;
-        Self::unrelate_by_id(self_id, target.id(), "collect").await
+        Self::unrelate_by_id(self_id, target.id(), Rel::Collect).await
     }
 
     pub async fn outs_records(id: RecordId) -> Result<Vec<RecordId>> {
-        Self::outs(id, "collect", Table::Post).await
+        Self::outs(id, Rel::Collect, Table::Post).await
     }
 
     pub async fn all_related(name: &str) -> Result<Vec<RecordId>> {
@@ -98,6 +141,45 @@ impl DbCollection {
 
     pub async fn records() -> Result<Vec<RecordId>> {
         Self::all_record().await
+    }
+
+    pub async fn select_pagin(
+        name: String,
+        count: i64,
+        cursor: Option<String>,
+    ) -> Result<Chunk<RecordId>> {
+        let self_id: RecordId = Self::select_record_id("name", &name).await?;
+        let rel_response: Vec<RelEdge> = query_take(
+            &QueryKind::rel_pagin(
+                self_id,
+                Rel::Collect,
+                count,
+                cursor,
+                Order::Desc,
+                "created_at",
+            ),
+            None,
+        )
+        .await?;
+        if rel_response.is_empty() {
+            return Err(anyhow::anyhow!("No data found"));
+        }
+        let ids: Vec<RecordId> = rel_response.iter().map(|r| r.out_id.clone()).collect();
+        let cursor = rel_response
+            .last()
+            .map(|r| r.created_at.to_string())
+            .unwrap();
+        Ok(Chunk { cursor, data: ids })
+    }
+
+    pub async fn which_collect(id: RecordId) -> Result<Vec<String>> {
+        let ids: Vec<RecordId> = Self::ins(id, Rel::Collect, Table::Collection).await?;
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+        let sql = QueryKind::single_field_by_ids(ids, "name");
+        let names: Vec<String> = query_take(sql.as_str(), None).await?;
+        Ok(names)
     }
 }
 
@@ -151,5 +233,18 @@ pub async fn uncollect_post(collection: String, post: Post) -> Result<(), String
 #[tauri::command]
 #[specta::specta]
 pub async fn select_collection(name: String) -> Result<Collection, String> {
-    Collection::select(name).await.map_err(|e| e.to_string())
+    Collection::select_all(name)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn select_collection_pagin(
+    name: String,
+    cursor: Option<String>,
+) -> Result<Chunk<Post>, String> {
+    Collection::select_pagin(name, 200, cursor)
+        .await
+        .map_err(|e| e.to_string())
 }

@@ -95,6 +95,7 @@ fn des_post(json: &Value) -> Option<Post> {
         replies,
         card: json.pointer("/card").and_then(des_card),
         article: json.pointer("/article").and_then(des_article),
+        collect_at: None,
     };
     Some(post)
 }

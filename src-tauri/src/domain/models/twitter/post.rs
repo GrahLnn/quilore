@@ -2,7 +2,7 @@ use super::{
     media::{DbMedia, Media},
     users::{DbUser, User},
 };
-use crate::database::enums::table::Table;
+use crate::{database::enums::table::Table, domain::models::collect::DbCollection};
 use crate::database::{Crud, HasId};
 use crate::utils::serialize::{i64_from_string_or_number, i64_to_string};
 use crate::{impl_crud, impl_id};
@@ -43,6 +43,7 @@ pub struct Post {
     pub replies: Option<Vec<Conversation>>,
     pub card: Option<Card>,
     pub article: Option<Article>,
+    pub collect_at: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
@@ -487,6 +488,7 @@ impl Post {
             replies: None,
             card: quote.card.clone(),
             article: quote.article.clone(),
+            collect_at: None,
         }
     }
     pub fn from_api(json: &Value) -> Option<Self> {
@@ -535,6 +537,7 @@ impl Post {
                 quote,
                 key_words: None,
                 replies: None,
+                collect_at: None,
             })
         }
     }
@@ -667,6 +670,8 @@ impl DbPost {
             None => None,
         };
 
+        let collect_at = DbCollection::which_collect(self.id.clone()).await.ok();
+
         // 需要显示引用的时候再查
         // let replies = match self.replies {
         //     Some(replies) => Some(Self::convert_replies(replies).await?),
@@ -690,6 +695,7 @@ impl DbPost {
             replies,
             card: self.card,
             article: self.article,
+            collect_at,
         })
     }
 

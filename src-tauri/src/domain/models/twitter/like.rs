@@ -237,7 +237,13 @@ impl DbLikedPost {
 
     pub async fn select_pagin(count: i64, cursor: Option<RecordId>) -> Result<Vec<Self>> {
         DbLikedPost::query_take(
-            &QueryKind::pagin(Table::LikedPost, count, cursor, Order::Desc),
+            &QueryKind::pagin(
+                Table::LikedPost,
+                count,
+                cursor.map(|c| c.to_string()),
+                Order::Desc,
+                "id",
+            ),
             None,
         )
         .await

@@ -1,9 +1,8 @@
-use super::enums::table::Table;
+use super::enums::table::{Rel, Table};
 use super::error::DBError;
 use super::{get_db, HasId, QueryKind};
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -185,21 +184,20 @@ pub trait Crud:
         Ok(records)
     }
 
-    async fn relate_by_id(self_id: RecordId, target_id: RecordId, rel: &str) -> Result<()> {
+    async fn relate_by_id(self_id: RecordId, target_id: RecordId, rel: Rel) -> Result<()> {
         let db = get_db()?;
-        let sql = format!("RELATE {self_id}->{rel}->{target_id};");
-        db.query(&sql).await?;
+        db.query(QueryKind::relate(self_id, target_id, rel)).await?;
         Ok(())
     }
 
-    async fn unrelate_by_id(self_id: RecordId, target_id: RecordId, rel: &str) -> Result<()> {
+    async fn unrelate_by_id(self_id: RecordId, target_id: RecordId, rel: Rel) -> Result<()> {
         let db = get_db()?;
-        let sql = format!("DELETE {self_id}->{rel} WHERE out={target_id} RETURN NONE;");
-        db.query(&sql).await?;
+        db.query(QueryKind::unrelate(self_id, target_id, rel))
+            .await?;
         Ok(())
     }
 
-    async fn relate<T>(&self, target: T, rel: &str) -> Result<()>
+    async fn relate<T>(&self, target: T, rel: Rel) -> Result<()>
     where
         Self: HasId + Send + Sync,
         T: HasId + Send + Sync,
@@ -207,7 +205,7 @@ pub trait Crud:
         Self::relate_by_id(self.id(), target.id(), rel).await
     }
 
-    async fn unrelate<T>(&self, target: T, rel: &str) -> Result<()>
+    async fn unrelate<T>(&self, target: T, rel: Rel) -> Result<()>
     where
         Self: HasId + Send + Sync,
         T: HasId + Send + Sync,
@@ -215,8 +213,13 @@ pub trait Crud:
         Self::unrelate_by_id(self.id(), target.id(), rel).await
     }
 
-    async fn outs(in_id: RecordId, rel: &str, out_table: Table) -> Result<Vec<RecordId>> {
-        let sql = format!("RETURN {in_id}->{rel}->{out_table};");
+    async fn outs(in_id: RecordId, rel: Rel, out_table: Table) -> Result<Vec<RecordId>> {
+        let sql = QueryKind::rel_outs(in_id, rel, out_table);
+        query_take(sql.as_str(), None).await
+    }
+
+    async fn ins(out_id: RecordId, rel: Rel, in_table: Table) -> Result<Vec<RecordId>> {
+        let sql = QueryKind::rel_ins(out_id, rel, in_table);
         query_take(sql.as_str(), None).await
     }
 

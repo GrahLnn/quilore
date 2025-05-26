@@ -12,14 +12,14 @@ import { postsStation } from "./pages";
 
 interface PostsProps {
   initialPosts?: LikedPost[];
-  initialCursor?: number | null;
+  initialCursor?: string | null;
   canScan?: boolean;
 }
 
 export default function Posts({ initialCursor = null }: PostsProps) {
   const [sortedIdxList, setSortedIdxList] = postsStation.sortedIdxList.useAll();
   const postsMapRef = useRef(new Map());
-  const [cursor, setCursor] = useState<number | null>(initialCursor);
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
   const container = useRef<HTMLDivElement>(null);
   const setTitle = station.postsTitle.useSet();
   const setAssetState = station.assetState.useSet();
@@ -88,19 +88,28 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         }
       });
     } else {
-      const result = await crab.selectCollection(catPage);
-      result.tap((c) => {
-        c.items.forEach((post) => {
+      // const result = await crab.selectCollection(catPage);
+      // result.tap((c) => {
+      //   c.items.forEach((post) => {
+      //     postsMapRef.current.set(post.rest_id, post);
+      //   });
+      //   setSortedIdxList(c.items.map((post) => ({ id: post.rest_id })));
+      // });
+      const r = await crab.selectCollectionPagin(catPage, cursor);
+      r.tap(({ data, cursor: newCursor }) => {
+        console.log(data);
+        data.forEach((post) => {
           postsMapRef.current.set(post.rest_id, post);
         });
-        setSortedIdxList(c.items.map((post) => ({ id: post.rest_id })));
+        setSortedIdxList(data.map((post) => ({ id: post.rest_id })));
+        setCursor(newCursor);
       });
     }
   };
 
   const maybeLoadMore = useInfiniteLoader(
     async () => {
-      if (catPage) return;
+      // if (catPage) return;
       await loadMorePosts();
     },
     {

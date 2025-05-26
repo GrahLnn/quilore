@@ -1,5 +1,9 @@
 use std::fmt;
 
+pub trait TableName {
+    fn table_name(&self) -> &str;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Table {
     LikedPost,
@@ -33,8 +37,39 @@ impl Table {
     }
 }
 
+impl TableName for Table {
+    fn table_name(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl fmt::Display for Table {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Rel {
+    Collect,
+}
+
+impl Rel {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Rel::Collect => "collect",
+        }
+    }
+}
+
+impl fmt::Display for Rel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl TableName for Rel {
+    fn table_name(&self) -> &str {
+        self.as_str()
     }
 }
