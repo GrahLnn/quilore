@@ -4,7 +4,11 @@ import { crab } from "@/src/cmd/commandAdapter";
 import { cn } from "@/lib/utils";
 import { isTwitterLoginCookie, isValidCookies } from "@/src/app/checkCookies";
 import { icons } from "@/src/assets/icons";
-import DropdownButton from "@/src/components/dropdownButton";
+import {
+  DropdownButton,
+  MenuItem,
+  MenuSub,
+} from "@/src/components/dropdownButton";
 import DropdownSettings from "@/src/components/dropdownSettings";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Platform } from "@/src/subpub/type";
@@ -181,59 +185,22 @@ const preference = [
 
 export function PlatPage() {
   const page = station.platform.useSee();
+  const cats = station.categorys.useSee();
+  const catCheck = station.catCheck.useSee();
+
   const setBarInteraction = station.allowBarInteraction.useSet();
   const setCenterTool = station.centerTool.useSet();
   const setImportState = station.startImport.useSet();
-  const setCatPage = station.catPage.useSet();
+  const [catPage, setCatPage] = station.catPage.useAll();
   const setNeedRefresh = station.needRefresh.useSet();
 
-  const collection = [
-    {
-      name: "Twitter",
-      fn: () => {
-        setCatPage(null);
-        setNeedRefresh(true);
-      },
-      // data: <div></div>,
-    },
-  ];
-
-  const actions = [
-    {
-      name: "Scan",
-      fn: () => {
-        crab.scanLikesTimeline();
-      },
-      icon: <icons.scan />,
-    },
-    {
-      name: "Import",
-      fn: () => {
-        open({
-          directory: false,
-          filters: [
-            {
-              name: "JSON",
-              extensions: ["json"],
-            },
-          ],
-        }).then((path) => {
-          if (!path) return;
-          crab.importData(path);
-          setImportState(true);
-        });
-      },
-      icon: <icons.squareDashedDownload />,
-    },
-    {
-      name: "Export",
-      fn: () => {},
-      icon: <icons.squareDashedUpload />,
-    },
-  ];
+  const setCatCheck = station.catCheck.useSet();
 
   useEffect(() => {
     setBarInteraction(true);
+    if (cats.length == 0) {
+      setCatCheck(null);
+    }
     setCenterTool({
       key: "posts",
       node: (
@@ -243,8 +210,15 @@ export function PlatPage() {
             // "transition duration-300 ease-in-out",
           ])}
         >
-          <DropdownButton items={collection}>
-            <icons.gridCircle size={14} />
+          <DropdownButton trigger={<icons.gridCircle size={14} />}>
+            <MenuItem
+              name="Twitter"
+              fn={() => {
+                if (!catPage) return;
+                setCatPage(null);
+                setNeedRefresh(true);
+              }}
+            />
           </DropdownButton>
 
           <DropdownSettings
@@ -256,13 +230,64 @@ export function PlatPage() {
           >
             <Title />
           </DropdownSettings>
-          <DropdownButton items={actions}>
-            <icons.sliders size={14} />
+          <DropdownButton trigger={<icons.sliders size={14} />}>
+            <MenuItem
+              name="Scan"
+              fn={() => {
+                crab.scanLikesTimeline();
+              }}
+              icon={<icons.scan />}
+            />
+            <MenuItem
+              name="Import"
+              fn={() => {
+                open({
+                  directory: false,
+                  filters: [
+                    {
+                      name: "JSON",
+                      extensions: ["json"],
+                    },
+                  ],
+                }).then((path) => {
+                  if (!path) return;
+                  crab.importData(path);
+                  setImportState(true);
+                });
+              }}
+              icon={<icons.squareDashedDownload />}
+            />
+            <MenuItem
+              name="Export"
+              fn={() => {}}
+              icon={<icons.squareDashedUpload />}
+            />
+            {cats.length > 0 && (
+              <MenuSub trigger={<>Check collect</>}>
+                {cats.map((cat) => (
+                  <MenuItem
+                    key={`${cat}-check`}
+                    name={cat}
+                    fn={() => {
+                      setCatCheck(cat);
+                    }}
+                  />
+                ))}
+              </MenuSub>
+            )}
+            {catCheck && (
+              <MenuItem
+                name="Clear check"
+                fn={() => {
+                  setCatCheck(null);
+                }}
+              />
+            )}
           </DropdownButton>
         </div>
       ),
     });
-  }, []);
+  }, [cats, catCheck]);
 
   return page.match({
     [Platform.Twitter]: () => <MatchPages />,

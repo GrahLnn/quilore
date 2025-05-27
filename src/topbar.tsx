@@ -345,9 +345,9 @@ const TopBar = memo(function TopBarComponent() {
             className={cn([
               "grid grid-cols-[1fr_auto_1fr] w-full h-full",
               !windowFocused && "opacity-30",
-
               "transition duration-300 ease-in-out",
             ])}
+            data-tauri-drag-region={!allowBarInteraction}
           >
             {allowBarInteraction && (
               <>

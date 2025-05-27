@@ -70,20 +70,20 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     if (!catPage) {
       const result = await crab.takePostChunk(cursor);
       result.tap(({ data, cursor: newCursor }) => {
-        const sortedData = data.sort((a, b) => b.sortidx - a.sortidx);
-        sortedData.forEach(({ sortidx, post }) => {
-          postsMapRef.current.set(sortidx, post);
+        // const sortedData = data.sort((a, b) => b.sortidx - a.sortidx);
+        data.forEach(({ post }) => {
+          postsMapRef.current.set(post.rest_id, post);
         });
 
         setSortedIdxList((prev) => {
           const existing = new Set(prev.map((v) => v.id));
-          const newIdxs = sortedData
-            .map(({ sortidx }) => ({ id: sortidx }))
+          const newIdxs = data
+            .map(({ post }) => ({ id: post.rest_id }))
             .filter((idx) => !existing.has(idx.id));
 
           return [...prev, ...newIdxs];
         });
-        if (sortedData.length) {
+        if (data.length) {
           setCursor(newCursor);
         }
       });
@@ -118,6 +118,23 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     }
   );
 
+  function handleCollect(
+    postId: string,
+    collected: boolean,
+    collectAt: string
+  ) {
+    const post = postsMapRef.current.get(postId);
+    if (post) {
+      if (collected) {
+        post.collect_at = [...post.collect_at, collectAt];
+      } else {
+        post.collect_at = post.collect_at.filter(
+          (x: string) => x !== collectAt
+        );
+      }
+    }
+  }
+
   return (
     <div
       ref={container}
@@ -136,7 +153,9 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         maxColumnCount={3}
         render={({ data }) => {
           const post = postsMapRef.current.get(data.id);
-          return post ? <TweetCard postdata={post} /> : null;
+          return post ? (
+            <TweetCard postdata={post} onCollect={handleCollect} />
+          ) : null;
         }}
         onRender={maybeLoadMore}
       />

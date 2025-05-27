@@ -146,10 +146,12 @@ function EditItem({ label, className, onClose }: EditItemProps) {
 
 interface CardToolsProps extends React.HTMLAttributes<HTMLDivElement> {
   postdata: Post;
+  onCollect: (collected: boolean, collectAt: string) => void;
 }
 
 const PostTools = memo(function CardToolsComp({
   postdata,
+  onCollect,
   className,
 }: CardToolsProps) {
   const [open, setOpen] = useState(false);
@@ -198,6 +200,7 @@ const PostTools = memo(function CardToolsComp({
                 v.tapErr((e) => {
                   console.log("collect post error:", e);
                 });
+                onCollect(true, currentChoose);
               });
             }}
           />
@@ -221,6 +224,7 @@ const PostTools = memo(function CardToolsComp({
                       v.tapErr((e) => {
                         console.log("collect post error:", e);
                       });
+                      onCollect(true, item);
                     });
                   }}
                 />

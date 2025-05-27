@@ -3,16 +3,20 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { PropsWithChildren } from "react";
-import React from "react";
+import React, { memo } from "react";
 import { useIsBarVisible } from "../state_machine/barVisible";
 
-interface DropdownMenuItemProps {
+interface MenuItemProps {
   name: string;
   shortcut?: string;
   fn?: () => void;
@@ -25,15 +29,16 @@ interface DropdownButtonProps extends PropsWithChildren {
   o?: string;
   className?: string;
   label?: string | React.ReactNode;
-  items?: Array<DropdownMenuItemProps>;
+  // items?: Array<React.ReactNode>;
+  trigger?: React.ReactNode;
 }
-export default function DropdownButton({
+export function DropdownButton({
   children,
   label,
-  items,
   p,
   o,
   className,
+  trigger,
 }: DropdownButtonProps) {
   const isVisible = useIsBarVisible();
   return (
@@ -54,7 +59,7 @@ export default function DropdownButton({
           ])}
           // style={{ transform: "translateZ(0)" }}
         >
-          {children}
+          {trigger}
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56 bg-popover/80 backdrop-filter backdrop-blur-[16px]">
           {label && (
@@ -65,24 +70,52 @@ export default function DropdownButton({
           {label && (
             <DropdownMenuSeparator className="dark:opacity-40 opacity-80" />
           )}
-          {items?.map((item) => (
-            <React.Fragment key={item.name}>
-              <DropdownMenuItem
-                className="focus:bg-accent/60 flex justify-between items-center dark:text-[#e5e5e5] opacity-70 dark:opacity-60 hover:opacity-90 transition"
-                key={item.name}
-                onClick={item.fn}
-              >
-                {item.name}
-                {item.shortcut && (
-                  <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>
-                )}
-                {item.icon}
-              </DropdownMenuItem>
-              {item.data}
-            </React.Fragment>
-          ))}
+          {/* {items?.map((item) => item)} */}
+          {children}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
   );
 }
+
+const MenuItem = memo(function MenuItemComp(item: MenuItemProps) {
+  return (
+    <React.Fragment key={item.name}>
+      <DropdownMenuItem
+        className="focus:bg-accent flex justify-between items-center dark:text-[#e5e5e5] opacity-70 dark:opacity-60 hover:opacity-90 transition"
+        onClick={item.fn}
+      >
+        {item.name}
+        {item.shortcut && (
+          <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>
+        )}
+        {item.icon}
+      </DropdownMenuItem>
+      {item.data}
+    </React.Fragment>
+  );
+});
+
+interface DropdownMenuSubProps extends PropsWithChildren {
+  trigger?: React.ReactNode;
+}
+
+const MenuSub = memo(function DropdownMenuSubComp({
+  children,
+  trigger,
+}: DropdownMenuSubProps) {
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="focus:bg-accent flex justify-between items-center dark:text-[#e5e5e5] opacity-70 dark:opacity-60 hover:opacity-90 transition">
+        {trigger}
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent className="min-w-40 bg-popover/80 backdrop-filter backdrop-blur-[16px]">
+          {children}
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+  );
+});
+
+export { MenuItem, MenuSub };

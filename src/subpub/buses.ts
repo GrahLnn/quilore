@@ -34,6 +34,7 @@ export const station = {
   canOpenSidebar: createAtom<boolean>(true),
   categorys: createAtom<string[]>([]),
   catPage: createAtom<string | null>(null),
+  catCheck: createAtom<string | null>(null),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),

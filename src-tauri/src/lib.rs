@@ -116,8 +116,10 @@ pub fn run() {
                 block_on(async move {
                     let local_data_dir = handle.path().app_local_data_dir()?;
                     let db_path = local_data_dir.join("quilore.db");
+                    let cur_time = std::time::Instant::now();
                     println!("db_path: {:?}", db_path);
                     init_db(db_path).await?;
+                    println!("init_db done, cost {}s", cur_time.elapsed().as_secs_f64());
                     GlobalVal::init().await?;
 
                     if let Some(window) = handle.get_webview_window("main") {

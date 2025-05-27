@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
 use super::interface::Chunk;
 use super::twitter::post::{DbPost, Post};
 use crate::database::enums::table::Rel;
-use crate::database::{query_raw, query_take, Crud, HasId, Order, QueryKind};
+use crate::database::{query_take, Crud, HasId, Order, QueryKind};
 use crate::impl_schema;
 use crate::{database::enums::table::Table, impl_crud};
 
