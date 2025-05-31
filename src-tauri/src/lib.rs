@@ -6,7 +6,7 @@ mod utils;
 use anyhow::Result;
 use database::init_db;
 use domain::models::collect::DbCollection;
-use domain::models::interface;
+use domain::models::{interface, scroll_position};
 use domain::models::meta::GlobalVal;
 use domain::models::twitter::entities::DbEntitie;
 use domain::models::twitter::utils::clean_database;
@@ -88,6 +88,9 @@ pub fn run() {
         collect::delete_collection,
         collect::select_collection,
         collect::select_collection_pagin,
+        scroll_position::create_scroll_cursor,
+        scroll_position::delete_scroll_cursor,
+        scroll_position::select_all_scroll_cursors,
     ];
 
     let builder: Builder = Builder::new().commands(commands).events(events);
@@ -254,54 +257,55 @@ async fn copy_to_clipboard(
 #[tauri::command]
 #[specta::specta]
 async fn import_data(path: &str) -> Result<(), String> {
-    let mut saved_collections: HashMap<RecordId, Vec<RecordId>> = HashMap::new();
+    // let mut saved_collections: HashMap<RecordId, Vec<RecordId>> = HashMap::new();
 
-    let collections = DbCollection::records().await.map_err(|e| e.to_string())?;
-    for collection in collections {
-        let posts = DbCollection::outs_records(collection.clone())
-            .await
-            .map_err(|e| e.to_string())?;
-        saved_collections.insert(collection, posts);
-    }
+    // let collections = DbCollection::records().await.map_err(|e| e.to_string())?;
+    // for collection in collections {
+    //     let posts = DbCollection::outs_records(collection.clone())
+    //         .await
+    //         .map_err(|e| e.to_string())?;
+    //     saved_collections.insert(collection, posts);
+    // }
 
-    scheduler::clean_all().await.map_err(|e| e.to_string())?;
-    clean_database().await.map_err(|e| e.to_string())?;
-    let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
-    let data = read_tweets_from_json(path_buf).map_err(|e| e.to_string())?;
-    dbg!("read");
-    let list = data.results;
-    let entities = list
-        .iter()
-        .map(|post| post.clone().into_entities(TaskKind::AssetTransport))
-        .collect::<Vec<_>>();
-    dbg!("make entities");
-    let merged = DbEntitie::merge_all(entities);
-    dbg!("merge entities");
-    let tasks = handle_entities(merged).await.map_err(|e| e.to_string())?;
-    dbg!("handle entities");
-    for task in tasks {
-        let _ = Scheduler::<Task>::get()
-            .map_err(|e| e.to_string())?
-            .enqueue(task);
-    }
-    dbg!("handle collections");
-    for (collection_name, rest_ids) in saved_collections {
-        for id in rest_ids {
-            let _ = DbCollection::relate(collection_name.clone(), id)
-                .await
-                .map_err(|e| e.to_string())?;
-        }
-    }
+    // scheduler::clean_all().await.map_err(|e| e.to_string())?;
+    // clean_database().await.map_err(|e| e.to_string())?;
+    // let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
+    // let data = read_tweets_from_json(path_buf).map_err(|e| e.to_string())?;
+    // dbg!("read");
+    // let list = data.results;
+    // let entities = list
+    //     .iter()
+    //     .map(|post| post.clone().into_entities(TaskKind::AssetTransport))
+    //     .collect::<Vec<_>>();
+    // dbg!("make entities");
+    // let merged = DbEntitie::merge_all(entities);
+    // dbg!("merge entities");
+    // let tasks = handle_entities(merged).await.map_err(|e| e.to_string())?;
+    // dbg!("handle entities");
+    // for task in tasks {
+    //     let _ = Scheduler::<Task>::get()
+    //         .map_err(|e| e.to_string())?
+    //         .enqueue(task);
+    // }
+    // dbg!("handle collections");
+    // for (collection_name, rest_ids) in saved_collections {
+    //     for id in rest_ids {
+    //         let _ = DbCollection::relate(collection_name.clone(), id)
+    //             .await
+    //             .map_err(|e| e.to_string())?;
+    //     }
+    // }
 
-    let app = Scheduler::<Task>::get()
-        .map_err(|e| e.to_string())?
-        .app
-        .clone();
-    event::ImportEvent { done: true }
-        .emit(&app)
-        .map_err(|e| e.to_string())?;
-    dbg!("done");
-    Ok(())
+    // let app = Scheduler::<Task>::get()
+    //     .map_err(|e| e.to_string())?
+    //     .app
+    //     .clone();
+    // event::ImportEvent { done: true }
+    //     .emit(&app)
+    //     .map_err(|e| e.to_string())?;
+    // dbg!("done");
+    // [TODO] 换一个不删库的方案
+    Err("not implemented".to_string())
 }
 
 #[tauri::command]

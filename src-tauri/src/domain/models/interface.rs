@@ -12,7 +12,7 @@ pub struct Chunk<T> {
 #[tauri::command]
 #[specta::specta]
 pub async fn take_post_chunk(cursor: Option<String>) -> Result<Chunk<LikedPost>, String> {
-    let data = LikedPost::select_pagin(200, cursor.map(|c| c.parse::<u32>().unwrap()))
+    let data = LikedPost::select_pagin(100, cursor.map(|c| c.parse::<u32>().unwrap()))
         .await
         .map_err(|e| e.to_string())?;
     let cursor = data

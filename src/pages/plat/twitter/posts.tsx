@@ -23,7 +23,12 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   const container = useRef<HTMLDivElement>(null);
   const setTitle = station.postsTitle.useSet();
   const setAssetState = station.assetState.useSet();
+  const setCurPosition = station.curPosition.useSet();
   const catPage = station.catPage.useSee();
+
+  const minIdxRef = useRef<number | null>(null);
+  const maxIdxRef = useRef<number | null>(null);
+  const pendingRef = useRef(false);
 
   useScrollYRef(); // 直接使用，内部已处理滚动条位置更新
 
@@ -97,7 +102,6 @@ export default function Posts({ initialCursor = null }: PostsProps) {
       // });
       const r = await crab.selectCollectionPagin(catPage, cursor);
       r.tap(({ data, cursor: newCursor }) => {
-        console.log(data);
         data.forEach((post) => {
           postsMapRef.current.set(post.rest_id, post);
         });
@@ -107,16 +111,35 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     }
   };
 
-  const maybeLoadMore = useInfiniteLoader(
-    async () => {
-      // if (catPage) return;
-      await loadMorePosts();
-    },
-    {
-      isItemLoaded: (index, items) => !!items[index],
-      threshold: 30,
+  const isItemLoaded = (index: number, items: any) => {
+    // 本轮（本帧）min/max 都动态收集
+    if (minIdxRef.current === null) {
+      minIdxRef.current = index;
     }
-  );
+    if (maxIdxRef.current === null || index > maxIdxRef.current) {
+      maxIdxRef.current = index;
+    }
+    // 本帧只处理一次
+    if (!pendingRef.current) {
+      pendingRef.current = true;
+      window.requestAnimationFrame(() => {
+        // 打印/上报一次本批次结果
+        if (minIdxRef.current !== null && maxIdxRef.current !== null)
+          setCurPosition(items[minIdxRef.current].id);
+
+        // 每帧重置，等待下一批
+        minIdxRef.current = null;
+        maxIdxRef.current = null;
+        pendingRef.current = false;
+      });
+    }
+    return !!items[index];
+  };
+
+  const maybeLoadMore = useInfiniteLoader(loadMorePosts, {
+    isItemLoaded,
+    threshold: 30,
+  });
 
   function handleCollect(
     postId: string,

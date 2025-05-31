@@ -17,6 +17,7 @@ pub enum Table {
     Task,
     Status,
     Collection,
+    ScrollCursor,
 }
 
 impl Table {
@@ -33,6 +34,7 @@ impl Table {
             Table::Task => "task",
             Table::Status => "status",
             Table::Collection => "collection",
+            Table::ScrollCursor => "scroll_cursor",
         }
     }
 }

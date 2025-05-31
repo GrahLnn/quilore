@@ -14,7 +14,7 @@ function App() {
   const setPage = station.page.useSet();
   const setSaveDir = station.saveDir.useSet();
   const setCollection = station.categorys.useSet();
-
+  const setScrollCursor = station.pinPosition.useSet();
   useEffect(() => {
     crab.appReady();
     const fetchData = async () => {
@@ -29,6 +29,16 @@ function App() {
       const collections = await crab.allCollection();
       collections.tap((v) => {
         setCollection(v);
+      });
+      const scrollCursors = await crab.selectAllScrollCursors();
+      scrollCursors.tap((v) => {
+        setScrollCursor((p) => {
+          const q = new Map(p);
+          v.forEach((cursor) => {
+            q.set(cursor.name, cursor.cursor);
+          });
+          return q;
+        });
       });
     };
 

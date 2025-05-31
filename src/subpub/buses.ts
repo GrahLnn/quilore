@@ -32,9 +32,11 @@ export const station = {
   needRefresh: createAtom<boolean>(false),
   currentChooseCat: createAtom<string | null>(null),
   canOpenSidebar: createAtom<boolean>(true),
-  categorys: createAtom<string[]>([]),
+  categorys: createAtom<Array<string>>([]),
   catPage: createAtom<string | null>(null),
   catCheck: createAtom<string | null>(null),
+  pinPosition: createAtom<Map<string, string>>(new Map()),
+  curPosition: createAtom<string | null>(null),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),

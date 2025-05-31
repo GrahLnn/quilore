@@ -6,6 +6,7 @@ import { isTwitterLoginCookie, isValidCookies } from "@/src/app/checkCookies";
 import { icons } from "@/src/assets/icons";
 import {
   DropdownButton,
+  FnMenuItem,
   MenuItem,
   MenuSub,
 } from "@/src/components/dropdownButton";
@@ -23,7 +24,15 @@ import {
   EditZoneDesc,
   ValueArea,
 } from "@/src/components/editzone";
-import { MatchPages } from "./twitter/pages";
+import { MatchPages, postsStation } from "./twitter/pages";
+import DropdownEditItem from "@/src/components/dropdownEditItem";
+import {
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Title = () => {
   const title = station.postsTitle.useSee();
@@ -187,11 +196,14 @@ export function PlatPage() {
   const page = station.platform.useSee();
   const cats = station.categorys.useSee();
   const catCheck = station.catCheck.useSee();
+  const sortIdxList = postsStation.sortedIdxList.useSee();
+  const curPosition = station.curPosition.useSee();
 
   const setBarInteraction = station.allowBarInteraction.useSet();
   const setCenterTool = station.centerTool.useSet();
   const setImportState = station.startImport.useSet();
   const [catPage, setCatPage] = station.catPage.useAll();
+  const [pinPosition, setPinPosition] = station.pinPosition.useAll();
   const setNeedRefresh = station.needRefresh.useSet();
 
   const setCatCheck = station.catCheck.useSet();
@@ -283,11 +295,57 @@ export function PlatPage() {
                 }}
               />
             )}
+            {pinPosition.size > 0 && (
+              <MenuSub trigger={<>Continue from</>}>
+                {Array.from(pinPosition.entries()).map(([key, value]) => (
+                  <FnMenuItem
+                    key={key}
+                    name={key}
+                    bfn={() => {
+                      crab.deleteScrollCursor(key);
+                      setPinPosition((p) => {
+                        const q = new Map(p);
+                        q.delete(key);
+                        return q;
+                      });
+                    }}
+                  />
+                ))}
+              </MenuSub>
+            )}
+
+            <MenuSub trigger={<>Pin scroll</>}>
+              {Array.from(pinPosition.entries()).map(([key, _]) => (
+                <MenuItem
+                  key={key}
+                  name={key}
+                  fn={() => {
+                    if (!curPosition) return;
+                    crab.createScrollCursor(key, curPosition);
+                  }}
+                />
+              ))}
+              {pinPosition.size > 0 && <DropdownMenuSeparator />}
+              <DropdownEditItem
+                label={
+                  pinPosition.size === 0 ? "Give a name ..." : "Add more ..."
+                }
+                onClose={(text: string) => {
+                  if (!text || !curPosition) return;
+                  setPinPosition((p) => {
+                    const q = new Map(p);
+                    q.set(text, curPosition);
+                    crab.createScrollCursor(text, curPosition);
+                    return q;
+                  });
+                }}
+              />
+            </MenuSub>
           </DropdownButton>
         </div>
       ),
     });
-  }, [cats, catCheck]);
+  }, [cats, catCheck, pinPosition, curPosition]);
 
   return page.match({
     [Platform.Twitter]: () => <MatchPages />,

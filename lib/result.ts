@@ -99,6 +99,14 @@ export class Result<T, E = Error> {
     return this;
   }
 
+  ok(): T | null {
+    return this.result.ok ? this.result.value : null;
+  }
+
+  err(): E | null {
+    return this.result.ok ? null : this.result.error;
+  }
+
   // 提供原始数据访问（如果有需要的话）
   get raw(): RawResult<T, E> {
     return this.result;

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type { PropsWithChildren } from "react";
 import React, { memo } from "react";
 import { useIsBarVisible } from "../state_machine/barVisible";
+import { icons } from "../assets/icons";
 
 interface MenuItemProps {
   name: string;
@@ -90,6 +91,35 @@ const MenuItem = memo(function MenuItemComp(item: MenuItemProps) {
           <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>
         )}
         {item.icon}
+      </DropdownMenuItem>
+      {item.data}
+    </React.Fragment>
+  );
+});
+
+interface FnMenuItemProps extends MenuItemProps {
+  bfn: () => void;
+}
+
+export const FnMenuItem = memo(function FnMenuItemComp(item: FnMenuItemProps) {
+  return (
+    <React.Fragment key={item.name}>
+      <DropdownMenuItem
+        className="focus:bg-accent flex justify-between items-center dark:text-[#e5e5e5] opacity-70 dark:opacity-60 hover:opacity-90 transition relative group"
+        onClick={item.fn}
+      >
+        {item.name}
+        <div className="absolute right-0 mr-2 flex items-center gap-x-1 cursor-default h-3">
+          <button
+            className="rounded bg-neutral-300 p-[2px] text-neutral-700 hover:bg-neutral-400/50 dark:bg-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-500 cursor-pointer opacity-0 group-hover:opacity-100 transition"
+            onClick={(e) => {
+              e.stopPropagation();
+              item.bfn();
+            }}
+          >
+            <icons.xmark size={12} className="size-[12px]" />
+          </button>
+        </div>
       </DropdownMenuItem>
       {item.data}
     </React.Fragment>

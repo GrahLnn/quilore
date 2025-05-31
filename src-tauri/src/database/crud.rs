@@ -49,6 +49,12 @@ pub trait Crud:
         updated.ok_or(DBError::NotFound.into())
     }
 
+    async fn upsert_by_id(id: RecordId, data: Self) -> Result<Self> {
+        let db = get_db()?;
+        let updated: Option<Self> = db.upsert(id).content(data).await?;
+        updated.ok_or(DBError::NotFound.into())
+    }
+
     async fn select<T>(id: T) -> Result<Self>
     where
         RecordIdKey: From<T>,
@@ -80,10 +86,7 @@ pub trait Crud:
         Ok(records)
     }
 
-    async fn update(id: RecordId, data: Self) -> Result<Self>
-    where
-        Self: HasId,
-    {
+    async fn update(id: RecordId, data: Self) -> Result<Self> {
         let db = get_db()?;
         let updated: Option<Self> = db.update(id).content(data).await?;
         updated.ok_or(DBError::NotFound.into())
