@@ -511,7 +511,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
             <div
               className={cn([
                 "absolute bottom-0 left-0 right-0 w-full flex items-center px-3 py-2",
-                "bg-gradient-to-t from-[rgba(0,0,0,0.6)] to-transparent",
+                "easgrad",
               ])}
             >
               <PauseButton paused={paused} onClick={togglePlay} />

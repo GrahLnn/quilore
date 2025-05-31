@@ -36,11 +36,13 @@ input::-webkit-credentials-auto-fill-button {
   --ring: hsl(240 5% 64.9%);
   --radius: 0.5rem;
 
-  --butty-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 3px 6px rgba(0, 0, 0, 0.06),
+  --butty-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06), 0 3px 6px rgba(0, 0, 0, 0.06),
     0 6px 12px rgba(0, 0, 0, 0.06);
 
   --lightbox-shadow-color: 204deg 10% 48%;
-  --lightbox-shadow: 1px 1px 2.1px hsl(var(--shadow-color) / 0),
+  --lightbox-shadow:
+    1px 1px 2.1px hsl(var(--shadow-color) / 0),
     43.5px 43.5px 92.3px hsl(var(--shadow-color) / 0.82),
     137px 137px 290.6px hsl(var(--shadow-color) / 1);
 
@@ -70,8 +72,9 @@ input::-webkit-credentials-auto-fill-button {
     --border: hsl(240 3.7% 15.9%);
     --input: hsl(240 3.7% 15.9%);
     --ring: hsl(240 3.8% 46.1%);
-    --butty-shadow: 0 1px 3px rgba(238, 238, 238, 0.06),
-      0 3px 6px rgba(235, 235, 235, 0.06), 0 6px 12px rgba(236, 236, 236, 0.06);
+    --butty-shadow:
+      0 1px 3px rgba(238, 238, 238, 0.06), 0 3px 6px rgba(235, 235, 235, 0.06),
+      0 6px 12px rgba(236, 236, 236, 0.06);
     --card-bg: #171717;
     --app-bg: #0a0a0a;
     --content: #ebebeb;
@@ -176,14 +179,16 @@ h1 {
 
 .lightbox-shadow {
   --shadow-color: 0deg 0% 47%;
-  box-shadow: 0 0 10px hsl(var(--shadow-color) / 0.3),
+  box-shadow:
+    0 0 10px hsl(var(--shadow-color) / 0.3),
     0 0 30px hsl(var(--shadow-color) / 0.67);
 }
 
 @media (prefers-color-scheme: dark) {
   .lightbox-shadow {
     --shadow-color: 0deg 0% 47%;
-    box-shadow: 0 0 10px hsl(var(--shadow-color) / 0.3),
+    box-shadow:
+      0 0 10px hsl(var(--shadow-color) / 0.3),
       0 0 30px hsl(var(--shadow-color) / 0.67);
   }
 }
@@ -215,4 +220,26 @@ h1 {
   100% {
     background-position: 0% 50%;
   }
+}
+
+.easgrad {
+  background: linear-gradient(
+    to top,
+    hsla(0, 0%, 0%, 0.65) 0%,
+    hsla(0, 0%, 0%, 0.642) 0.7%,
+    hsla(0, 0%, 0%, 0.618) 2.5%,
+    hsla(0, 0%, 0%, 0.582) 5.6%,
+    hsla(0, 0%, 0%, 0.536) 9.7%,
+    hsla(0, 0%, 0%, 0.481) 14.8%,
+    hsla(0, 0%, 0%, 0.421) 20.8%,
+    hsla(0, 0%, 0%, 0.357) 27.6%,
+    hsla(0, 0%, 0%, 0.293) 35.1%,
+    hsla(0, 0%, 0%, 0.229) 43.2%,
+    hsla(0, 0%, 0%, 0.169) 51.9%,
+    hsla(0, 0%, 0%, 0.114) 60.9%,
+    hsla(0, 0%, 0%, 0.068) 70.4%,
+    hsla(0, 0%, 0%, 0.032) 80.1%,
+    hsla(0, 0%, 0%, 0.008) 90%,
+    hsla(0, 0%, 0%, 0) 100%
+  );
 }
