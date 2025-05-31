@@ -119,8 +119,16 @@ impl QueryKind {
         let table_name = table.table_name();
         format!("SELECT * FROM {table_name} LIMIT {count};")
     }
-    pub fn insert(table: &str) -> String {
-        format!("INSERT INTO {table} $data ON DUPLICATE KEY UPDATE id = id;")
+    pub fn insert(table: Table) -> String {
+        format!("INSERT IGNORE INTO {table} $data;")
+    }
+    pub fn insert_replace(table: Table, keys: Vec<String>) -> String {
+        let key_str = keys
+            .iter()
+            .map(|k| format!("{k}=$input.{k}"))
+            .collect::<Vec<String>>()
+            .join(",");
+        format!("INSERT INTO {table} $data ON DUPLICATE KEY UPDATE {key_str};")
     }
     pub fn upsert_set(id: &str, key: &str, value: &str) -> String {
         format!("UPDATE {id} SET {key} = '{value}';")

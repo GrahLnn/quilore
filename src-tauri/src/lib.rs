@@ -21,7 +21,7 @@ use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::{self, Job};
 use domain::platform::scheduler::{self, Scheduler};
 use domain::platform::twitter::api::user;
-use domain::platform::{handle_entities, Task, TaskKind};
+use domain::platform::{handle_entities_replace, Task, TaskKind};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -257,6 +257,7 @@ async fn copy_to_clipboard(
 #[tauri::command]
 #[specta::specta]
 async fn import_data(path: &str) -> Result<(), String> {
+    println!("import_data: {}", path);
     // let mut saved_collections: HashMap<RecordId, Vec<RecordId>> = HashMap::new();
 
     // let collections = DbCollection::records().await.map_err(|e| e.to_string())?;
@@ -269,24 +270,24 @@ async fn import_data(path: &str) -> Result<(), String> {
 
     // scheduler::clean_all().await.map_err(|e| e.to_string())?;
     // clean_database().await.map_err(|e| e.to_string())?;
-    // let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
-    // let data = read_tweets_from_json(path_buf).map_err(|e| e.to_string())?;
-    // dbg!("read");
-    // let list = data.results;
-    // let entities = list
-    //     .iter()
-    //     .map(|post| post.clone().into_entities(TaskKind::AssetTransport))
-    //     .collect::<Vec<_>>();
-    // dbg!("make entities");
-    // let merged = DbEntitie::merge_all(entities);
-    // dbg!("merge entities");
-    // let tasks = handle_entities(merged).await.map_err(|e| e.to_string())?;
-    // dbg!("handle entities");
-    // for task in tasks {
-    //     let _ = Scheduler::<Task>::get()
-    //         .map_err(|e| e.to_string())?
-    //         .enqueue(task);
-    // }
+    let path_buf = PathBuf::from_str(path).map_err(|e| e.to_string())?;
+    let data = read_tweets_from_json(path_buf).map_err(|e| e.to_string())?;
+    dbg!("read");
+    let list = data.results;
+    let entities = list
+        .iter()
+        .map(|post| post.clone().into_entities(TaskKind::AssetTransport))
+        .collect::<Vec<_>>();
+    dbg!("make entities");
+    let merged = DbEntitie::merge_all(entities);
+    dbg!("merge entities");
+    let tasks = handle_entities_replace(merged).await.map_err(|e| e.to_string())?;
+    dbg!("handle entities");
+    for task in tasks {
+        let _ = Scheduler::<Task>::get()
+            .map_err(|e| e.to_string())?
+            .enqueue(task);
+    }
     // dbg!("handle collections");
     // for (collection_name, rest_ids) in saved_collections {
     //     for id in rest_ids {
@@ -296,16 +297,17 @@ async fn import_data(path: &str) -> Result<(), String> {
     //     }
     // }
 
-    // let app = Scheduler::<Task>::get()
-    //     .map_err(|e| e.to_string())?
-    //     .app
-    //     .clone();
-    // event::ImportEvent { done: true }
-    //     .emit(&app)
-    //     .map_err(|e| e.to_string())?;
-    // dbg!("done");
+    let app = Scheduler::<Task>::get()
+        .map_err(|e| e.to_string())?
+        .app
+        .clone();
+    event::ImportEvent { done: true }
+        .emit(&app)
+        .map_err(|e| e.to_string())?;
+    dbg!("done");
     // [TODO] 换一个不删库的方案
-    Err("not implemented".to_string())
+    // Err("not implemented".to_string())
+    Ok(())
 }
 
 #[tauri::command]

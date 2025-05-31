@@ -8,6 +8,15 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use surrealdb::{RecordId, RecordIdKey, Response};
 
+fn struct_field_names<T: Serialize>(data: &T) -> Vec<String> {
+    // serialize struct to serde_json::Value
+    let value = serde_json::to_value(data).unwrap();
+    match value {
+        Value::Object(map) => map.keys().cloned().collect(),
+        _ => vec![],
+    }
+}
+
 #[async_trait]
 pub trait Crud:
     Serialize + for<'de> Deserialize<'de> + std::fmt::Debug + 'static + Clone + Send + Sync
@@ -132,11 +141,31 @@ pub trait Crud:
         for chunk in data.chunks(chunk_size) {
             let chunk_clone = chunk.to_vec(); // Clone the chunk to ensure it lives long enough
             let inserted: Vec<Self> = db
-                .query(QueryKind::insert(Self::TABLE.as_str()))
+                .query(QueryKind::insert(Self::TABLE))
                 .bind(("data", chunk_clone)) // Use the cloned chunk
                 .await?
                 .take(0)?;
             inserted_all.extend(inserted);
+        }
+
+        Ok(inserted_all)
+    }
+
+    async fn insert_replace(data: Vec<Self>) -> Result<Vec<Self>> {
+        let db = get_db()?;
+        let chunk_size = 50_000;
+        let mut inserted_all = Vec::with_capacity(data.len());
+        let keys = struct_field_names(&data[0]);
+
+        for chunk in data.chunks(chunk_size) {
+            let chunk_clone = chunk.to_vec();
+            let inserted: Vec<Self> = db
+                .query(QueryKind::insert_replace(Self::TABLE, keys.clone()))
+                .bind(("data", chunk_clone))
+                .await?
+                .take(0)?;
+            inserted_all.extend(inserted);
+            println!("{} inserted: {}/{}", Self::TABLE, inserted_all.len(), data.len());
         }
 
         Ok(inserted_all)

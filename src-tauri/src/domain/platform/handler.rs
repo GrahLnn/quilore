@@ -208,3 +208,27 @@ pub async fn handle_entities(data: DbEntitie) -> Result<Vec<Task>> {
         tokio::join!(f_like, f_posts, f_media, f_users, f_assets, f_repls, f_tasks,);
     _r_tasks
 }
+
+pub async fn handle_entities_replace(data: DbEntitie) -> Result<Vec<Task>> {
+    let DbEntitie {
+        like,
+        posts,
+        medias,
+        users,
+        assets,
+        replies,
+        tasks,
+    } = data;
+
+    let f_like = DbLikedPost::insert_replace(like);
+    let f_posts = DbPost::insert_replace(posts);
+    let f_media = DbMedia::insert_replace(medias);
+    let f_users = DbUser::insert_replace(users);
+    let f_assets = DbAsset::insert_replace(assets);
+    let f_repls = DbReply::insert_replace(replies);
+    let f_tasks = Task::insert_replace(tasks);
+
+    let (_r_like, _r_posts, _r_media, _r_users, _r_assets, _r_repls, _r_tasks) =
+        tokio::join!(f_like, f_posts, f_media, f_users, f_assets, f_repls, f_tasks,);
+    _r_tasks
+}

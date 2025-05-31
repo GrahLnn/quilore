@@ -24,6 +24,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   const setTitle = station.postsTitle.useSet();
   const setAssetState = station.assetState.useSet();
   const setCurPosition = station.curPosition.useSet();
+  const setInitCursor = station.initCursor.useSet();
   const catPage = station.catPage.useSee();
 
   const minIdxRef = useRef<number | null>(null);
@@ -37,6 +38,7 @@ export default function Posts({ initialCursor = null }: PostsProps) {
     setTitle(catPage || "X.Likes");
     if (sortedIdxList.length === 0) {
       loadMorePosts();
+      setInitCursor(null);
     }
     // 更新容器高度
     scrollbar.updateContainerHeight(container.current?.clientHeight || 0);
@@ -76,14 +78,14 @@ export default function Posts({ initialCursor = null }: PostsProps) {
       const result = await crab.takePostChunk(cursor);
       result.tap(({ data, cursor: newCursor }) => {
         // const sortedData = data.sort((a, b) => b.sortidx - a.sortidx);
-        data.forEach(({ post }) => {
-          postsMapRef.current.set(post.rest_id, post);
+        data.forEach(({ post, sortidx }) => {
+          postsMapRef.current.set(sortidx.toString(), post);
         });
 
         setSortedIdxList((prev) => {
           const existing = new Set(prev.map((v) => v.id));
           const newIdxs = data
-            .map(({ post }) => ({ id: post.rest_id }))
+            .map(({ sortidx }) => ({ id: sortidx.toString() }))
             .filter((idx) => !existing.has(idx.id));
 
           return [...prev, ...newIdxs];
@@ -93,13 +95,6 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         }
       });
     } else {
-      // const result = await crab.selectCollection(catPage);
-      // result.tap((c) => {
-      //   c.items.forEach((post) => {
-      //     postsMapRef.current.set(post.rest_id, post);
-      //   });
-      //   setSortedIdxList(c.items.map((post) => ({ id: post.rest_id })));
-      // });
       const r = await crab.selectCollectionPagin(catPage, cursor);
       r.tap(({ data, cursor: newCursor }) => {
         data.forEach((post) => {

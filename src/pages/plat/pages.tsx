@@ -207,6 +207,7 @@ export function PlatPage() {
   const setNeedRefresh = station.needRefresh.useSet();
 
   const setCatCheck = station.catCheck.useSet();
+  const setInitCursor = station.initCursor.useSet();
 
   useEffect(() => {
     setBarInteraction(true);
@@ -295,12 +296,23 @@ export function PlatPage() {
                 }}
               />
             )}
-            {pinPosition.size > 0 && (
+            {pinPosition.size > 0 && !catPage && (
               <MenuSub trigger={<>Continue from</>}>
+                <MenuItem
+                  name="Start"
+                  fn={() => {
+                    setInitCursor(null);
+                    setNeedRefresh(true);
+                  }}
+                />
                 {Array.from(pinPosition.entries()).map(([key, value]) => (
                   <FnMenuItem
                     key={key}
                     name={key}
+                    fn={() => {
+                      setInitCursor(value);
+                      setNeedRefresh(true);
+                    }}
                     bfn={() => {
                       crab.deleteScrollCursor(key);
                       setPinPosition((p) => {
@@ -314,33 +326,40 @@ export function PlatPage() {
               </MenuSub>
             )}
 
-            <MenuSub trigger={<>Pin scroll</>}>
-              {Array.from(pinPosition.entries()).map(([key, _]) => (
-                <MenuItem
-                  key={key}
-                  name={key}
-                  fn={() => {
-                    if (!curPosition) return;
-                    crab.createScrollCursor(key, curPosition);
+            {!catPage && (
+              <MenuSub trigger={<>Pin scroll</>}>
+                {Array.from(pinPosition.entries()).map(([key, _]) => (
+                  <MenuItem
+                    key={key}
+                    name={key}
+                    fn={() => {
+                      if (!curPosition) return;
+                      crab.createScrollCursor(key, curPosition);
+                      setPinPosition((p) => {
+                        const q = new Map(p);
+                        q.set(key, curPosition);
+                        return q;
+                      });
+                    }}
+                  />
+                ))}
+                {pinPosition.size > 0 && <DropdownMenuSeparator />}
+                <DropdownEditItem
+                  label={
+                    pinPosition.size === 0 ? "Give a name ..." : "Add more ..."
+                  }
+                  onClose={(text: string) => {
+                    if (!text || !curPosition) return;
+                    setPinPosition((p) => {
+                      const q = new Map(p);
+                      q.set(text, curPosition);
+                      crab.createScrollCursor(text, curPosition);
+                      return q;
+                    });
                   }}
                 />
-              ))}
-              {pinPosition.size > 0 && <DropdownMenuSeparator />}
-              <DropdownEditItem
-                label={
-                  pinPosition.size === 0 ? "Give a name ..." : "Add more ..."
-                }
-                onClose={(text: string) => {
-                  if (!text || !curPosition) return;
-                  setPinPosition((p) => {
-                    const q = new Map(p);
-                    q.set(text, curPosition);
-                    crab.createScrollCursor(text, curPosition);
-                    return q;
-                  });
-                }}
-              />
-            </MenuSub>
+              </MenuSub>
+            )}
           </DropdownButton>
         </div>
       ),

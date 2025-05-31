@@ -20,6 +20,7 @@ export function MatchPages() {
   const [catPage, setCatPage] = station.catPage.useAll();
 
   const isStartImport = station.startImport.useSee();
+  const initCursor = station.initCursor.useSee();
 
   const setIsLoading = postsStation.isLoading.useSet();
   const setScanning = postsStation.scanning.useSet();
@@ -58,7 +59,7 @@ export function MatchPages() {
     checkdone &&
     page.match({
       [TwitterPage.Pre]: () => <PrePosts />,
-      [TwitterPage.Posts]: () => <Posts key={key} />,
+      [TwitterPage.Posts]: () => <Posts key={key} initialCursor={initCursor} />,
     })
   );
 }

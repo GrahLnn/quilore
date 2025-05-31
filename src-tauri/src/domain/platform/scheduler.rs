@@ -90,7 +90,7 @@ impl<T: Schedulable> Scheduler<T> {
                 }
                 let tx_inner = tx.clone();
                 tokio::spawn(async move {
-                    static WORK_SEMA: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(10));
+                    static WORK_SEMA: LazyLock<Semaphore> = LazyLock::new(|| Semaphore::new(64));
                     let _permit = WORK_SEMA.acquire().await.unwrap();
 
                     item.update_status(Status::Running, None).await.ok();

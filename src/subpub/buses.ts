@@ -37,6 +37,7 @@ export const station = {
   catCheck: createAtom<string | null>(null),
   pinPosition: createAtom<Map<string, string>>(new Map()),
   curPosition: createAtom<string | null>(null),
+  initCursor: createAtom<string | null>(null),
 
   guide: createMatchAtom<Guide>(Guide.SetSaveDir),
   page: createMatchAtom<Page>(Page.Main),
