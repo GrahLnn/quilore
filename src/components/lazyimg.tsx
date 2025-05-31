@@ -57,10 +57,6 @@ const LazyImage: React.FC<LazyImageProps> = memo(
     const val = assetState.get(asset.name);
     const imgm = imgmRef.current!;
     const bundimgCurrentState = imgm.useBundimgState();
-    const isGhostCurrently = useMemo(
-      () => bundimgCurrentState.is("ghost"),
-      [bundimgCurrentState]
-    );
     const assetSrc = useMemo(() => convertFileSrc(asset.path), [asset.path]);
 
     const isCurImg = useCallback(() => {
@@ -149,8 +145,8 @@ const LazyImage: React.FC<LazyImageProps> = memo(
     }, []);
 
     const updateRect = useCallback(() => {
-      if (containerRef.current && imgRef.current) {
-        const domRect = imgRef.current.getBoundingClientRect();
+      if (containerRef.current) {
+        const domRect = containerRef.current.getBoundingClientRect();
         const lite: RectLite = {
           width: domRect.width,
           height: domRect.height,
@@ -165,36 +161,23 @@ const LazyImage: React.FC<LazyImageProps> = memo(
             prev.height !== lite.height ||
             prev.top !== lite.top ||
             prev.left !== lite.left;
-
-          if (!shouldUpdate) {
-            // console.log("[skip] rect unchanged", asset.name);
-            return prev;
-          } else {
-            // console.log("[set] rect updated", asset.name, prev, "→", lite);
-            return lite;
-          }
+          return !shouldUpdate ? prev : lite;
         });
       }
     }, []);
 
     useEffect(() => {
-      if (isGhostCurrently) {
-        const handleUpdate = () => {
-          if (isGhostCurrently) {
-            updateRect();
-          }
-        };
-
-        window.addEventListener("scroll", handleUpdate, true);
-        window.addEventListener("resize", handleUpdate);
-        handleUpdate();
+      if (!bundimgCurrentState.is("normal")) {
+        window.addEventListener("scroll", updateRect, true);
+        window.addEventListener("resize", updateRect);
+        updateRect();
 
         return () => {
-          window.removeEventListener("scroll", handleUpdate, true);
-          window.removeEventListener("resize", handleUpdate);
+          window.removeEventListener("scroll", updateRect, true);
+          window.removeEventListener("resize", updateRect);
         };
       }
-    }, [isGhostCurrently, updateRect]);
+    }, [bundimgCurrentState, updateRect]);
 
     const renderImage = useMemo(() => {
       return bundimgCurrentState.match({
