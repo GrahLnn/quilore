@@ -32,6 +32,8 @@ interface DropdownButtonProps extends PropsWithChildren {
   label?: string | React.ReactNode;
   // items?: Array<React.ReactNode>;
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 export function DropdownButton({
   children,
@@ -40,11 +42,13 @@ export function DropdownButton({
   o,
   className,
   trigger,
+  open,
+  onOpenChange,
 }: DropdownButtonProps) {
   const isVisible = useIsBarVisible();
   return (
     <div data-tauri-drag-region={!isVisible}>
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger
           className={cn([
             "focus:outline-none focus:ring-0 focus:border-0",
@@ -111,13 +115,13 @@ export const FnMenuItem = memo(function FnMenuItemComp(item: FnMenuItemProps) {
         {item.name}
         <div className="absolute right-0 mr-2 flex items-center gap-x-1 cursor-default h-3">
           <button
-            className="rounded bg-neutral-300 p-[2px] text-neutral-700 hover:bg-neutral-400/50 dark:bg-neutral-600 dark:text-neutral-100 dark:hover:bg-neutral-500 cursor-pointer opacity-0 group-hover:opacity-100 transition"
+            className="rounded bg-neutral-300 p-[2px] hover:bg-neutral-400/40 dark:bg-neutral-600 dark:hover:bg-neutral-500/70 cursor-pointer opacity-0 group-hover:opacity-70 hover:opacity-100 transition"
             onClick={(e) => {
               e.stopPropagation();
               item.bfn();
             }}
           >
-            <icons.xmark size={12} className="size-[12px]" />
+            <icons.xmark size={12} className="size-[12px] dark:text-white/80" />
           </button>
         </div>
       </DropdownMenuItem>

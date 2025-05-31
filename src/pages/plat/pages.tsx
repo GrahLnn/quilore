@@ -192,6 +192,145 @@ const preference = [
   },
 ];
 
+function PlatTool() {
+  const cats = station.categorys.useSee();
+  const catCheck = station.catCheck.useSee();
+  const curPosition = station.curPosition.useSee();
+
+  const setImportState = station.startImport.useSet();
+  const [catPage, setCatPage] = station.catPage.useAll();
+  const [pinPosition, setPinPosition] = station.pinPosition.useAll();
+  const setNeedRefresh = station.needRefresh.useSet();
+
+  const setCatCheck = station.catCheck.useSet();
+  const setInitCursor = station.initCursor.useSet();
+
+  const [mopen, setOpen] = useState(false);
+  return (
+    <DropdownButton
+      trigger={<icons.sliders size={14} />}
+      open={mopen}
+      onOpenChange={setOpen}
+    >
+      <MenuItem
+        name="Scan"
+        fn={() => {
+          crab.scanLikesTimeline();
+        }}
+        icon={<icons.scan />}
+      />
+      <MenuItem
+        name="Import"
+        fn={() => {
+          open({
+            directory: false,
+            filters: [
+              {
+                name: "JSON",
+                extensions: ["json"],
+              },
+            ],
+          }).then((path) => {
+            if (!path) return;
+            crab.importData(path);
+            setImportState(true);
+          });
+        }}
+        icon={<icons.squareDashedDownload />}
+      />
+      <MenuItem
+        name="Export"
+        fn={() => {}}
+        icon={<icons.squareDashedUpload />}
+      />
+      {cats.length > 0 && (
+        <MenuSub trigger={<>Check collect</>}>
+          {cats.map((cat) => (
+            <MenuItem
+              key={`${cat}-check`}
+              name={cat}
+              fn={() => {
+                setCatCheck(cat);
+              }}
+            />
+          ))}
+        </MenuSub>
+      )}
+      {catCheck && (
+        <MenuItem
+          name="Clear check"
+          fn={() => {
+            setCatCheck(null);
+          }}
+        />
+      )}
+      {pinPosition.size > 0 && !catPage && (
+        <MenuSub trigger={<>Continue from</>}>
+          <MenuItem
+            name="Start"
+            fn={() => {
+              setInitCursor(null);
+              setNeedRefresh(true);
+            }}
+          />
+          {Array.from(pinPosition.entries()).map(([key, value]) => (
+            <FnMenuItem
+              key={key}
+              name={key}
+              fn={() => {
+                setInitCursor(value);
+                setNeedRefresh(true);
+              }}
+              bfn={() => {
+                crab.deleteScrollCursor(key);
+                setPinPosition((p) => {
+                  const q = new Map(p);
+                  q.delete(key);
+                  return q;
+                });
+              }}
+            />
+          ))}
+        </MenuSub>
+      )}
+
+      {!catPage && (
+        <MenuSub trigger={<>Pin scroll</>}>
+          {Array.from(pinPosition.entries()).map(([key, _]) => (
+            <MenuItem
+              key={key}
+              name={key}
+              fn={() => {
+                if (!curPosition) return;
+                crab.createScrollCursor(key, curPosition);
+                setPinPosition((p) => {
+                  const q = new Map(p);
+                  q.set(key, curPosition);
+                  return q;
+                });
+              }}
+            />
+          ))}
+          {pinPosition.size > 0 && <DropdownMenuSeparator />}
+          <DropdownEditItem
+            label={pinPosition.size === 0 ? "Give a name ..." : "Add more ..."}
+            onClose={(text: string) => {
+              if (!text || !curPosition) return;
+              setPinPosition((p) => {
+                const q = new Map(p);
+                q.set(text, curPosition);
+                crab.createScrollCursor(text, curPosition);
+                return q;
+              });
+              setOpen(false);
+            }}
+          />
+        </MenuSub>
+      )}
+    </DropdownButton>
+  );
+}
+
 export function PlatPage() {
   const page = station.platform.useSee();
   const cats = station.categorys.useSee();
@@ -243,124 +382,7 @@ export function PlatPage() {
           >
             <Title />
           </DropdownSettings>
-          <DropdownButton trigger={<icons.sliders size={14} />}>
-            <MenuItem
-              name="Scan"
-              fn={() => {
-                crab.scanLikesTimeline();
-              }}
-              icon={<icons.scan />}
-            />
-            <MenuItem
-              name="Import"
-              fn={() => {
-                open({
-                  directory: false,
-                  filters: [
-                    {
-                      name: "JSON",
-                      extensions: ["json"],
-                    },
-                  ],
-                }).then((path) => {
-                  if (!path) return;
-                  crab.importData(path);
-                  setImportState(true);
-                });
-              }}
-              icon={<icons.squareDashedDownload />}
-            />
-            <MenuItem
-              name="Export"
-              fn={() => {}}
-              icon={<icons.squareDashedUpload />}
-            />
-            {cats.length > 0 && (
-              <MenuSub trigger={<>Check collect</>}>
-                {cats.map((cat) => (
-                  <MenuItem
-                    key={`${cat}-check`}
-                    name={cat}
-                    fn={() => {
-                      setCatCheck(cat);
-                    }}
-                  />
-                ))}
-              </MenuSub>
-            )}
-            {catCheck && (
-              <MenuItem
-                name="Clear check"
-                fn={() => {
-                  setCatCheck(null);
-                }}
-              />
-            )}
-            {pinPosition.size > 0 && !catPage && (
-              <MenuSub trigger={<>Continue from</>}>
-                <MenuItem
-                  name="Start"
-                  fn={() => {
-                    setInitCursor(null);
-                    setNeedRefresh(true);
-                  }}
-                />
-                {Array.from(pinPosition.entries()).map(([key, value]) => (
-                  <FnMenuItem
-                    key={key}
-                    name={key}
-                    fn={() => {
-                      setInitCursor(value);
-                      setNeedRefresh(true);
-                    }}
-                    bfn={() => {
-                      crab.deleteScrollCursor(key);
-                      setPinPosition((p) => {
-                        const q = new Map(p);
-                        q.delete(key);
-                        return q;
-                      });
-                    }}
-                  />
-                ))}
-              </MenuSub>
-            )}
-
-            {!catPage && (
-              <MenuSub trigger={<>Pin scroll</>}>
-                {Array.from(pinPosition.entries()).map(([key, _]) => (
-                  <MenuItem
-                    key={key}
-                    name={key}
-                    fn={() => {
-                      if (!curPosition) return;
-                      crab.createScrollCursor(key, curPosition);
-                      setPinPosition((p) => {
-                        const q = new Map(p);
-                        q.set(key, curPosition);
-                        return q;
-                      });
-                    }}
-                  />
-                ))}
-                {pinPosition.size > 0 && <DropdownMenuSeparator />}
-                <DropdownEditItem
-                  label={
-                    pinPosition.size === 0 ? "Give a name ..." : "Add more ..."
-                  }
-                  onClose={(text: string) => {
-                    if (!text || !curPosition) return;
-                    setPinPosition((p) => {
-                      const q = new Map(p);
-                      q.set(text, curPosition);
-                      crab.createScrollCursor(text, curPosition);
-                      return q;
-                    });
-                  }}
-                />
-              </MenuSub>
-            )}
-          </DropdownButton>
+          <PlatTool />
         </div>
       ),
     });
