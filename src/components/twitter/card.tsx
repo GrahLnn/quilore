@@ -19,7 +19,12 @@ const CardEle = memo(function CardEleComp({ card }: { card?: Card | null }) {
           "hover:bg-[var(--card-bg)] hover:shadow-[var(--butty-shadow)]"
         )}
       >
-        <div className="text-sm font-bold text-[var(--content)] mb-1 text-left">
+        <div
+          className={cn([
+            "text-sm font-bold text-[var(--content)] text-left",
+            card.description && "mb-1",
+          ])}
+        >
           {card.title}
         </div>
         {card.description && (
