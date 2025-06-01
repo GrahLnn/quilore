@@ -143,7 +143,9 @@ const renderThreeMedia = (media: Media[], state: TweetState) => {
     return (
       <div className="flex flex-row gap-2">
         {media.map((m, i) => (
-          <MediaElement media={m} state={state} key={`${m.id}-${i}`} />
+          <div key={m.id} className="flex-1 min-w-0">
+            <MediaElement media={m} state={state} key={`${m.id}-${i}`} />
+          </div>
         ))}
       </div>
     );
