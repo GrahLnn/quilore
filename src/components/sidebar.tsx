@@ -138,7 +138,7 @@ export default function Sidebar() {
             duration: 0.1,
           }}
           className={cn([
-            "fixed top-6 bottom-1 left-1 w-60 z-[70]",
+            "fixed top-6 bottom-1 left-1 w-60 z-[1000]",
             "shadow-lg rounded-md border border-[#f5f5f5] dark:border-[#262626]",
             "bg-popover/80 backdrop-filter backdrop-blur-[16px]",
           ])}
