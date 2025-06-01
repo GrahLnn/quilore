@@ -204,6 +204,7 @@ const LazyImage: React.FC<LazyImageProps> = memo(
                   width: rect.width,
                   height: rect.height,
                   pointerEvents: "none",
+                  objectFit: "cover",
                   zIndex: 60,
                 }}
                 layoutId={asset.name + animationInstanceHash}
@@ -252,7 +253,7 @@ const LazyImage: React.FC<LazyImageProps> = memo(
           style={{
             width: full ? "100%" : undefined,
             aspectRatio: `${ratio?.[0] || 1} / ${ratio?.[1] || 1}`,
-            height: rect ? `${rect.height}px` : undefined,
+            height: rect && allowbox ? `${rect.height}px` : undefined,
           }}
         >
           {renderImage}
