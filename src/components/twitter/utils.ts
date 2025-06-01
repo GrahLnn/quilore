@@ -15,7 +15,7 @@ export enum TweetState {
 }
 
 export function isLandscape(m: Media) {
-  return (m.width ?? 0) > (m.height ?? 0);
+  return (m.width ?? 0) >= (m.height ?? 0);
 }
 
 // 全排列辅助
