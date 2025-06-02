@@ -137,19 +137,17 @@ export default function Posts({ initialCursor = null }: PostsProps) {
   });
 
   function handleCollect(
-    postId: string,
+    postId: string | number,
     collected: boolean,
     collectAt: string
   ) {
     const post = postsMapRef.current.get(postId);
     if (post) {
-      if (collected) {
-        post.collect_at = [...post.collect_at, collectAt];
-      } else {
+      if (collected) post.collect_at = [...post.collect_at, collectAt];
+      else
         post.collect_at = post.collect_at.filter(
           (x: string) => x !== collectAt
         );
-      }
     }
   }
 
@@ -172,7 +170,12 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         render={({ data }) => {
           const post = postsMapRef.current.get(data.id);
           return post ? (
-            <TweetCard postdata={post} onCollect={handleCollect} />
+            <TweetCard
+              postdata={post}
+              onCollect={(collected, collectAt) =>
+                handleCollect(data.id, collected, collectAt)
+              }
+            />
           ) : null;
         }}
         onRender={maybeLoadMore}

@@ -10,7 +10,7 @@ import { station } from "@/src/subpub/buses";
 
 interface TweetCardProps {
   postdata: Post;
-  onCollect: (postId: string, collected: boolean, collectAt: string) => void;
+  onCollect: (collected: boolean, collectAt: string) => void;
 }
 
 const TweetCard = memo(function TweetCardComp({
@@ -30,7 +30,7 @@ const TweetCard = memo(function TweetCardComp({
         ? [...collectAts, collectAt]
         : collectAts.filter((x: string) => x !== collectAt)
     );
-    onCollect(postdata.rest_id, collected, collectAt);
+    onCollect(collected, collectAt);
   };
   return (
     <div

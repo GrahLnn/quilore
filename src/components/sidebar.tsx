@@ -72,6 +72,7 @@ function SidebarItem({ text }: SidebarItemProps) {
   const [curChoose, setCurChoose] = station.currentChooseCat.useAll();
   const setNeedRefresh = station.needRefresh.useSet();
   const [catPage, setCatPage] = station.catPage.useAll();
+  const [catCheck, setCatCheck] = station.catCheck.useAll();
 
   return (
     <div
@@ -108,8 +109,13 @@ function SidebarItem({ text }: SidebarItemProps) {
                   setCat(v);
                 });
               });
-              setCatPage(null);
-              setNeedRefresh(true);
+              if (catPage === text) {
+                setCatPage(null);
+                setNeedRefresh(true);
+              }
+              if (catCheck === text) {
+                setCatCheck(null);
+              }
             });
           }}
         >
