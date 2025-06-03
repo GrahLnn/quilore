@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "quilore",
+  "productName": "Quilore",
   "version": "0.0.1",
   "identifier": "com.quilore.desktop",
   "build": {
@@ -14,7 +14,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "quilore",
+        "title": "Quilore",
         "hiddenTitle": true,
         "width": 1400,
         "height": 750,
