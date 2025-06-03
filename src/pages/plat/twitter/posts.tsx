@@ -100,8 +100,16 @@ export default function Posts({ initialCursor = null }: PostsProps) {
         data.forEach((post) => {
           postsMapRef.current.set(post.rest_id, post);
         });
-        setSortedIdxList(data.map((post) => ({ id: post.rest_id })));
-        setCursor(newCursor);
+        setSortedIdxList((prev) => {
+          const existing = new Set(prev.map((v) => v.id));
+          const newIdxs = data
+            .map((post) => ({ id: post.rest_id }))
+            .filter((idx) => !existing.has(idx.id));
+          return [...prev, ...newIdxs];
+        });
+        if (data.length) {
+          setCursor(newCursor);
+        }
       });
     }
   };
