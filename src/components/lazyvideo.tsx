@@ -33,7 +33,7 @@ const formatTime = (t: number): string => {
 
 interface MorphButton {
   state: boolean;
-  onClick: () => void;
+  onClick: (e: MouseEvent<HTMLElement>) => void;
   icona: React.ReactNode;
   iconb: React.ReactNode;
   stateName: [string, string];
@@ -89,7 +89,7 @@ const MorphButton = memo(function MorphButtonComp({
 
 interface FullScreenProp {
   is_fullscreen: boolean;
-  onClick: () => void;
+  onClick: (e: MouseEvent<HTMLElement>) => void;
 }
 
 const FullScreenButton = memo(function FullScreenButtonComp({
@@ -109,7 +109,7 @@ const FullScreenButton = memo(function FullScreenButtonComp({
 
 interface PauseButtonProp {
   paused: boolean;
-  onClick: () => void;
+  onClick: (e: MouseEvent<HTMLElement>) => void;
 }
 
 const PauseButton = memo(function PauseButtonComp({
@@ -129,7 +129,7 @@ const PauseButton = memo(function PauseButtonComp({
 
 interface MuteButtonProp {
   muted: boolean;
-  onClick: () => void;
+  onClick: (e: MouseEvent<HTMLElement>) => void;
 }
 
 const MuteButton = memo(function MuteButtonComp({
@@ -194,6 +194,12 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
     const [firstClick, setFirstClick] = useState<boolean>(true);
     const [isHovering, setIsHovering] = useState<boolean>(false);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [wasPlayingBeforeDrag, setWasPlayingBeforeDrag] =
+      useState<boolean>(false);
+    const [isDraggingPause, setIsDraggingPause] = useState<boolean>(false);
+    const [recentlyDragged, setRecentlyDragged] = useState<boolean>(false);
+    const [isMouseInside, setIsMouseInside] = useState<boolean>(false);
 
     const videoSrc = useMemo(() => convertFileSrc(src), [src]);
     const posterSrc = useMemo(
@@ -201,49 +207,123 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       [poster]
     );
 
+    // 节流 seek 函数，支持 fastSeek
+    const seekTo = useCallback((sec: number) => {
+      const v = innerRef.current;
+      if (!v) return;
+
+      // 使用 fastSeek 如果支持，否则回退到 currentTime
+      if ("fastSeek" in v && typeof (v as any).fastSeek === "function") {
+        (v as any).fastSeek(sec);
+      } else {
+        v.currentTime = sec;
+      }
+    }, []);
+
+    const throttledSeek = useRef(
+      throttle(seekTo, 80, { trailing: true }) // ≈12 fps，足够平滑
+    ).current;
+
+    // 立即更新UI的函数
+    const updateUIImmediately = useCallback(
+      (pct: number, newTime: number) => {
+        // 立即更新进度条位置
+        if (progressRef.current) {
+          progressRef.current.style.width = `${pct * 100}%`;
+        }
+        // 立即更新时间显示
+        if (timeDisplayRef.current && duration > 0) {
+          timeDisplayRef.current.textContent = formatTime(duration - newTime);
+        }
+      },
+      [duration]
+    );
+
+    // 计算百分比的辅助函数
+    const calcPct = useCallback(
+      (e: MouseEvent<HTMLDivElement>, target?: HTMLDivElement) => {
+        const element = target || e.currentTarget;
+        const rect = element.getBoundingClientRect();
+        return Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+      },
+      []
+    );
+
     const handleMouseEnter = useCallback(() => {
       if (!controls) return;
       setIsHovering(true);
+      setIsMouseInside(true);
     }, [controls]);
 
     const handleMouseLeave = useCallback(() => {
       if (!controls) return;
+      setIsMouseInside(false);
+      // 如果正在拖动进度条，不隐藏控制条
+      if (isDragging) return;
       setIsHovering(false);
-    }, [controls]);
+    }, [controls, isDragging]);
 
-    const handleVideoClick = useCallback(() => {
-      if (!controls) return;
-      const v = innerRef.current;
-      if (!v) return;
-
-      if (firstClick && muted) {
-        v.muted = false;
-        setFirstClick(false);
-        if (v.paused) {
-          v.play().catch(() => {});
-        }
-      } else {
-        togglePlay();
+    useEffect(() => {
+      if (
+        !isDragging &&
+        !isDraggingPause &&
+        !recentlyDragged &&
+        !isMouseInside
+      ) {
+        setIsHovering(false);
       }
-    }, [controls, firstClick, muted]);
+    }, [isDragging, isDraggingPause, recentlyDragged, isMouseInside]);
 
-    const togglePlay = useCallback(() => {
+    const handleVideoClick = useCallback(
+      (e: MouseEvent<HTMLElement>) => {
+        if (!controls || isDragging || isDraggingPause || recentlyDragged)
+          return;
+        const v = innerRef.current;
+        if (!v) return;
+
+        if (firstClick && muted) {
+          v.muted = false;
+          setFirstClick(false);
+          if (v.paused) {
+            v.play().catch(() => {});
+          }
+        } else {
+          togglePlay(e);
+        }
+      },
+      [
+        controls,
+        firstClick,
+        muted,
+        isDragging,
+        isDraggingPause,
+        recentlyDragged,
+      ]
+    );
+
+    const togglePlay = useCallback((e: MouseEvent<HTMLElement>) => {
+      e.stopPropagation();
       const v = innerRef.current;
       if (!v) return;
       if (v.paused) v.play().catch(() => {});
       else v.pause();
     }, []);
 
-    const toggleMute = useCallback(() => {
+    const toggleMute = useCallback((e: MouseEvent<HTMLElement>) => {
+      e.stopPropagation();
       const v = innerRef.current;
       if (!v) return;
       v.muted = !v.muted;
       if (!v.muted) setFirstClick(false);
     }, []);
 
-    const toggleFullScreen = useCallback(() => {
-      setIsFullscreen(!isFullscreen);
-    }, [isFullscreen]);
+    const toggleFullScreen = useCallback(
+      (e: MouseEvent<HTMLElement>) => {
+        e.stopPropagation();
+        setIsFullscreen(!isFullscreen);
+      },
+      [isFullscreen]
+    );
 
     // Effect 1: Setup video properties like initial muted state and autoplay
     useEffect(() => {
@@ -301,23 +381,50 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
           setBufferedEnd(bufEnd);
         }
       };
+
       const onTimeUpdate = () => {
-        // if (v) setDisplayTime(formatTime(v.duration - v.currentTime));
-        if (v && timeDisplayRef.current)
-          timeDisplayRef.current.textContent = formatTime(
-            v.duration - v.currentTime
-          );
+        // 如果正在拖拽，不更新时间显示，避免冲突
+        if (isDragging) return;
+
+        const v = innerRef.current;
+        if (v) {
+          if (timeDisplayRef.current) {
+            timeDisplayRef.current.textContent = formatTime(
+              v.duration - v.currentTime
+            );
+          }
+        }
+      };
+
+      // 强制渲染帧的函数 - 在seeked事件中触发
+      const onSeeked = () => {
+        if (isDragging) {
+          // 在拖动过程中，通过单帧播放确保帧得到渲染
+          const v = innerRef.current;
+          if (v && v.paused) {
+            // "单帧播放"技巧：播一下立刻停
+            v.play()
+              .then(() => v.pause())
+              .catch(() => {});
+          }
+        }
       };
 
       const onPlay = () => {
-        setPaused(false);
+        // 只有非拖动期间的播放事件才更新paused状态
+        if (!isDraggingPause) {
+          setPaused(false);
+        }
       };
       const onPause = () => {
         const v = innerRef.current; // 获取 video 元素的当前引用
         if (!v) return;
         if (v.ended && loop) return;
 
-        setPaused(true);
+        // 只有非拖动期间的暂停事件才更新paused状态
+        if (!isDraggingPause) {
+          setPaused(true);
+        }
       };
       const onVolumeChange = () => setMuted(v.muted);
       const onEnded = () => {
@@ -335,6 +442,7 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       v.addEventListener("pause", onPause);
       v.addEventListener("volumechange", onVolumeChange);
       v.addEventListener("timeupdate", onTimeUpdate);
+      v.addEventListener("seeked", onSeeked);
       v.addEventListener("ended", onEnded);
 
       // Manually trigger handlers if data is already available (e.g. video loaded before effect ran)
@@ -355,22 +463,23 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         v.removeEventListener("pause", onPause);
         v.removeEventListener("volumechange", onVolumeChange);
         v.removeEventListener("timeupdate", onTimeUpdate);
+        v.removeEventListener("seeked", onSeeked);
         v.removeEventListener("ended", onEnded);
       };
-    }, [controls]); // This effect now correctly depends on `controls`
+    }, [controls, isDragging, isDraggingPause, loop]); // 添加isDraggingPause依赖
 
     // Effect 4: RequestAnimationFrame loop for smooth progress updates when playing
     useEffect(() => {
       const v = innerRef.current;
-      if (!v || !controls || paused) {
-        // Do not run RAF if no video, controls are off, or video is paused.
+      if (!v || !controls || paused || isDragging) {
+        // 如果正在拖拽，不要通过RAF更新进度条
         return;
       }
 
       let animationFrameId: number;
       const animationLoop = () => {
         // Ensure elements are still mounted and video is valid
-        if (v && progressRef.current) {
+        if (v && progressRef.current && !isDragging) {
           const pct = v.duration > 0 ? (v.currentTime / v.duration) * 100 : 0;
           progressRef.current.style.width = `${pct}%`;
           animationFrameId = requestAnimationFrame(animationLoop);
@@ -381,25 +490,37 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       return () => {
         cancelAnimationFrame(animationFrameId); // Cleanup: cancel the frame
       };
-    }, [paused, controls, duration]); // Re-run if paused state, controls, or duration changes.
-    // Duration is included because formatTime depends on it for remaining time.
+    }, [paused, controls, duration, isDragging]); // 添加isDragging依赖
 
     const onSeek = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
         if (!controls) return;
         const v = innerRef.current;
-        const target = e.currentTarget;
-        const rect = target.getBoundingClientRect();
-        const pct = Math.min(
-          Math.max((e.clientX - rect.left) / rect.width, 0),
-          1
-        );
-        if (v && duration > 0) {
-          v.currentTime = pct * duration;
-          // `timeupdate` event will fire after seeking, updating `displayTime` state
+        if (!v || duration <= 0) return;
+
+        const pct = calcPct(e);
+        const newTime = pct * duration;
+
+        if (isDragging) {
+          // 拖动时：节流seek + 立即更新UI
+          throttledSeek(newTime);
+          updateUIImmediately(pct, newTime);
+        } else {
+          // 点击时：直接seek
+          seekTo(newTime);
+          updateUIImmediately(pct, newTime);
         }
       },
-      [controls, duration]
+      [
+        controls,
+        duration,
+        isDragging,
+        calcPct,
+        throttledSeek,
+        updateUIImmediately,
+        seekTo,
+      ]
     );
 
     const throttledUpdateTooltip = useRef(
@@ -428,9 +549,149 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
       )
     ).current;
 
+    const handleMouseDown = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (!controls) return;
+        const v = innerRef.current;
+        if (!v) return;
+
+        // 记录拖拽前的播放状态
+        setWasPlayingBeforeDrag(!v.paused);
+        // 设置拖动暂停标志
+        setIsDraggingPause(true);
+        // 开始拖拽时暂停视频以便实时预览
+        if (!v.paused) {
+          v.pause();
+        }
+
+        setIsDragging(true);
+        onSeek(e); // 立即执行一次seek
+        e.preventDefault();
+      },
+      [controls, onSeek]
+    );
+
+    const handleMouseMove = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (!controls) return;
+
+        // 处理拖拽
+        if (isDragging) {
+          const pct = calcPct(e);
+          const newTime = pct * duration;
+
+          // 节流seek + 立即更新UI
+          throttledSeek(newTime);
+          updateUIImmediately(pct, newTime);
+        } else {
+          // 处理悬停工具提示
+          throttledUpdateTooltip(
+            innerRef.current,
+            hoverTooltipRef.current,
+            e.clientX,
+            e.currentTarget.getBoundingClientRect(),
+            duration
+          );
+        }
+      },
+      [
+        controls,
+        isDragging,
+        duration,
+        calcPct,
+        throttledSeek,
+        updateUIImmediately,
+        throttledUpdateTooltip,
+      ]
+    );
+
+    const handleMouseUp = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (!controls) return;
+        const v = innerRef.current;
+        if (!v) return;
+
+        setIsDragging(false);
+        // 清除拖动暂停标志
+        setIsDraggingPause(false);
+
+        // 设置最近拖动标志，防止立即触发视频点击
+        setRecentlyDragged(true);
+        setTimeout(() => {
+          setRecentlyDragged(false);
+        }, 100); // 100ms 延迟足够处理事件时序问题
+
+        // 拖拽结束后，根据之前的播放状态决定是否继续播放
+        if (wasPlayingBeforeDrag && v.paused) {
+          v.play().catch(() => {});
+        }
+      },
+      [controls, wasPlayingBeforeDrag]
+    );
+
+    // 添加全局鼠标事件监听器处理拖拽结束
+    useEffect(() => {
+      if (!isDragging) return;
+
+      const handleGlobalMouseMove = (e: globalThis.MouseEvent) => {
+        if (!controls) return;
+        const progressBar = progressRef.current?.parentElement;
+        if (!progressBar) return;
+
+        const rect = progressBar.getBoundingClientRect();
+        const pct = Math.min(
+          Math.max((e.clientX - rect.left) / rect.width, 0),
+          1
+        );
+
+        if (duration > 0) {
+          const newTime = pct * duration;
+          // 节流seek + 立即更新UI
+          throttledSeek(newTime);
+          updateUIImmediately(pct, newTime);
+        }
+      };
+
+      const handleGlobalMouseUp = () => {
+        const v = innerRef.current;
+        setIsDragging(false);
+        // 清除拖动暂停标志
+        setIsDraggingPause(false);
+
+        // 设置最近拖动标志，防止立即触发视频点击
+        setRecentlyDragged(true);
+        setTimeout(() => {
+          setRecentlyDragged(false);
+        }, 100); // 100ms 延迟足够处理事件时序问题
+
+        // 拖拽结束后，根据之前的播放状态决定是否继续播放
+        if (wasPlayingBeforeDrag && v && v.paused) {
+          v.play().catch(() => {});
+        }
+      };
+
+      document.addEventListener("mousemove", handleGlobalMouseMove);
+      document.addEventListener("mouseup", handleGlobalMouseUp);
+
+      return () => {
+        document.removeEventListener("mousemove", handleGlobalMouseMove);
+        document.removeEventListener("mouseup", handleGlobalMouseUp);
+      };
+    }, [
+      isDragging,
+      controls,
+      duration,
+      wasPlayingBeforeDrag,
+      throttledSeek,
+      updateUIImmediately,
+    ]);
+
     const onHover = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
-        if (!controls) return;
+        if (!controls || isDragging) return; // 拖拽时不显示工具提示
         throttledUpdateTooltip(
           innerRef.current,
           hoverTooltipRef.current,
@@ -439,22 +700,27 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
           duration
         );
       },
-      [controls, duration, throttledUpdateTooltip]
+      [controls, duration, throttledUpdateTooltip, isDragging]
     );
 
-    const onHoverLeave = useCallback(() => {
-      if (!controls) return;
-      throttledUpdateTooltip.cancel();
-      if (hoverTooltipRef.current) {
-        hoverTooltipRef.current.style.display = "none";
-      }
-    }, [controls, throttledUpdateTooltip]);
+    const onHoverLeave = useCallback(
+      (e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (!controls) return;
+        throttledUpdateTooltip.cancel();
+        if (hoverTooltipRef.current) {
+          hoverTooltipRef.current.style.display = "none";
+        }
+      },
+      [controls, throttledUpdateTooltip]
+    );
 
     useEffect(() => {
       return () => {
+        throttledSeek.cancel();
         throttledUpdateTooltip.cancel();
       };
-    }, [throttledUpdateTooltip]);
+    }, [throttledSeek, throttledUpdateTooltip]);
 
     useEffect(() => {
       if (isFullscreen) {
@@ -483,15 +749,19 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={handleVideoClick}
         // layout
       >
         <motion.video
           ref={innerRef}
-          className={cn(["mx-auto my-auto max-h-full max-w-full object-contain"])}
+          className={cn([
+            "mx-auto my-auto max-h-full max-w-full object-contain",
+          ])}
           src={videoSrc}
           poster={posterSrc}
+          preload="auto"
+          playsInline
           crossOrigin="anonymous"
-          onClick={handleVideoClick}
           // layout
         />
 
@@ -523,9 +793,12 @@ const TheVideo = forwardRef<HTMLVideoElement, TheVideoProps>(
                   "relative flex-1 h-0.5 mx-3 cursor-pointer rounded-full transition shadow",
                   "hover:shadow-[0_1px_3px_rgba(238,238,238,0.06),0_3px_6px_rgba(235,235,235,0.06),0_6px_12px_rgba(236,236,236,0.06)]",
                   "before:absolute before:content-[''] before:left-0 before:right-0 before:h-[12px] before:top-[-5px] before:z-10",
+                  isDragging ? "cursor-grabbing" : "cursor-pointer",
                 ])}
                 onClick={onSeek}
-                onMouseMove={onHover}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
                 onMouseLeave={onHoverLeave}
               >
                 <div
