@@ -68,8 +68,6 @@ const LazyImage: React.FC<LazyImageProps> = memo(
       );
     }, [boxState.payload, asset.name, animationInstanceHash]);
 
-    console.log(assetSrc);
-
     // useEffect(() => {
     //   if (inView && exists) {
     //     imgm.toNormal();
