@@ -2,6 +2,7 @@ use super::asset::{Asset, AssetType, DbAsset};
 use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
 use crate::domain::models::meta::GlobalVal;
+use crate::domain::models::twitter::asset::FullAssetPath;
 use crate::enums::platform::Platform;
 use crate::{impl_crud, impl_id};
 use anyhow::Result;
@@ -20,14 +21,17 @@ pub struct User {
 
 impl User {
     pub fn from_api(json: &serde_json::Value) -> Option<Self> {
-        let url = json.pointer("/profile_image_url_https")?.as_str()?.to_string();
-        let name = Url::parse(&url).ok()?.path_segments()?.last()?.to_string();
-        let base_path = GlobalVal::get_save_dir()?;
-        let path = base_path
-            .join(AssetType::Avatar.as_str())
-            .join(name.clone())
-            .to_string_lossy()
+        let url = json
+            .pointer("/profile_image_url_https")?
+            .as_str()?
             .to_string();
+        let name = Url::parse(&url).ok()?.path_segments()?.last()?.to_string();
+
+        let path = FullAssetPath(
+            GlobalVal::get_save_dir()?
+                .join(AssetType::Avatar.as_str())
+                .join(name.clone()),
+        );
         let avatar = Asset {
             url,
             path,
@@ -63,7 +67,7 @@ impl DbUser {
         Ok(User {
             id: self.id.key().to_string(),
             name: self.name,
-            avatar: DbAsset::get(self.avatar).await?,
+            avatar: Asset::get(self.avatar).await?,
         })
     }
 

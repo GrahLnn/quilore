@@ -1,4 +1,4 @@
-use crate::domain::models::twitter::asset::{Asset, AssetType};
+use crate::domain::models::twitter::asset::{Asset, AssetType, FullAssetPath};
 use crate::domain::models::twitter::media::{
     AnimatedGifMedia, Media, MediaBase, PhotoMedia, VideoMedia,
 };
@@ -178,7 +178,7 @@ fn des_asset(json: &Value, ty: AssetType) -> Option<Asset> {
         plat: Platform::Twitter,
         url,
         name,
-        path: path.clone(),
+        path: FullAssetPath(PathBuf::from(path.clone())),
         downloaded: true,
         available: match path {
             val if val == "media unavailable" => false,

@@ -1,13 +1,57 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 use surrealdb::RecordId;
 
 use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
+use crate::domain::models::meta::GlobalVal;
 use crate::domain::platform::{scheduler, Task, TaskKind};
 use crate::enums::platform::Platform;
 use crate::{impl_crud, impl_id};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct FullAssetPath(pub PathBuf);
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct RelAssetPath(pub PathBuf);
+
+impl Deref for FullAssetPath {
+    type Target = PathBuf;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for FullAssetPath {
+    fn as_ref(&self) -> &Path {
+        self.0.as_path()
+    }
+}
+
+impl Deref for RelAssetPath {
+    type Target = PathBuf;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FullAssetPath {
+    pub fn to_rel(&self) -> RelAssetPath {
+        let base = GlobalVal::get_save_dir().unwrap();
+        RelAssetPath(self.0.strip_prefix(&base).unwrap_or(&self.0).to_path_buf())
+    }
+}
+impl RelAssetPath {
+    pub fn to_full(&self) -> FullAssetPath {
+        let base = GlobalVal::get_save_dir().unwrap();
+        FullAssetPath(base.join(&self.0))
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, Eq)]
 pub enum AssetType {
@@ -32,7 +76,7 @@ pub struct Asset {
     pub plat: Platform,
     pub url: String,
     pub name: String,
-    pub path: String,
+    pub path: FullAssetPath,
     pub downloaded: bool,
     pub available: bool,
 }
@@ -40,6 +84,9 @@ pub struct Asset {
 impl Asset {
     pub fn into_db(self) -> DbAsset {
         DbAsset::from_domain(self)
+    }
+    pub async fn get(id: RecordId) -> Result<Self> {
+        DbAsset::get(id).await.map(|db| db.into_domain())
     }
 }
 
@@ -51,7 +98,7 @@ pub struct DbAsset {
     pub plat: Platform,
     pub url: String,
     pub name: String,
-    pub path: String,
+    pub path: RelAssetPath,
     pub downloaded: bool,
     pub available: bool,
 }
@@ -65,7 +112,7 @@ impl DbAsset {
             ty: self.ty,
             url: self.url,
             name: self.name,
-            path: self.path,
+            path: self.path.to_full(),
             plat: self.plat,
             downloaded: self.downloaded,
             available: self.available,
@@ -77,15 +124,14 @@ impl DbAsset {
             ty: asset.ty,
             url: asset.url,
             name: asset.name,
-            path: asset.path,
+            path: asset.path.to_rel(),
             plat: asset.plat,
             downloaded: asset.downloaded,
             available: asset.available,
         }
     }
-    pub async fn get(id: RecordId) -> Result<Asset> {
-        let data: DbAsset = DbAsset::select_record(id).await?;
-        Ok(data.into_domain())
+    pub async fn get(id: RecordId) -> Result<Self> {
+        DbAsset::select_record(id).await
     }
     pub fn into_task(self, kind: TaskKind) -> Task {
         Task {

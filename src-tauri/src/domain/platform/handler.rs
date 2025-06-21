@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::database::Crud;
 use crate::domain::models::meta::GlobalVal;
+use crate::domain::models::twitter::asset::FullAssetPath;
 use crate::domain::models::twitter::entities::DbEntitie;
 use crate::domain::models::twitter::{
     asset::DbAsset, like::DbLikedPost, media::DbMedia, post::DbPost, post::DbReply, users::DbUser,
@@ -43,7 +44,7 @@ pub async fn download_asset(task: Task) -> Result<Option<super::HandleSignal>> {
         .await
         .context("查询 DbAsset 失败")?;
 
-    let save_path = PathBuf::from(&asset.path);
+    let save_path = asset.path.to_full();
     if save_path.exists() {
         if !asset.downloaded || !asset.available {
             asset.downloaded = true;
@@ -140,10 +141,10 @@ pub async fn transport_asset(task: Task) -> Result<Option<super::HandleSignal>> 
         .await
         .context("查询 DbAsset 失败")?;
 
-    let file_path = PathBuf::from(&asset.path);
+    let file_path = asset.path.to_full();
     let base_path =
         GlobalVal::get_save_dir().ok_or_else(|| anyhow!("Failed to get save directory"))?;
-    let target_path = base_path.join(&asset.ty.as_str()).join(&asset.name);
+    let target_path = FullAssetPath(base_path.join(&asset.ty.as_str()).join(&asset.name));
 
     if let Some(parent) = target_path.parent() {
         // 目标目录不存在才创建
@@ -155,11 +156,11 @@ pub async fn transport_asset(task: Task) -> Result<Option<super::HandleSignal>> 
     }
 
     // 若目标已经存在则跳过，直接更新 asset.path 字段
-    let need_copy = if asset.path.contains("media unavailable") {
+    let need_copy = if !asset.available {
         // 只要 asset.path 包含 "media unavailable"，直接不复制
         false
     } else if tokio::fs::try_exists(&target_path).await.unwrap_or(false) {
-        asset.path = target_path.to_string_lossy().to_string();
+        asset.path = target_path.to_rel();
         false
     } else if file_path == target_path {
         false
@@ -172,7 +173,7 @@ pub async fn transport_asset(task: Task) -> Result<Option<super::HandleSignal>> 
             .await
             .with_context(|| format!("复制文件失败: {:?} -> {:?}", file_path, target_path))?;
 
-        asset.path = target_path.to_string_lossy().to_string();
+        asset.path = target_path.to_rel();
     }
 
     DbAsset::update(asset.id.clone(), asset.clone()).await?;

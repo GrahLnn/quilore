@@ -1,6 +1,7 @@
 use crate::database::enums::table::Table;
 use crate::database::{Crud, HasId};
 use crate::domain::models::meta::GlobalVal;
+use crate::domain::models::twitter::asset::FullAssetPath;
 use crate::enums::platform::Platform;
 use crate::{impl_crud, impl_id};
 
@@ -113,11 +114,9 @@ impl Media {
                     .and_then(Value::as_u64)
                     .map(|v| v as u32);
                 let base_path = GlobalVal::get_save_dir()?;
-                let path = base_path
-                    .join("media")
-                    .join(id.clone())
-                    .to_string_lossy()
-                    .to_string();
+                let path =
+                    FullAssetPath(base_path.join(AssetType::Media.as_str()).join(id.clone()));
+
                 let asset = Asset {
                     ty: AssetType::Media,
                     plat: Platform::Twitter,
@@ -172,11 +171,9 @@ impl Media {
                     .and_then(Value::as_u64)
                     .map(|v| v as u32);
                 let base_path = GlobalVal::get_save_dir()?;
-                let path = base_path
-                    .join(AssetType::Media.as_str())
-                    .join(id.clone())
-                    .to_string_lossy()
-                    .to_string();
+                let path =
+                    FullAssetPath(base_path.join(AssetType::Media.as_str()).join(id.clone()));
+
                 let asset = Asset {
                     ty: AssetType::Media,
                     plat: Platform::Twitter,
@@ -207,11 +204,13 @@ impl Media {
                     .last()?
                     .to_string();
                 let base_path = GlobalVal::get_save_dir()?;
-                let path = base_path
-                    .join(AssetType::Thumb.as_str())
-                    .join(thumb_name.clone())
-                    .to_string_lossy()
-                    .to_string();
+
+                let path = FullAssetPath(
+                    base_path
+                        .join(AssetType::Thumb.as_str())
+                        .join(thumb_name.clone()),
+                );
+
                 let thumb = Asset {
                     ty: AssetType::Thumb,
                     plat: Platform::Twitter,
@@ -270,11 +269,11 @@ impl Media {
 
 impl DbMedia {
     pub async fn convert_asset(id: RecordId) -> Result<Asset> {
-        DbAsset::get(id).await
+        Asset::get(id).await
     }
 
     pub async fn into_domain(self) -> Result<Media> {
-        let asset = DbAsset::get(self.asset).await?;
+        let asset = Asset::get(self.asset).await?;
         let base = MediaBase {
             id: self.id.to_string(),
             asset,
@@ -287,14 +286,14 @@ impl DbMedia {
             "video" => Ok(Media::Video(VideoMedia {
                 base,
                 aspect_ratio: self.aspect_ratio.unwrap_or((16, 9)),
-                thumb: DbAsset::get(self.thumb.unwrap()).await?,
+                thumb: Asset::get(self.thumb.unwrap()).await?,
                 duration_millis: self.duration_millis.unwrap_or(0),
             })),
             "animated_gif" => Ok(Media::AnimatedGif(AnimatedGifMedia {
                 base,
                 aspect_ratio: self.aspect_ratio.unwrap_or((16, 9)),
 
-                thumb: DbAsset::get(self.thumb.unwrap()).await?,
+                thumb: Asset::get(self.thumb.unwrap()).await?,
             })),
             _ => Err(anyhow::anyhow!("未知的 media_type: {}", self.media_type)),
         }

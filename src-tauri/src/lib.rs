@@ -4,9 +4,8 @@ mod enums;
 mod utils;
 
 use anyhow::Result;
-use database::init_db;
+use database::{init_db, Crud};
 use domain::models::collect::DbCollection;
-use domain::models::{interface, scroll_position};
 use domain::models::meta::GlobalVal;
 use domain::models::twitter::entities::DbEntitie;
 use domain::models::twitter::utils::clean_database;
@@ -16,6 +15,7 @@ use domain::models::twitter::{
 };
 use domain::models::userkv::{get_userkv_value, upsert_userkv};
 use domain::models::{collect, meta};
+use domain::models::{interface, scroll_position};
 use domain::platform::api::user::ScanLikesEvent;
 use domain::platform::emitter::AssetDownloadBatchEvent;
 use domain::platform::job::{self, Job};
@@ -45,6 +45,8 @@ use tokio::task::block_in_place;
 
 #[cfg(target_os = "macos")]
 use std::cell::RefCell;
+
+use crate::domain::models::twitter::asset::{DbAsset, FullAssetPath, RelAssetPath};
 #[cfg(target_os = "macos")]
 thread_local! {
     static MAIN_WINDOW_OBSERVER: RefCell<Option<utils::macos_titlebar::FullscreenStateManager>> = RefCell::new(None);
@@ -281,7 +283,9 @@ async fn import_data(path: &str) -> Result<(), String> {
     dbg!("make entities");
     let merged = DbEntitie::merge_all(entities);
     dbg!("merge entities");
-    let tasks = handle_entities_replace(merged).await.map_err(|e| e.to_string())?;
+    let tasks = handle_entities_replace(merged)
+        .await
+        .map_err(|e| e.to_string())?;
     dbg!("handle entities");
     for task in tasks {
         let _ = Scheduler::<Task>::get()
